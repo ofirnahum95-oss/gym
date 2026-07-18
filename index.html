@@ -428,7 +428,7 @@
         /* Bottom Tab Navigation */
         .bottom-nav {
             position: fixed; 
-            bottom: 0; 
+            bottom: -1px; 
             left: 0; 
             right: 0;
             background: rgba(245, 247, 250, 0.95);
@@ -438,8 +438,7 @@
             display: flex; 
             justify-content: space-around;
             align-items: flex-end;
-            padding: 10px 10px;
-            padding-bottom: env(safe-area-inset-bottom);
+            padding: 10px 10px 0;
             z-index: 1000;
             box-shadow: 0 -4px 20px rgba(0,0,0,0.04);
             box-sizing: border-box;
