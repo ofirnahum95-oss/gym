@@ -28,20 +28,21 @@
             flex: 1;
             display: flex;
             flex-direction: column;
+            padding-top: max(8px, env(safe-area-inset-top));
         }
 
         .container {
             max-width: 1200px;
             margin: 0 auto;
-            padding: 16px;
+            padding: 12px 16px;
             padding-bottom: 90px;
             flex: 1;
             width: 100%;
             overflow-y: auto;
         }
 
-        h1 { font-size: 28px; font-weight: 800; margin-bottom: 4px; line-height: 1.2; }
-        h2 { font-size: 22px; font-weight: 700; margin-bottom: 12px; line-height: 1.2; }
+        h1 { font-size: 28px; font-weight: 800; margin: 0 0 2px 0; line-height: 1.1; }
+        h2 { font-size: 22px; font-weight: 700; margin-bottom: 8px; line-height: 1.2; }
         p { line-height: 1.4; }
 
         .page { 
@@ -93,7 +94,7 @@
         .metric-label { font-size: 11px; color: rgba(255, 255, 255, 0.7); margin-bottom: 4px; font-weight: 600; }
         .metric-value { font-size: 26px; font-weight: 800; line-height: 1.1; }
 
-        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 16px; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px; margin-bottom: 12px; }
 
         .input-group { margin-bottom: 10px; }
         .input-group label { display: block; font-size: 12px; font-weight: 700; margin-bottom: 4px; color: #FFFFFF; text-transform: uppercase; }
@@ -227,6 +228,7 @@
         .loading {
             text-align: center;
             padding: 40px 20px;
+            padding-top: max(40px, calc(40px + env(safe-area-inset-top)));
             min-height: 100vh;
             display: flex;
             flex-direction: column;
@@ -264,7 +266,7 @@
             <!-- DASHBOARD -->
             <div id="dashboard" class="page active">
                 <h1>💪 FitPro</h1>
-                <p style="color: rgba(255, 255, 255, 0.7); margin-bottom: 20px;">Personal Workout Tracker</p>
+                <p style="color: rgba(255, 255, 255, 0.7); margin: 0 0 12px 0; font-size: 15px;">Personal Workout Tracker</p>
 
                 <div class="grid">
                     <div class="metric">
@@ -284,7 +286,7 @@
                 <h2>Your Exercises</h2>
                 <div id="next-workout"></div>
 
-                <button class="btn btn-primary" onclick="openWorkoutModal()" style="margin-top: 20px;">
+                <button class="btn btn-primary" onclick="openWorkoutModal()" style="margin-top: 12px;">
                     🎯 Start Workout
                 </button>
             </div>
@@ -293,7 +295,7 @@
             <div id="exercises" class="page">
                 <h1>🏋️ Exercises</h1>
                 <div id="exercises-list"></div>
-                <button class="btn btn-primary" onclick="openExerciseModal()" style="margin-top: 20px;">
+                <button class="btn btn-primary" onclick="openExerciseModal()" style="margin-top: 12px;">
                     ➕ Add Exercise
                 </button>
             </div>
