@@ -1,0 +1,1411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#000000">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="FitPro">
+    <title>FitPro - Premium Workout Tracker</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="manifest" href="data:application/manifest+json,{\"name\":\"FitPro\",\"short_name\":\"FitPro\",\"start_url\":\"/\",\"display\":\"standalone\",\"background_color\":\"#000\",\"theme_color\":\"#007AFF\"}">
+    <style>
+        * {
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+        input, textarea, button { -webkit-user-select: text; user-select: text; }
+        
+        :root {
+            --primary: #007AFF;
+            --primary-dark: #0051D5;
+            --secondary: #00D4FF;
+            --success: #34C759;
+            --danger: #FF3B30;
+            --warning: #FF9500;
+            --background: #000000;
+            --surface: #1C1C1E;
+            --surface-light: rgba(255, 255, 255, 0.05);
+            --border: rgba(255, 255, 255, 0.1);
+            --text: #FFFFFF;
+            --text-secondary: rgba(255, 255, 255, 0.6);
+        }
+
+        body {
+            background: var(--background);
+            color: var(--text);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            overflow-x: hidden;
+            margin: 0;
+            padding: 0;
+        }
+
+        .glass {
+            background: var(--surface-light);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--border);
+        }
+
+        .btn {
+            padding: 12px 20px;
+            border-radius: 12px;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 14px;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:active {
+            background: var(--primary-dark);
+            transform: scale(0.98);
+        }
+
+        .btn-secondary {
+            background: var(--surface-light);
+            color: var(--text);
+            border: 1px solid var(--border);
+        }
+
+        .btn-secondary:active {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .card {
+            background: var(--surface-light);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 16px;
+        }
+
+        .metric-card {
+            background: var(--surface-light);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 20px;
+        }
+
+        .page {
+            display: none;
+            padding: 16px;
+            padding-bottom: 120px;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .page.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .navbar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(0, 0, 0, 0.95);
+            backdrop-filter: blur(20px);
+            border-top: 1px solid var(--border);
+            display: flex;
+            justify-content: space-around;
+            padding-bottom: max(16px, env(safe-area-inset-bottom));
+            z-index: 100;
+        }
+
+        .nav-item {
+            flex: 1;
+            padding: 8px;
+            text-align: center;
+            cursor: pointer;
+            border: none;
+            background: none;
+            color: var(--text-secondary);
+            transition: color 0.2s;
+            font-size: 11px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .nav-item.active {
+            color: var(--primary);
+        }
+
+        .nav-item-icon {
+            font-size: 24px;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 200;
+            align-items: flex-end;
+            animation: slideUp 0.3s ease;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(100%); }
+            to { transform: translateY(0); }
+        }
+
+        .modal-content {
+            background: var(--surface);
+            width: 100%;
+            border-radius: 20px 20px 0 0;
+            padding: 20px;
+            padding-bottom: max(20px, env(safe-area-inset-bottom));
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .section-header {
+            margin-bottom: 20px;
+        }
+
+        .section-header h2 {
+            font-size: 28px;
+            font-weight: 700;
+            margin: 0 0 4px 0;
+        }
+
+        .section-header p {
+            color: var(--text-secondary);
+            font-size: 13px;
+            margin: 0;
+        }
+
+        .input-group {
+            margin-bottom: 12px;
+        }
+
+        .input-group label {
+            display: block;
+            font-size: 12px;
+            font-weight: 600;
+            margin-bottom: 4px;
+            color: var(--text-secondary);
+        }
+
+        .input-group input,
+        .input-group textarea {
+            width: 100%;
+            padding: 12px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text);
+            font-size: 16px;
+        }
+
+        .input-group input::placeholder,
+        .input-group textarea::placeholder {
+            color: var(--text-secondary);
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .badge-chest { background: rgba(239, 68, 68, 0.2); color: #fca5a5; }
+        .badge-back { background: rgba(59, 130, 246, 0.2); color: #93c5fd; }
+        .badge-legs { background: rgba(168, 85, 247, 0.2); color: #d8b4fe; }
+        .badge-shoulders { background: rgba(234, 179, 8, 0.2); color: #fef08a; }
+        .badge-arms { background: rgba(249, 115, 22, 0.2); color: #fed7aa; }
+        .badge-core { background: rgba(34, 197, 94, 0.2); color: #86efac; }
+
+        .exercise-item {
+            background: var(--surface-light);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 12px;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+        }
+
+        .exercise-item:active {
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .exercise-info {
+            flex: 1;
+        }
+
+        .exercise-info h3 {
+            font-size: 14px;
+            font-weight: 600;
+            margin: 0 0 4px 0;
+        }
+
+        .exercise-info p {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin: 0;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            margin-bottom: 16px;
+            padding-bottom: 8px;
+        }
+
+        .tab {
+            padding: 8px 12px;
+            border-radius: 8px;
+            border: none;
+            background: var(--surface-light);
+            color: var(--text-secondary);
+            cursor: pointer;
+            white-space: nowrap;
+            font-size: 13px;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .tab.active {
+            background: var(--primary);
+            color: white;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .metric {
+            background: var(--surface-light);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 16px;
+        }
+
+        .metric-label {
+            font-size: 11px;
+            color: var(--text-secondary);
+            margin-bottom: 4px;
+        }
+
+        .metric-value {
+            font-size: 24px;
+            font-weight: 700;
+        }
+
+        .metric-unit {
+            font-size: 11px;
+            color: var(--text-secondary);
+            margin-left: 4px;
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 100px;
+            left: 16px;
+            right: 16px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 12px 16px;
+            font-size: 14px;
+            z-index: 150;
+            animation: slideUp 0.2s ease;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .modal-header h3 {
+            margin: 0;
+            font-size: 18px;
+            font-weight: 700;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            color: var(--text);
+            font-size: 24px;
+            cursor: pointer;
+            padding: 0;
+        }
+
+        .set-input {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .set-input input {
+            flex: 1;
+            padding: 8px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text);
+            font-size: 14px;
+        }
+
+        .set-input label {
+            font-size: 12px;
+            color: var(--text-secondary);
+            min-width: 30px;
+        }
+
+        .pr-banner {
+            background: linear-gradient(135deg, #FF9500, #FF3B30);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 16px;
+            animation: pulse 0.5s ease;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.8; }
+        }
+
+        .chart {
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-around;
+            height: 120px;
+            padding: 16px 0;
+            gap: 4px;
+        }
+
+        .chart-bar {
+            flex: 1;
+            background: var(--primary);
+            border-radius: 4px 4px 0 0;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .action-buttons button {
+            flex: 1;
+        }
+
+        .spinner {
+            border: 3px solid var(--surface-light);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 0.8s linear infinite;
+            display: inline-block;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .workout-set-item {
+            background: var(--surface-light);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 12px;
+            margin-bottom: 8px;
+        }
+
+        .set-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .set-header h4 {
+            margin: 0;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .set-header .toggle {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+            background: var(--primary);
+            border: none;
+            cursor: pointer;
+            color: white;
+            font-size: 12px;
+        }
+
+        .set-details {
+            font-size: 12px;
+            color: var(--text-secondary);
+            line-height: 1.4;
+        }
+
+        @media (min-width: 768px) {
+            .navbar {
+                position: static;
+                flex-direction: column;
+                width: 200px;
+                height: 100vh;
+                border-top: none;
+                border-right: 1px solid var(--border);
+                justify-content: flex-start;
+                padding: 20px 0;
+            }
+
+            .page {
+                padding-bottom: 20px;
+            }
+
+            .nav-item {
+                flex-direction: row;
+                padding: 12px 16px;
+                margin: 0 8px;
+                border-radius: 8px;
+                justify-content: flex-start;
+                gap: 12px;
+            }
+
+            .nav-item-icon {
+                font-size: 20px;
+            }
+
+            .grid {
+                grid-template-columns: repeat(4, 1fr);
+            }
+
+            body {
+                display: flex;
+                flex-direction: row-reverse;
+            }
+
+            .app-content {
+                flex: 1;
+                overflow-y: auto;
+            }
+
+            .modal {
+                align-items: center;
+                justify-content: center;
+            }
+
+            .modal-content {
+                width: 90%;
+                max-width: 500px;
+                border-radius: 20px;
+                max-height: 90vh;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-content">
+        <!-- DASHBOARD -->
+        <div id="dashboard" class="page active">
+            <div class="section-header">
+                <p id="welcome-text">Welcome back</p>
+                <h2>This Week</h2>
+            </div>
+
+            <div class="grid">
+                <div class="metric">
+                    <p class="metric-label">Total Volume</p>
+                    <div class="metric-value"><span id="volume">0</span><span class="metric-unit">kg</span></div>
+                </div>
+                <div class="metric">
+                    <p class="metric-label">Workouts</p>
+                    <div class="metric-value"><span id="workout-count">0</span></div>
+                </div>
+                <div class="metric">
+                    <p class="metric-label">Personal Records</p>
+                    <div class="metric-value"><span id="pr-count">0</span><span class="metric-unit">🏆</span></div>
+                </div>
+                <div class="metric">
+                    <p class="metric-label">Avg Duration</p>
+                    <div class="metric-value"><span id="avg-duration">0</span><span class="metric-unit">min</span></div>
+                </div>
+            </div>
+
+            <div style="margin-top: 20px;">
+                <div class="section-header">
+                    <h2>Next Workout</h2>
+                </div>
+                <div id="next-workout"></div>
+            </div>
+
+            <div style="margin-top: 20px;">
+                <button class="btn btn-primary" onclick="openWorkoutModal()" style="width: 100%; padding: 16px;">
+                    🎯 Start New Workout
+                </button>
+            </div>
+        </div>
+
+        <!-- WORKOUT -->
+        <div id="workout" class="page">
+            <div class="section-header">
+                <h2>Workout Session</h2>
+                <p id="session-date"></p>
+            </div>
+
+            <div style="margin-bottom: 16px;">
+                <label class="input-group label">Type</label>
+                <select id="session-type" class="input-group input" style="width: 100%;">
+                    <option value="personal">Personal Training</option>
+                    <option value="solo">Solo Workout</option>
+                </select>
+            </div>
+
+            <div id="session-exercises"></div>
+
+            <div style="margin: 16px 0;">
+                <div class="input-group">
+                    <label>Duration (minutes)</label>
+                    <input type="number" id="session-duration" placeholder="75" />
+                </div>
+                <div class="input-group">
+                    <label>Notes</label>
+                    <textarea id="session-notes" placeholder="How did it go?" style="height: 80px;"></textarea>
+                </div>
+            </div>
+
+            <div class="action-buttons">
+                <button class="btn btn-secondary" onclick="cancelWorkout()">Cancel</button>
+                <button class="btn btn-primary" onclick="saveWorkout()">Save Workout</button>
+            </div>
+        </div>
+
+        <!-- EXERCISES -->
+        <div id="exercises" class="page">
+            <div class="section-header">
+                <h2>Exercises</h2>
+            </div>
+
+            <div class="tabs" id="muscle-tabs"></div>
+            <div id="exercises-list"></div>
+
+            <button class="btn btn-primary" onclick="openExerciseModal()" style="width: 100%; margin-top: 16px;">
+                ➕ Add Exercise
+            </button>
+        </div>
+
+        <!-- ANALYTICS -->
+        <div id="analytics" class="page">
+            <div class="section-header">
+                <h2>Analytics</h2>
+            </div>
+
+            <div class="tabs">
+                <button class="tab active" onclick="setTimeframe('week')">Week</button>
+                <button class="tab" onclick="setTimeframe('month')">Month</button>
+                <button class="tab" onclick="setTimeframe('year')">Year</button>
+            </div>
+
+            <div class="grid">
+                <div class="metric">
+                    <p class="metric-label">Total Volume</p>
+                    <div class="metric-value"><span id="analytics-volume">0</span><span class="metric-unit">kg</span></div>
+                </div>
+                <div class="metric">
+                    <p class="metric-label">Total Workouts</p>
+                    <div class="metric-value"><span id="analytics-workouts">0</span></div>
+                </div>
+                <div class="metric">
+                    <p class="metric-label">Avg Duration</p>
+                    <div class="metric-value"><span id="analytics-duration">0</span><span class="metric-unit">min</span></div>
+                </div>
+                <div class="metric">
+                    <p class="metric-label">Consistency</p>
+                    <div class="metric-value"><span id="analytics-consistency">0</span><span class="metric-unit">%</span></div>
+                </div>
+            </div>
+
+            <div class="card" style="margin-top: 16px;">
+                <p style="margin: 0 0 12px 0; font-weight: 600;">Volume Trend</p>
+                <div class="chart" id="volume-chart"></div>
+            </div>
+
+            <div class="card" style="margin-top: 16px;">
+                <p style="margin: 0 0 12px 0; font-weight: 600;">Insights</p>
+                <div id="insights"></div>
+            </div>
+        </div>
+
+        <!-- REPORTS -->
+        <div id="reports" class="page">
+            <div class="section-header">
+                <h2>Weekly Report</h2>
+            </div>
+
+            <div class="card" style="margin-bottom: 16px;">
+                <button class="btn btn-primary" onclick="generateReport()" style="width: 100%;">
+                    📊 Generate Report
+                </button>
+            </div>
+
+            <div id="report-content"></div>
+
+            <button class="btn btn-secondary" onclick="shareReport()" style="width: 100%; margin-top: 16px;" id="share-btn" disabled>
+                📤 Share to WhatsApp
+            </button>
+        </div>
+
+        <!-- SETTINGS -->
+        <div id="settings" class="page">
+            <div class="section-header">
+                <h2>Settings</h2>
+            </div>
+
+            <div class="card" style="margin-bottom: 16px;">
+                <h3 style="margin: 0 0 8px 0; font-size: 14px; font-weight: 600;">User</h3>
+                <p style="margin: 0; font-size: 12px; color: var(--text-secondary);" id="user-email">Not signed in</p>
+                <button class="btn btn-secondary" onclick="signOut()" style="width: 100%; margin-top: 12px;">
+                    Sign Out
+                </button>
+            </div>
+
+            <div class="card" style="margin-bottom: 16px;">
+                <h3 style="margin: 0 0 8px 0; font-size: 14px; font-weight: 600;">Data</h3>
+                <button class="btn btn-secondary" onclick="exportData()" style="width: 100%; margin-bottom: 8px;">
+                    💾 Export Data
+                </button>
+                <button class="btn btn-secondary" onclick="document.getElementById('import-file').click()" style="width: 100%;">
+                    📥 Import Data
+                </button>
+                <input type="file" id="import-file" style="display: none;" onchange="importData(event)">
+            </div>
+
+            <div class="card">
+                <h3 style="margin: 0 0 8px 0; font-size: 14px; font-weight: 600;">Clear All Data</h3>
+                <button class="btn" style="background: var(--danger); color: white; width: 100%;" onclick="clearAllData()">
+                    🗑️ Delete Everything
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- NAVBAR -->
+    <nav class="navbar">
+        <button class="nav-item active" onclick="switchPage('dashboard')">
+            <span class="nav-item-icon">📊</span>
+            <span>Dashboard</span>
+        </button>
+        <button class="nav-item" onclick="switchPage('workout')">
+            <span class="nav-item-icon">💪</span>
+            <span>Workout</span>
+        </button>
+        <button class="nav-item" onclick="switchPage('exercises')">
+            <span class="nav-item-icon">🏋️</span>
+            <span>Exercises</span>
+        </button>
+        <button class="nav-item" onclick="switchPage('analytics')">
+            <span class="nav-item-icon">📈</span>
+            <span>Analytics</span>
+        </button>
+        <button class="nav-item" onclick="switchPage('reports')">
+            <span class="nav-item-icon">📤</span>
+            <span>Reports</span>
+        </button>
+        <button class="nav-item" onclick="switchPage('settings')">
+            <span class="nav-item-icon">⚙️</span>
+            <span>Settings</span>
+        </button>
+    </nav>
+
+    <!-- MODALS -->
+    <div class="modal" id="workout-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Select Program</h3>
+                <button class="modal-close" onclick="closeModal('workout-modal')">✕</button>
+            </div>
+            <div id="programs-list"></div>
+        </div>
+    </div>
+
+    <div class="modal" id="exercise-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Add Exercise</h3>
+                <button class="modal-close" onclick="closeModal('exercise-modal')">✕</button>
+            </div>
+            <div class="input-group">
+                <label>Exercise Name *</label>
+                <input type="text" id="exercise-name" placeholder="e.g., Bench Press">
+            </div>
+            <div class="input-group">
+                <label>Muscle Group *</label>
+                <select id="exercise-muscle" style="width: 100%; padding: 8px; background: var(--surface); border: 1px solid var(--border); border-radius: 6px; color: var(--text);">
+                    <option value="Chest">Chest</option>
+                    <option value="Back">Back</option>
+                    <option value="Legs">Legs</option>
+                    <option value="Shoulders">Shoulders</option>
+                    <option value="Arms">Arms</option>
+                    <option value="Core">Core</option>
+                </select>
+            </div>
+            <div class="input-group">
+                <label>Sets</label>
+                <input type="number" id="exercise-sets" placeholder="4" value="4">
+            </div>
+            <div class="input-group">
+                <label>Rep Range</label>
+                <div style="display: flex; gap: 8px;">
+                    <input type="number" id="exercise-min-reps" placeholder="Min" value="6" style="flex: 1;">
+                    <input type="number" id="exercise-max-reps" placeholder="Max" value="10" style="flex: 1;">
+                </div>
+            </div>
+            <div class="input-group">
+                <label>Target Weight (kg)</label>
+                <input type="number" id="exercise-weight" placeholder="100" value="100">
+            </div>
+            <div class="action-buttons">
+                <button class="btn btn-secondary" onclick="closeModal('exercise-modal')">Cancel</button>
+                <button class="btn btn-primary" onclick="saveExercise()">Add</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ============================================================================
+        // CONFIGURATION & STATE
+        // ============================================================================
+
+        // Firebase config - REPLACE WITH YOUR CONFIG
+        const FIREBASE_CONFIG = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_AUTH_DOMAIN",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_STORAGE_BUCKET",
+            messagingSenderId: "YOUR_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
+
+        // Global state
+        const state = {
+            user: null,
+            exercises: [],
+            workoutSessions: [],
+            personalRecords: {},
+            currentWorkout: null,
+            currentTimeframe: 'week'
+        };
+
+        // ============================================================================
+        // STORAGE UTILITIES
+        // ============================================================================
+
+        const DB = {
+            getExercises: () => JSON.parse(localStorage.getItem('exercises') || '[]'),
+            setExercises: (data) => localStorage.setItem('exercises', JSON.stringify(data)),
+            
+            getSessions: () => JSON.parse(localStorage.getItem('sessions') || '[]'),
+            setSessions: (data) => localStorage.setItem('sessions', JSON.stringify(data)),
+            
+            getPRs: () => JSON.parse(localStorage.getItem('prs') || '{}'),
+            setPRs: (data) => localStorage.setItem('prs', JSON.stringify(data)),
+
+            getUser: () => JSON.parse(localStorage.getItem('user') || 'null'),
+            setUser: (data) => localStorage.setItem('user', JSON.stringify(data))
+        };
+
+        // ============================================================================
+        // INITIALIZATION
+        // ============================================================================
+
+        function init() {
+            // Load data
+            state.exercises = DB.getExercises();
+            state.workoutSessions = DB.getSessions();
+            state.personalRecords = DB.getPRs();
+            state.user = DB.getUser();
+
+            // Initialize with demo data if empty
+            if (state.exercises.length === 0) {
+                initDemoData();
+            }
+
+            // Set user name
+            if (state.user) {
+                document.getElementById('welcome-text').textContent = `Welcome back, ${state.user.name}`;
+                document.getElementById('user-email').textContent = state.user.email;
+            }
+
+            // Render pages
+            renderDashboard();
+            renderExercises();
+            renderPrograms();
+            updateAnalytics();
+        }
+
+        function initDemoData() {
+            state.exercises = [
+                { id: 'ex1', name: 'Bench Press', muscleGroup: 'Chest', sets: 4, minReps: 6, maxReps: 10, targetWeight: 100 },
+                { id: 'ex2', name: 'Squats', muscleGroup: 'Legs', sets: 4, minReps: 8, maxReps: 12, targetWeight: 140 },
+                { id: 'ex3', name: 'Deadlifts', muscleGroup: 'Back', sets: 3, minReps: 3, maxReps: 6, targetWeight: 180 },
+                { id: 'ex4', name: 'Pull-ups', muscleGroup: 'Back', sets: 3, minReps: 6, maxReps: 12, targetWeight: 0 },
+                { id: 'ex5', name: 'Rows', muscleGroup: 'Back', sets: 4, minReps: 6, maxReps: 10, targetWeight: 110 },
+                { id: 'ex6', name: 'Shoulder Press', muscleGroup: 'Shoulders', sets: 3, minReps: 6, maxReps: 10, targetWeight: 60 },
+            ];
+
+            state.user = {
+                id: 'user1',
+                name: 'אופיר',
+                email: 'ofir@example.com'
+            };
+
+            // Add some demo sessions
+            const today = new Date();
+            for (let i = 0; i < 10; i++) {
+                const date = new Date(today);
+                date.setDate(date.getDate() - i);
+                
+                const session = {
+                    id: `session-${i}`,
+                    date: date.toISOString(),
+                    type: i % 3 === 0 ? 'personal' : 'solo',
+                    sets: [
+                        { exerciseId: 'ex1', reps: 8, weight: 100, completed: true },
+                        { exerciseId: 'ex1', reps: 8, weight: 100, completed: true },
+                        { exerciseId: 'ex1', reps: 7, weight: 100, completed: true },
+                        { exerciseId: 'ex2', reps: 10, weight: 140, completed: true },
+                    ],
+                    duration: 70 + Math.random() * 20,
+                    notes: 'Good session'
+                };
+                state.workoutSessions.push(session);
+            }
+
+            DB.setExercises(state.exercises);
+            DB.setSessions(state.workoutSessions);
+            DB.setUser(state.user);
+            document.getElementById('user-email').textContent = state.user.email;
+        }
+
+        // ============================================================================
+        // PAGE NAVIGATION
+        // ============================================================================
+
+        function switchPage(pageName) {
+            // Hide all pages
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            
+            // Show selected page
+            const page = document.getElementById(pageName);
+            if (page) {
+                page.classList.add('active');
+            }
+
+            // Update nav
+            document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+            event.target.closest('.nav-item')?.classList.add('active');
+
+            // Render page
+            if (pageName === 'exercises') renderExercises();
+            if (pageName === 'analytics') updateAnalytics();
+        }
+
+        // ============================================================================
+        // DASHBOARD
+        // ============================================================================
+
+        function renderDashboard() {
+            // Calculate this week's stats
+            const weekAgo = new Date();
+            weekAgo.setDate(weekAgo.getDate() - 7);
+
+            const weekSessions = state.workoutSessions.filter(s => new Date(s.date) > weekAgo);
+            
+            let totalVolume = 0;
+            let totalDuration = 0;
+            weekSessions.forEach(session => {
+                session.sets.forEach(set => {
+                    if (set.completed) totalVolume += set.weight * set.reps;
+                });
+                totalDuration += session.duration || 0;
+            });
+
+            document.getElementById('volume').textContent = totalVolume.toLocaleString();
+            document.getElementById('workout-count').textContent = weekSessions.length;
+            document.getElementById('pr-count').textContent = Object.keys(state.personalRecords).length;
+            document.getElementById('avg-duration').textContent = weekSessions.length > 0 ? Math.round(totalDuration / weekSessions.length) : 0;
+
+            // Next workout
+            const nextContainer = document.getElementById('next-workout');
+            const upcomingExercises = state.exercises.slice(0, 3);
+            
+            nextContainer.innerHTML = upcomingExercises.map(ex => `
+                <div class="exercise-item">
+                    <div class="exercise-info">
+                        <h3>${ex.name}</h3>
+                        <p>${ex.sets}x${ex.minReps}-${ex.maxReps} @ ${ex.targetWeight}kg</p>
+                    </div>
+                    <span class="badge badge-${ex.muscleGroup.toLowerCase()}">${ex.muscleGroup}</span>
+                </div>
+            `).join('');
+        }
+
+        // ============================================================================
+        // EXERCISES
+        // ============================================================================
+
+        function renderExercises() {
+            // Render muscle tabs
+            const muscles = [...new Set(state.exercises.map(e => e.muscleGroup))];
+            const tabsContainer = document.getElementById('muscle-tabs');
+            
+            tabsContainer.innerHTML = `
+                <button class="tab active" onclick="filterExercises()">All</button>
+                ${muscles.map(m => `<button class="tab" onclick="filterExercises('${m}')">${m}</button>`).join('')}
+            `;
+
+            filterExercises();
+        }
+
+        function filterExercises(muscle = null) {
+            const filtered = muscle ? state.exercises.filter(e => e.muscleGroup === muscle) : state.exercises;
+            
+            // Update active tab
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            event?.target?.classList.add('active');
+
+            // Render exercises
+            const list = document.getElementById('exercises-list');
+            list.innerHTML = filtered.map(ex => `
+                <div class="exercise-item" onclick="editExercise('${ex.id}')">
+                    <div class="exercise-info">
+                        <h3>${ex.name}</h3>
+                        <p>${ex.sets} sets • ${ex.minReps}-${ex.maxReps} reps • ${ex.targetWeight}kg</p>
+                    </div>
+                    <span class="badge badge-${ex.muscleGroup.toLowerCase()}">${ex.muscleGroup}</span>
+                </div>
+            `).join('');
+        }
+
+        function openExerciseModal() {
+            document.getElementById('exercise-modal').classList.add('active');
+        }
+
+        function closeModal(id) {
+            document.getElementById(id).classList.remove('active');
+        }
+
+        function saveExercise() {
+            const exercise = {
+                id: 'ex-' + Date.now(),
+                name: document.getElementById('exercise-name').value,
+                muscleGroup: document.getElementById('exercise-muscle').value,
+                sets: parseInt(document.getElementById('exercise-sets').value) || 4,
+                minReps: parseInt(document.getElementById('exercise-min-reps').value) || 6,
+                maxReps: parseInt(document.getElementById('exercise-max-reps').value) || 10,
+                targetWeight: parseInt(document.getElementById('exercise-weight').value) || 100
+            };
+
+            if (!exercise.name) {
+                showToast('Please enter exercise name');
+                return;
+            }
+
+            state.exercises.push(exercise);
+            DB.setExercises(state.exercises);
+            closeModal('exercise-modal');
+            renderExercises();
+            showToast('✅ Exercise added');
+
+            // Clear form
+            document.getElementById('exercise-name').value = '';
+            document.getElementById('exercise-sets').value = '4';
+        }
+
+        function editExercise(id) {
+            const ex = state.exercises.find(e => e.id === id);
+            if (!ex) return;
+
+            const newWeight = prompt(`${ex.name} - New target weight (kg):`, ex.targetWeight);
+            if (newWeight === null) return;
+
+            ex.targetWeight = parseFloat(newWeight);
+            DB.setExercises(state.exercises);
+            renderExercises();
+            showToast('✅ Exercise updated');
+        }
+
+        // ============================================================================
+        // WORKOUT SESSION
+        // ============================================================================
+
+        function openWorkoutModal() {
+            document.getElementById('workout-modal').classList.add('active');
+        }
+
+        function renderPrograms() {
+            const container = document.getElementById('programs-list');
+            
+            const defaultPrograms = [
+                { id: 'prog-1', name: 'Upper Body A', exercises: ['ex1', 'ex5', 'ex6'] },
+                { id: 'prog-2', name: 'Lower Body', exercises: ['ex2', 'ex3', 'ex4'] },
+                { id: 'prog-3', name: 'Full Body', exercises: ['ex1', 'ex2', 'ex5'] }
+            ];
+
+            container.innerHTML = defaultPrograms.map(prog => `
+                <button class="btn btn-secondary" onclick="startWorkout('${prog.id}', '${prog.name}')" style="width: 100%; margin-bottom: 8px;">
+                    ${prog.name}
+                </button>
+            `).join('');
+        }
+
+        function startWorkout(programId, programName) {
+            closeModal('workout-modal');
+            switchPage('workout');
+
+            state.currentWorkout = {
+                id: 'workout-' + Date.now(),
+                date: new Date().toISOString(),
+                type: 'solo',
+                sets: [],
+                duration: 0,
+                notes: '',
+                programId,
+                programName
+            };
+
+            document.getElementById('session-date').textContent = programName;
+            document.getElementById('session-type').value = 'solo';
+            document.getElementById('session-duration').value = '';
+            document.getElementById('session-notes').value = '';
+
+            renderWorkoutExercises();
+        }
+
+        function renderWorkoutExercises() {
+            if (!state.currentWorkout) return;
+
+            // Get exercises for this program
+            const programExercises = state.exercises.slice(0, 4); // Demo
+            const container = document.getElementById('session-exercises');
+
+            container.innerHTML = programExercises.map((ex, idx) => `
+                <div class="card" style="margin-bottom: 12px;">
+                    <div style="font-weight: 600; margin-bottom: 12px;">${ex.name}</div>
+                    <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 12px;">
+                        ${ex.sets} sets • ${ex.minReps}-${ex.maxReps} reps • ${ex.targetWeight}kg
+                    </div>
+                    
+                    <div id="sets-${idx}"></div>
+                    
+                    <button class="btn btn-secondary" onclick="addSet(${idx})" style="width: 100%; margin-top: 8px;">
+                        + Add Set
+                    </button>
+                </div>
+            `).join('');
+
+            // Add initial sets
+            programExercises.forEach((ex, idx) => {
+                for (let i = 0; i < ex.sets; i++) {
+                    addSet(idx);
+                }
+            });
+        }
+
+        function addSet(exerciseIdx) {
+            const ex = state.exercises[exerciseIdx];
+            const container = document.getElementById(`sets-${exerciseIdx}`);
+            const setNumber = container.children.length + 1;
+
+            const setEl = document.createElement('div');
+            setEl.className = 'workout-set-item';
+            setEl.innerHTML = `
+                <div class="set-header">
+                    <h4>Set ${setNumber}</h4>
+                    <button class="set-header toggle" onclick="this.textContent = this.textContent === '✓' ? '✕' : '✓'">✓</button>
+                </div>
+                <div class="set-details">
+                    <div class="set-input">
+                        <label>Reps:</label>
+                        <input type="number" value="${ex.maxReps}" onchange="updateSet(this)">
+                    </div>
+                    <div class="set-input">
+                        <label>Weight:</label>
+                        <input type="number" value="${ex.targetWeight}" onchange="updateSet(this)">
+                    </div>
+                </div>
+            `;
+
+            container.appendChild(setEl);
+        }
+
+        function updateSet(input) {
+            // Auto-save
+        }
+
+        function cancelWorkout() {
+            state.currentWorkout = null;
+            switchPage('dashboard');
+        }
+
+        function saveWorkout() {
+            if (!state.currentWorkout) return;
+
+            state.currentWorkout.type = document.getElementById('session-type').value;
+            state.currentWorkout.duration = parseInt(document.getElementById('session-duration').value) || 60;
+            state.currentWorkout.notes = document.getElementById('session-notes').value;
+
+            // Calculate total volume from UI
+            let totalVolume = 0;
+            document.querySelectorAll('.workout-set-item').forEach(setEl => {
+                const inputs = setEl.querySelectorAll('input[type="number"]');
+                if (inputs.length >= 2) {
+                    const weight = parseFloat(inputs[1].value) || 0;
+                    const reps = parseInt(inputs[0].value) || 0;
+                    totalVolume += weight * reps;
+                }
+            });
+
+            state.currentWorkout.totalVolume = totalVolume;
+            state.currentWorkout.completed = true;
+
+            state.workoutSessions.push(state.currentWorkout);
+            DB.setSessions(state.workoutSessions);
+
+            state.currentWorkout = null;
+            showToast('✅ Workout saved!');
+            switchPage('dashboard');
+            renderDashboard();
+        }
+
+        // ============================================================================
+        // ANALYTICS
+        // ============================================================================
+
+        function updateAnalytics() {
+            const timeframe = state.currentTimeframe;
+            let days = 7;
+            if (timeframe === 'month') days = 30;
+            if (timeframe === 'year') days = 365;
+
+            const startDate = new Date();
+            startDate.setDate(startDate.getDate() - days);
+
+            const sessions = state.workoutSessions.filter(s => new Date(s.date) > startDate);
+
+            let totalVolume = 0;
+            let totalDuration = 0;
+            const dailyVolume = {};
+
+            sessions.forEach(session => {
+                const dateKey = new Date(session.date).toLocaleDateString();
+                dailyVolume[dateKey] = 0;
+
+                session.sets.forEach(set => {
+                    const volume = set.weight * set.reps;
+                    totalVolume += volume;
+                    dailyVolume[dateKey] += volume;
+                });
+                totalDuration += session.duration || 0;
+            });
+
+            document.getElementById('analytics-volume').textContent = totalVolume.toLocaleString();
+            document.getElementById('analytics-workouts').textContent = sessions.length;
+            document.getElementById('analytics-duration').textContent = sessions.length > 0 ? Math.round(totalDuration / sessions.length) : 0;
+            
+            const consistency = Math.round((sessions.length / (days / 3)) * 100);
+            document.getElementById('analytics-consistency').textContent = Math.min(consistency, 100);
+
+            // Chart
+            const chartContainer = document.getElementById('volume-chart');
+            const lastDays = Object.values(dailyVolume).slice(-7);
+            const maxVol = Math.max(...lastDays, 1);
+
+            chartContainer.innerHTML = lastDays.map(vol => `
+                <div class="chart-bar" style="height: ${(vol / maxVol) * 100}%"></div>
+            `).join('');
+
+            // Insights
+            const insights = generateInsights(sessions, totalVolume);
+            document.getElementById('insights').innerHTML = insights.map(i => `
+                <p style="font-size: 12px; margin: 8px 0; color: var(--text-secondary);">💡 ${i}</p>
+            `).join('');
+        }
+
+        function setTimeframe(timeframe) {
+            state.currentTimeframe = timeframe;
+            document.querySelectorAll('#analytics .tab').forEach(t => t.classList.remove('active'));
+            event.target.classList.add('active');
+            updateAnalytics();
+        }
+
+        function generateInsights(sessions, totalVolume) {
+            const insights = [];
+            
+            if (sessions.length >= 4) {
+                insights.push('💪 Great consistency! Keep it up!');
+            }
+            
+            if (totalVolume > 100000) {
+                insights.push('🔥 You moved serious weight this week!');
+            }
+
+            const avgDuration = sessions.reduce((s, ss) => s + (ss.duration || 0), 0) / sessions.length;
+            if (avgDuration > 75) {
+                insights.push(`⏱️ Average session: ${Math.round(avgDuration)}min - great dedication!`);
+            }
+
+            return insights.length > 0 ? insights : ['📊 Keep tracking your workouts!'];
+        }
+
+        // ============================================================================
+        // REPORTS
+        // ============================================================================
+
+        function generateReport() {
+            const weekAgo = new Date();
+            weekAgo.setDate(weekAgo.getDate() - 7);
+
+            const sessions = state.workoutSessions.filter(s => new Date(s.date) > weekAgo);
+            let totalVolume = 0;
+
+            sessions.forEach(s => {
+                s.sets.forEach(set => {
+                    totalVolume += set.weight * set.reps;
+                });
+            });
+
+            const message = `היי :) 📊 מצרף עדכונים:\n\n🏋️ סה"כ אימונים: ${sessions.length}\n📦 סה"כ וולום: ${(totalVolume/1000).toFixed(1)}K kg\n⏱️ סך הזמן: ${Math.round(sessions.reduce((s, ss) => s + (ss.duration || 0), 0))} דקות\n\n💯 Great work this week!`;
+
+            document.getElementById('report-content').innerHTML = `
+                <div class="card" style="white-space: pre-wrap; font-size: 13px; line-height: 1.6;">
+                    ${message}
+                </div>
+            `;
+
+            document.getElementById('share-btn').disabled = false;
+            window.reportMessage = message;
+        }
+
+        function shareReport() {
+            if (!window.reportMessage) return;
+            const encoded = encodeURIComponent(window.reportMessage);
+            window.open(`https://wa.me/?text=${encoded}`, '_blank');
+        }
+
+        // ============================================================================
+        // SETTINGS
+        // ============================================================================
+
+        function exportData() {
+            const data = {
+                exercises: state.exercises,
+                sessions: state.workoutSessions,
+                prs: state.personalRecords,
+                exportDate: new Date().toISOString()
+            };
+
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `fitpro-backup-${Date.now()}.json`;
+            a.click();
+            showToast('✅ Data exported');
+        }
+
+        function importData(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    state.exercises = data.exercises || [];
+                    state.workoutSessions = data.sessions || [];
+                    state.personalRecords = data.prs || {};
+
+                    DB.setExercises(state.exercises);
+                    DB.setSessions(state.workoutSessions);
+                    DB.setPRs(state.personalRecords);
+
+                    showToast('✅ Data imported');
+                    renderDashboard();
+                } catch (err) {
+                    showToast('❌ Import failed');
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function clearAllData() {
+            if (!confirm('Are you sure? This cannot be undone!')) return;
+
+            state.exercises = [];
+            state.workoutSessions = [];
+            state.personalRecords = {};
+
+            localStorage.clear();
+            showToast('✅ All data cleared');
+            location.reload();
+        }
+
+        function signOut() {
+            state.user = null;
+            DB.setUser(null);
+            showToast('Signed out');
+        }
+
+        // ============================================================================
+        // UTILITIES
+        // ============================================================================
+
+        function showToast(message) {
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.textContent = message;
+            document.body.appendChild(toast);
+
+            setTimeout(() => {
+                toast.remove();
+            }, 2000);
+        }
+
+        // ============================================================================
+        // STARTUP
+        // ============================================================================
+
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>
