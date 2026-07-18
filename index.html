@@ -312,11 +312,11 @@
         }
     </style>
 </head>
-<body>
+<body dir="rtl">
     <!-- LOADING -->
     <div id="loadingScreen" class="loading">
         <div class="spinner"></div>
-        <p style="color: rgba(255, 255, 255, 0.7);">Loading FitPro...</p>
+        <p style="color: rgba(255, 255, 255, 0.7);">טוען FitPro...</p>
     </div>
 
     <!-- APP -->
@@ -325,67 +325,67 @@
             <!-- DASHBOARD -->
             <div id="dashboard" class="page active">
                 <h1>💪 FitPro</h1>
-                <p style="color: rgba(255, 255, 255, 0.7); margin: 0 0 12px 0; font-size: 15px;">Personal Workout Tracker</p>
+                <p style="color: rgba(255, 255, 255, 0.7); margin: 0 0 12px 0; font-size: 15px;">עוקב אימונים אישי</p>
 
                 <div class="grid">
                     <div class="metric">
-                        <div class="metric-label">This Week</div>
+                        <div class="metric-label">השבוע</div>
                         <div class="metric-value" id="volume">0</div>
                     </div>
                     <div class="metric">
-                        <div class="metric-label">Workouts</div>
+                        <div class="metric-label">אימונים</div>
                         <div class="metric-value" id="workout-count">0</div>
                     </div>
                     <div class="metric">
-                        <div class="metric-label">Avg Time</div>
-                        <div class="metric-value" id="avg-duration">0<span style="font-size: 14px;">m</span></div>
+                        <div class="metric-label">זמן ממוצע</div>
+                        <div class="metric-value" id="avg-duration">0<span style="font-size: 14px;">דק</span></div>
                     </div>
                 </div>
 
-                <h2>Your Exercises</h2>
+                <h2>התרגילים שלך</h2>
                 <div id="next-workout"></div>
 
                 <button class="btn btn-primary" onclick="openWorkoutModal()" style="margin-top: 12px;">
-                    🎯 Start Workout
+                    🎯 התחל אימון
                 </button>
             </div>
 
             <!-- EXERCISES -->
             <div id="exercises" class="page">
-                <h1>🏋️ Exercises</h1>
+                <h1>🏋️ תרגילים</h1>
                 <div id="exercises-list"></div>
                 <button class="btn btn-primary" onclick="openExerciseModal()" style="margin-top: 12px;">
-                    ➕ Add Exercise
+                    ➕ הוסף תרגיל
                 </button>
             </div>
 
             <!-- IMPORT -->
             <div id="import" class="page">
-                <h1>📝 Import Workout</h1>
-                <p style="color: rgba(255, 255, 255, 0.7); margin: 0 0 12px 0; font-size: 14px;">Copy your coach's WhatsApp message and paste below</p>
+                <h1>📝 הוסף תוכנית</h1>
+                <p style="color: rgba(255, 255, 255, 0.7); margin: 0 0 12px 0; font-size: 14px;">העתק את הודעת המאמן מ-WhatsApp והדבק למטה</p>
                 
                 <div class="input-group">
-                    <textarea id="import-text" placeholder="Paste workout here... (Hebrew, English, or mixed)&#10;&#10;Example:&#10;- בעמידה בהטיית גו, חתירה עם מוט 12×3 (12.5)&#10;- Bench Press 4x8-10 @ 100kg" style="height: 180px; resize: vertical;"></textarea>
+                    <textarea id="import-text" placeholder="הדבק את התוכנית כאן...&#10;&#10;דוגמה:&#10;- בעמידה בהטיית גו, חתירה עם מוט 12×3 (12.5)&#10;- בעמידה, פשיטת כתף בפולי 12×3 (20.4)" style="height: 180px; resize: vertical;"></textarea>
                 </div>
 
-                <button class="btn btn-primary" onclick="analyzeWorkout()">🤖 Analyze with AI</button>
-                <button class="btn btn-secondary" onclick="document.getElementById('import-text').value = ''">Clear</button>
+                <button class="btn btn-primary" onclick="analyzeWorkout()">🤖 ניתוח עם AI</button>
+                <button class="btn btn-secondary" onclick="document.getElementById('import-text').value = ''">נקה</button>
             </div>
 
             <!-- ANALYTICS -->
             <div id="analytics" class="page">
-                <h1>📈 Analytics</h1>
+                <h1>📈 סטטיסטיקה</h1>
                 <div class="grid" style="margin-bottom: 20px;">
                     <div class="metric">
-                        <div class="metric-label">Total Volume</div>
+                        <div class="metric-label">כלל הנפח</div>
                         <div class="metric-value" id="analytics-volume">0</div>
                     </div>
                     <div class="metric">
-                        <div class="metric-label">Workouts</div>
+                        <div class="metric-label">אימונים</div>
                         <div class="metric-value" id="analytics-workouts">0</div>
                     </div>
                     <div class="metric">
-                        <div class="metric-label">Consistency</div>
+                        <div class="metric-label">עקביות</div>
                         <div class="metric-value" id="analytics-consistency">0%</div>
                     </div>
                 </div>
@@ -393,37 +393,37 @@
 
             <!-- SETTINGS -->
             <div id="settings" class="page">
-                <h1>⚙️ Settings</h1>
+                <h1>⚙️ הגדרות</h1>
                 <div class="card">
-                    <h3>☁️ Firebase Realtime Database</h3>
-                    <p style="font-size: 13px; color: rgba(255, 255, 255, 0.7);">✅ Connected</p>
-                    <p style="font-size: 12px; color: rgba(255, 255, 255, 0.5); margin-top: 6px;">Data syncs in real-time</p>
+                    <h3>☁️ Firebase מסד נתונים</h3>
+                    <p style="font-size: 13px; color: rgba(255, 255, 255, 0.7);">✅ מחובר</p>
+                    <p style="font-size: 12px; color: rgba(255, 255, 255, 0.5); margin-top: 6px;">סנכרון בזמן אמת</p>
                 </div>
 
                 <div class="card" style="margin-top: 12px;">
-                    <h3>🤖 Claude AI (Workout Import)</h3>
+                    <h3>🤖 Claude AI (ניתוח תוכניות)</h3>
                     <p style="font-size: 13px; color: rgba(255, 255, 255, 0.7); margin-bottom: 12px;">
-                        Needed to analyze your coach's messages (Hebrew + English support)
+                        נדרש לניתוח הודעות המאמן (תמיכה בעברית + אנגלית)
                     </p>
                     <div class="input-group">
-                        <label>Anthropic API Key</label>
-                        <input type="password" id="api-key-input" placeholder="sk-... (from console.anthropic.com)">
+                        <label>מפתח Anthropic API</label>
+                        <input type="password" id="api-key-input" placeholder="sk-... (מ-console.anthropic.com)">
                     </div>
-                    <button class="btn btn-primary" onclick="saveAPIKey()">Save API Key</button>
+                    <button class="btn btn-primary" onclick="saveAPIKey()">שמור מפתח</button>
                     <p style="font-size: 12px; color: rgba(255, 255, 255, 0.5); margin-top: 8px;">
-                        🔗 <a href="https://console.anthropic.com" target="_blank">Get your free API key</a>
+                        🔗 <a href="https://console.anthropic.com" target="_blank">קבל מפתח חינם</a>
                     </p>
                 </div>
 
                 <div class="card" style="margin-top: 12px;">
-                    <h3>📋 How Workout Import Works</h3>
+                    <h3>📋 איך זה עובד</h3>
                     <ol style="font-size: 12px; color: rgba(255, 255, 255, 0.7); margin: 8px 0; padding-left: 18px;">
-                        <li>Copy your coach's WhatsApp message</li>
-                        <li>Go to <strong>📝 Import</strong></li>
-                        <li>Paste the message</li>
-                        <li>Click <strong>🤖 Analyze</strong></li>
-                        <li>Review and edit exercise details</li>
-                        <li>Click <strong>💾 Save All</strong></li>
+                        <li>העתק את הודעת המאמן מ-WhatsApp</li>
+                        <li>עבור ל-<strong>📝 הוספה</strong></li>
+                        <li>הדבק את ההודעה</li>
+                        <li>לחץ <strong>🤖 ניתוח</strong></li>
+                        <li>בדוק וערוך את התרגילים</li>
+                        <li>לחץ <strong>💾 שמור הכל</strong></li>
                     </ol>
                 </div>
             </div>
@@ -432,18 +432,18 @@
 
     <!-- NAVBAR -->
     <nav class="navbar" id="navbar" style="display: none;">
-        <button class="nav-item active" onclick="switchPage('dashboard')">📊 Dashboard</button>
-        <button class="nav-item" onclick="switchPage('exercises')">💪 Exercises</button>
-        <button class="nav-item" onclick="switchPage('import')">📝 Import</button>
-        <button class="nav-item" onclick="switchPage('analytics')">📈 Analytics</button>
-        <button class="nav-item" onclick="switchPage('settings')">⚙️ Settings</button>
+        <button class="nav-item active" onclick="switchPage('dashboard')">📊 לוח בקרה</button>
+        <button class="nav-item" onclick="switchPage('exercises')">💪 תרגילים</button>
+        <button class="nav-item" onclick="switchPage('import')">📝 הוספה</button>
+        <button class="nav-item" onclick="switchPage('analytics')">📈 סטטיסטיקה</button>
+        <button class="nav-item" onclick="switchPage('settings')">⚙️ הגדרות</button>
     </nav>
 
     <!-- MODALS -->
     <div class="modal" id="workout-modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h3>Start Workout</h3>
+                <h3>התחל אימון</h3>
                 <button class="modal-close" onclick="closeModal('workout-modal')">✕</button>
             </div>
             <div id="programs-list"></div>
@@ -453,86 +453,86 @@
     <div class="modal" id="exercise-modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h3>Add Exercise</h3>
+                <h3>הוסף תרגיל</h3>
                 <button class="modal-close" onclick="closeModal('exercise-modal')">✕</button>
             </div>
             <div class="input-group">
-                <label>Exercise Name</label>
-                <input type="text" id="exercise-name" placeholder="Bench Press">
+                <label>שם התרגיל</label>
+                <input type="text" id="exercise-name" placeholder="חתירה עם מוט">
             </div>
             <div class="input-group">
-                <label>Muscle Group</label>
+                <label>קבוצת שרירים</label>
                 <select id="exercise-muscle">
-                    <option>Chest</option>
-                    <option>Back</option>
-                    <option>Legs</option>
-                    <option>Shoulders</option>
+                    <option>חזה</option>
+                    <option>גב</option>
+                    <option>רגליים</option>
+                    <option>כתפיים</option>
                 </select>
             </div>
             <div class="input-group">
-                <label>Sets</label>
+                <label>סטים</label>
                 <input type="number" id="exercise-sets" value="4">
             </div>
             <div class="input-group">
-                <label>Min Reps</label>
+                <label>חזרות מינימום</label>
                 <input type="number" id="exercise-min-reps" value="6">
             </div>
             <div class="input-group">
-                <label>Max Reps</label>
+                <label>חזרות מקסימום</label>
                 <input type="number" id="exercise-max-reps" value="10">
             </div>
             <div class="input-group">
-                <label>Weight (kg)</label>
+                <label>משקל יעד (ק״ג)</label>
                 <input type="number" id="exercise-weight" value="100">
             </div>
-            <button class="btn btn-primary" onclick="saveExercise()">Add</button>
-            <button class="btn btn-secondary" onclick="closeModal('exercise-modal')">Cancel</button>
+            <button class="btn btn-primary" onclick="saveExercise()">הוסף</button>
+            <button class="btn btn-secondary" onclick="closeModal('exercise-modal')">ביטול</button>
         </div>
     </div>
 
     <div class="modal" id="session-modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h3>Log Workout</h3>
+                <h3>רשום אימון</h3>
                 <button class="modal-close" onclick="closeModal('session-modal')">✕</button>
             </div>
             <div class="input-group">
-                <label>Weight (kg)</label>
+                <label>משקל (ק״ג)</label>
                 <input type="number" id="session-weight">
             </div>
             <div class="input-group">
-                <label>Reps</label>
+                <label>חזרות</label>
                 <input type="number" id="session-reps">
             </div>
             <div class="input-group">
-                <label>Duration (min)</label>
+                <label>משך זמן (דקות)</label>
                 <input type="number" id="session-duration" value="60">
             </div>
             <div class="input-group">
-                <label>Notes</label>
+                <label>הערות</label>
                 <textarea id="session-notes"></textarea>
             </div>
-            <button class="btn btn-primary" onclick="saveWorkout()">Save</button>
-            <button class="btn btn-secondary" onclick="closeModal('session-modal')">Cancel</button>
+            <button class="btn btn-primary" onclick="saveWorkout()">שמור</button>
+            <button class="btn btn-secondary" onclick="closeModal('session-modal')">ביטול</button>
         </div>
     </div>
 
     <div class="modal" id="import-review-modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h3>Review Workout Plan</h3>
+                <h3>בדוק תוכנית</h3>
                 <button class="modal-close" onclick="closeModal('import-review-modal')">✕</button>
             </div>
             <div id="import-review-list" style="max-height: 500px; overflow-y: auto;"></div>
-            <button class="btn btn-primary" onclick="saveImportedExercises()" style="margin-top: 12px;">💾 Save All</button>
-            <button class="btn btn-secondary" onclick="closeModal('import-review-modal')">Cancel</button>
+            <button class="btn btn-primary" onclick="saveImportedExercises()" style="margin-top: 12px;">💾 שמור הכל</button>
+            <button class="btn btn-secondary" onclick="closeModal('import-review-modal')">ביטול</button>
         </div>
     </div>
 
     <div class="modal" id="import-loading-modal">
         <div class="modal-content" style="text-align: center; padding: 40px 20px;">
             <div class="spinner" style="margin: 0 auto 20px;"></div>
-            <p>Analyzing workout plan with AI...</p>
+            <p>מנתח את התוכנית עם AI...</p>
         </div>
     </div>
 
@@ -660,7 +660,7 @@
             await putData('/exercises', exercises);
             closeModal('exercise-modal');
             renderAll();
-            showToast('✅ Added!');
+            showToast('✅ נוסף!');
             document.getElementById('exercise-name').value = '';
         }
 
@@ -687,7 +687,7 @@
             await putData('/sessions', sessions);
             closeModal('session-modal');
             renderAll();
-            showToast('✅ Saved!');
+            showToast('✅ שמור!');
         }
 
         function renderAll() {
@@ -719,10 +719,10 @@
                             <h3>${ex.name}</h3>
                             <p>${ex.sets}x${ex.minReps}${ex.minReps !== ex.maxReps ? '-' + ex.maxReps : ''} @ ${ex.targetWeight || 0}kg</p>
                         </div>
-                        <span class="badge badge-${(ex.muscleGroup || 'Chest').toLowerCase()}">${ex.muscleGroup || '—'}</span>
+                        <span class="badge ${getBadgeClass(ex.muscleGroup || 'חזה')}">${ex.muscleGroup || '—'}</span>
                     </div>
                 `).join('')
-                : '<p style="color: rgba(255, 255, 255, 0.5); text-align: center; padding: 20px;">No exercises yet. Go to 📝 Import or add manually!</p>';
+                : '<p style="color: rgba(255, 255, 255, 0.5); text-align: center; padding: 20px;">אין תרגילים עדיין. עבור ל-📝 הוספה או הוסף ידנית!</p>';
             
             document.getElementById('next-workout').innerHTML = html;
         }
@@ -730,7 +730,7 @@
         function renderExercises() {
             const exercises_list = Object.entries(exercises);
             if (exercises_list.length === 0) {
-                document.getElementById('exercises-list').innerHTML = '<p style="color: rgba(255, 255, 255, 0.5); text-align: center; padding: 20px;">No exercises yet. Click "Add Exercise" to get started!</p>';
+                document.getElementById('exercises-list').innerHTML = '<p style="color: rgba(255, 255, 255, 0.5); text-align: center; padding: 20px;">אין תרגילים עדיין. לחץ "הוסף תרגיל" כדי להתחיל!</p>';
                 return;
             }
 
@@ -740,7 +740,7 @@
                         <h3>${ex.name}</h3>
                         <p>${ex.sets} sets • ${ex.minReps}${ex.minReps !== ex.maxReps ? '-' + ex.maxReps : ''} reps • ${ex.targetWeight || 0}kg</p>
                     </div>
-                    <span class="badge badge-${(ex.muscleGroup || 'chest').toLowerCase()}">${ex.muscleGroup || '—'}</span>
+                    <span class="badge ${getBadgeClass(ex.muscleGroup || 'חזה')}">${ex.muscleGroup || '—'}</span>
                 </div>
             `).join('');
             document.getElementById('exercises-list').innerHTML = html;
@@ -749,7 +749,7 @@
         function renderPrograms() {
             const exercises_list = Object.entries(exercises);
             if (exercises_list.length === 0) {
-                document.getElementById('programs-list').innerHTML = '<p style="color: rgba(255, 255, 255, 0.5); text-align: center; padding: 20px;">No exercises yet. Add one to start!</p>';
+                document.getElementById('programs-list').innerHTML = '<p style="color: rgba(255, 255, 255, 0.5); text-align: center; padding: 20px;">אין תרגילים עדיין. הוסף אחד כדי להתחיל!</p>';
                 return;
             }
 
@@ -785,6 +785,22 @@
         }
 
         // ============================================================================
+        // BADGE CLASS MAPPING
+        // ============================================================================
+
+        function getBadgeClass(muscleGroup) {
+            const badgeMap = {
+                'חזה': 'chest',
+                'גב': 'back',
+                'רגליים': 'legs',
+                'כתפיים': 'shoulders',
+                'כללי': 'chest',
+            };
+            const english = badgeMap[muscleGroup] || muscleGroup.toLowerCase();
+            return `badge-${english}`;
+        }
+
+        // ============================================================================
         // WORKOUT IMPORT & AI ANALYSIS
         // ============================================================================
 
@@ -793,7 +809,7 @@
         async function analyzeWorkout() {
             const text = document.getElementById('import-text').value.trim();
             if (!text) {
-                showToast('⚠️ Please paste a workout plan');
+                showToast('⚠️ בבקשה הדבק את התוכנית');
                 return;
             }
 
@@ -1045,8 +1061,8 @@ Return ONLY the JSON array, nothing else.`
             const html = parsedWorkout.map((ex, idx) => {
                 const existing = findExistingExercise(ex.name);
                 const status = existing 
-                    ? `<span class="import-status import-status-existing">✅ Existing: ${existing.name}</span>`
-                    : `<span class="import-status import-status-new">🆕 New Exercise</span>`;
+                    ? `<span class="import-status import-status-existing">✅ קיים: ${existing.name}</span>`
+                    : `<span class="import-status import-status-new">🆕 תרגיל חדש</span>`;
 
                 const sets = ex.sets || 4;
                 const minReps = ex.minReps || ex.maxReps || 10;
@@ -1059,29 +1075,29 @@ Return ONLY the JSON array, nothing else.`
                     <div class="import-exercise-item" data-index="${idx}">
                         <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; gap: 8px;">
                             <div style="flex: 1;">
-                                <strong style="font-size: 15px; display: block; margin-bottom: 2px;">${ex.name || 'Unknown'}</strong>
+                                <strong style="font-size: 15px; display: block; margin-bottom: 2px;">${ex.name || 'לא ידוע'}</strong>
                                 <span class="import-status import-status-existing" style="font-size: 12px;">${ex.order || idx + 1}</span>
                             </div>
                             ${status}
                         </div>
                         <div class="import-field">
-                            <label>Sets:</label>
+                            <label>סטים:</label>
                             <input type="number" data-field="sets" value="${sets}" min="1" max="10">
                         </div>
                         <div class="import-field">
-                            <label>Reps:</label>
-                            <input type="text" data-field="reps" value="${repsDisplay}" placeholder="10 or 6-10">
+                            <label>חזרות:</label>
+                            <input type="text" data-field="reps" value="${repsDisplay}" placeholder="10 או 6-10">
                         </div>
                         <div class="import-field">
-                            <label>Weight:</label>
-                            <input type="number" data-field="weight" value="${weight}" min="0" step="0.5" placeholder="kg">
+                            <label>משקל:</label>
+                            <input type="number" data-field="weight" value="${weight}" min="0" step="0.5" placeholder="ק״ג">
                         </div>
                         ${notes ? `<div style="font-size: 12px; color: rgba(255, 255, 255, 0.6); margin-top: 6px; padding: 6px; background: rgba(255, 255, 255, 0.04); border-radius: 6px;">📝 ${notes}</div>` : ''}
                     </div>
                 `;
             }).join('');
 
-            document.getElementById('import-review-list').innerHTML = html || '<p style="color: rgba(255, 255, 255, 0.5);">No exercises found. Try pasting a different workout plan.</p>';
+            document.getElementById('import-review-list').innerHTML = html || '<p style="color: rgba(255, 255, 255, 0.5);">לא נמצאו תרגילים. נסה להדביק תוכנית אחרת.</p>';
             openModal('import-review-modal');
         }
 
@@ -1125,7 +1141,7 @@ Return ONLY the JSON array, nothing else.`
                         const id = 'ex-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
                         newExercises[id] = {
                             name: ex.name,
-                            muscleGroup: 'General',
+                            muscleGroup: 'כללי',
                             sets,
                             minReps,
                             maxReps,
@@ -1151,7 +1167,7 @@ Return ONLY the JSON array, nothing else.`
             });
 
             if (Object.keys(newExercises).length === 0) {
-                showToast('⚠️ No exercises to save');
+                showToast('⚠️ אין תרגילים לשמירה');
                 return;
             }
 
@@ -1162,10 +1178,10 @@ Return ONLY the JSON array, nothing else.`
             renderAll();
             
             const msg = createdCount > 0 && updatedCount > 0
-                ? `✅ Imported: ${createdCount} new + ${updatedCount} updated`
+                ? `✅ יובאו: ${createdCount} חדש + ${updatedCount} עודכנו`
                 : createdCount > 0
-                ? `✅ Created ${createdCount} new exercises`
-                : `✅ Updated ${updatedCount} exercises`;
+                ? `✅ נוצרו ${createdCount} תרגילים חדשים`
+                : `✅ עודכנו ${updatedCount} תרגילים`;
             
             showToast(msg);
             document.getElementById('import-text').value = '';
@@ -1179,18 +1195,18 @@ Return ONLY the JSON array, nothing else.`
         function saveAPIKey() {
             const key = document.getElementById('api-key-input').value.trim();
             if (!key) {
-                showToast('⚠️ Please enter an API key');
+                showToast('⚠️ בבקשה הוסף מפתח API');
                 return;
             }
             localStorage.setItem('anthropic_api_key', key);
-            showToast('✅ API Key saved');
+            showToast('✅ מפתח שמור');
             document.getElementById('api-key-input').value = key.substring(0, 10) + '...';
         }
 
         function loadAPIKey() {
             const key = localStorage.getItem('anthropic_api_key');
             if (key) {
-                document.getElementById('api-key-input').placeholder = key.substring(0, 10) + '... (saved)';
+                document.getElementById('api-key-input').placeholder = key.substring(0, 10) + '... (שמור)';
                 document.getElementById('api-key-input').style.color = '#22c55e';
             }
         }
