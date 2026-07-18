@@ -8,28 +8,30 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
         
         body {
-            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%);
+            background: linear-gradient(135deg, #0a0a0a 0%, #16161a 100%);
             color: #fff;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
             font-size: 16px;
             line-height: 1.5;
+            -webkit-font-smoothing: antialiased;
         }
         
         .container {
-            max-width: 600px;
+            max-width: 500px;
             margin: 0 auto;
             padding: 20px;
-            padding-top: 20px;
             padding-bottom: 100px;
         }
         
         header {
             text-align: center;
             margin-bottom: 30px;
+            padding-top: 10px;
         }
         
         header h1 {
-            font-size: 32px;
+            font-size: 34px;
+            font-weight: 800;
             margin-bottom: 6px;
             background: linear-gradient(135deg, #007AFF, #5AC8FA);
             -webkit-background-clip: text;
@@ -40,125 +42,162 @@
         header p {
             color: rgba(255, 255, 255, 0.6);
             font-size: 14px;
+            letter-spacing: 0.3px;
         }
         
         .section {
-            background: rgba(255, 255, 255, 0.06);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 24px;
             padding: 20px;
-            margin-bottom: 20px;
+            margin-bottom: 24px;
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
         }
         
         .section h2 {
             font-size: 18px;
+            font-weight: 700;
             margin-bottom: 16px;
             display: flex;
             align-items: center;
             gap: 10px;
+            color: rgba(255, 255, 255, 0.9);
         }
         
         .workout-card {
-            background: rgba(0, 122, 255, 0.08);
-            border: 1px solid rgba(0, 122, 255, 0.2);
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
             border-radius: 16px;
             padding: 16px;
             margin-bottom: 12px;
+            position: relative;
+            transition: transform 0.2s ease;
+        }
+
+        .superset-container {
+            background: rgba(255, 149, 0, 0.04);
+            border: 1px dashed rgba(255, 149, 0, 0.3);
+            border-radius: 20px;
+            padding: 12px;
+            margin-bottom: 14px;
+        }
+
+        .superset-badge {
+            background: rgba(255, 149, 0, 0.15);
+            color: #FF9500;
+            padding: 4px 10px;
+            border-radius: 8px;
+            font-size: 11px;
+            font-weight: 700;
+            display: inline-block;
+            margin-bottom: 10px;
+            margin-right: 4px;
         }
         
         .workout-card h3 {
             font-size: 16px;
-            margin-bottom: 8px;
-            color: #007AFF;
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: #fff;
+            padding-left: 35px; /* מניעת דריסה של כפתור העריכה */
         }
         
         .workout-card .details {
             display: grid;
-            grid-template-columns: 1fr 1fr 1fr;
-            gap: 12px;
-            font-size: 13px;
-            margin-top: 12px;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
         }
         
         .detail-item {
-            background: rgba(255, 255, 255, 0.05);
-            padding: 8px;
-            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            padding: 10px 6px;
+            border-radius: 12px;
             text-align: center;
         }
         
         .detail-label {
-            color: rgba(255, 255, 255, 0.5);
+            color: rgba(255, 255, 255, 0.4);
             font-size: 11px;
             margin-bottom: 4px;
-            text-transform: uppercase;
+            font-weight: 500;
         }
         
         .detail-value {
-            font-weight: 600;
-            font-size: 14px;
+            font-weight: 700;
+            font-size: 15px;
+            color: #007AFF;
         }
         
         .btn {
-            padding: 14px 20px;
+            padding: 15px 20px;
             border: none;
-            border-radius: 12px;
+            border-radius: 14px;
             font-size: 16px;
             font-weight: 600;
             cursor: pointer;
-            transition: all 0.3s ease;
+            transition: background 0.2s ease, transform 0.1s ease;
             width: 100%;
             margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
         }
         
         .btn-primary {
-            background: linear-gradient(135deg, #007AFF, #0051BA);
+            background: #007AFF;
             color: white;
         }
         
         .btn-primary:active {
             transform: scale(0.98);
-            opacity: 0.9;
+            background: #0066d6;
         }
         
         .btn-secondary {
-            background: rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.08);
             color: #007AFF;
-            border: 1px solid rgba(0, 122, 255, 0.3);
+            border: 1px solid rgba(0, 122, 255, 0.2);
         }
         
         .btn-secondary:active {
-            background: rgba(0, 122, 255, 0.2);
+            background: rgba(0, 122, 255, 0.15);
         }
         
         .btn-success {
-            background: linear-gradient(135deg, #34C759, #00B54B);
+            background: #34C759;
             color: white;
+        }
+
+        .btn-success:active {
+            background: #2cb04e;
         }
         
         input, textarea, select {
             width: 100%;
             padding: 14px;
-            background: rgba(255, 255, 255, 0.08);
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 14px;
             color: #fff;
             font-size: 16px;
-            margin-bottom: 12px;
+            margin-bottom: 14px;
             font-family: inherit;
+            transition: border-color 0.2s;
         }
         
         input:focus, textarea:focus, select:focus {
             outline: none;
             border-color: #007AFF;
-            background: rgba(0, 122, 255, 0.1);
+            background: rgba(0, 122, 255, 0.05);
         }
         
         textarea {
-            resize: vertical;
-            min-height: 120px;
-            font-family: monospace;
-            font-size: 14px;
+            resize: none;
+            min-height: 100px;
+            font-size: 15px;
         }
         
         .modal {
@@ -168,9 +207,9 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background: rgba(0, 0, 0, 0.8);
+            background: rgba(0, 0, 0, 0.85);
             z-index: 1000;
-            align-items: center;
+            align-items: flex-end; /* פתיחה מלמטה בסגנון מובייל Native */
             justify-content: center;
         }
         
@@ -179,125 +218,136 @@
         }
         
         .modal-content {
-            background: #1a1a1a;
-            border-radius: 20px;
+            background: #1c1c1e;
+            border-top-left-radius: 24px;
+            border-top-right-radius: 24px;
             padding: 24px;
-            max-width: 90vw;
-            max-height: 90vh;
+            max-width: 500px;
+            max-height: 85vh;
             overflow-y: auto;
             width: 100%;
+            box-shadow: 0 -10px 25px rgba(0,0,0,0.5);
+            animation: slideUp 0.25s cubic-bezier(0.15, 1, 0.3, 1);
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(100%); }
+            to { transform: translateY(0); }
         }
         
         .modal-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 20px;
+            margin-bottom: 24px;
         }
         
         .modal-header h3 {
-            font-size: 20px;
+            font-size: 19px;
+            font-weight: 700;
         }
         
         .close-btn {
-            background: none;
+            background: rgba(255,255,255,0.1);
             border: none;
-            font-size: 28px;
-            color: rgba(255, 255, 255, 0.6);
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            font-size: 20px;
+            color: rgba(255, 255, 255, 0.7);
             cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
         
-        .badge {
-            display: inline-block;
-            padding: 6px 12px;
-            border-radius: 20px;
-            font-size: 12px;
+        .input-group {
+            margin-bottom: 16px;
+        }
+
+        .input-group label {
+            display: block;
+            font-size: 13px;
+            color: rgba(255,255,255,0.5);
+            margin-bottom: 6px;
+            font-weight: 500;
+        }
+
+        .stepper-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .stepper-btn {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #fff;
+            font-size: 20px;
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .stepper-container input {
+            margin-bottom: 0;
+            text-align: center;
             font-weight: 600;
-            margin: 4px 0;
         }
         
-        .badge-new {
-            background: rgba(34, 197, 89, 0.2);
-            color: #34C759;
-        }
-        
-        .badge-existing {
-            background: rgba(0, 122, 255, 0.2);
-            color: #007AFF;
-        }
-        
-        .badge-change {
-            background: rgba(255, 149, 0, 0.2);
-            color: #FF9500;
+        .edit-trigger {
+            position: absolute; 
+            top: 12px; 
+            left: 12px; 
+            background: rgba(255,255,255,0.06); 
+            border: 1px solid rgba(255,255,255,0.08); 
+            color: #007AFF; 
+            width: 32px;
+            height: 32px;
+            border-radius: 10px; 
+            font-size: 14px; 
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
         
         .empty-state {
             text-align: center;
-            padding: 40px 20px;
-            color: rgba(255, 255, 255, 0.5);
+            padding: 30px 10px;
+            color: rgba(255, 255, 255, 0.4);
         }
         
         .empty-state p {
             font-size: 14px;
-            margin-bottom: 20px;
-        }
-        
-        .stat-row {
-            display: flex;
-            justify-content: space-between;
-            padding: 12px 0;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        }
-        
-        .stat-row:last-child {
-            border-bottom: none;
-        }
-        
-        .stat-label {
-            color: rgba(255, 255, 255, 0.6);
-            font-size: 14px;
-        }
-        
-        .stat-value {
-            font-weight: 600;
-            font-size: 16px;
+            margin-bottom: 8px;
         }
         
         .toast {
             position: fixed;
-            bottom: 80px;
+            bottom: 30px;
             left: 50%;
             transform: translateX(-50%);
             background: #34C759;
             color: white;
-            padding: 14px 20px;
-            border-radius: 12px;
+            padding: 14px 24px;
+            border-radius: 16px;
             font-size: 14px;
             font-weight: 600;
             z-index: 2000;
-            animation: slideUp 0.3s ease;
-        }
-        
-        @keyframes slideUp {
-            from { transform: translateX(-50%) translateY(20px); opacity: 0; }
-            to { transform: translateX(-50%) translateY(0); opacity: 1; }
+            box-shadow: 0 8px 20px rgba(0,0,0,0.3);
         }
         
         .changes-list {
-            max-height: 300px;
+            max-height: 250px;
             overflow-y: auto;
-        }
-        
-        .change-item {
-            background: rgba(255, 149, 0, 0.08);
-            border-left: 3px solid #FF9500;
+            font-size: 14px;
+            background: rgba(0,0,0,0.15);
             padding: 12px;
-            margin-bottom: 8px;
-            border-radius: 8px;
-        }
-        
-        .change-item strong {
-            color: #FF9500;
+            border-radius: 14px;
+            line-height: 1.6;
         }
     </style>
 </head>
@@ -331,19 +381,21 @@
             <h2>📊 שינויים מהשבוע שעבר</h2>
             <div id="changes-summary">
                 <div class="empty-state">
-                    <p>אף שינויים עדיין</p>
+                    <p>אין שינויים מתועדים עדיין</p>
                 </div>
             </div>
-            <button class="btn btn-success" onclick="sendToCoach()" id="send-btn" style="display:none;">💬 שלח למאמן</button>
-            <button class="btn btn-secondary" onclick="copyChanges()" id="copy-btn" style="display:none;">📋 העתק</button>
+            <div style="margin-top: 14px; display: flex; gap: 10px;">
+                <button class="btn btn-success" onclick="sendToCoach()" id="send-btn" style="display:none; flex: 2; margin-bottom: 0;">💬 שלח למאמן</button>
+                <button class="btn btn-secondary" onclick="copyChanges()" id="copy-btn" style="display:none; flex: 1; margin-bottom: 0;">📋 העתק</button>
+            </div>
         </div>
         
         <!-- Settings -->
         <div class="section">
             <h2>⚙️ הגדרות</h2>
-            <p style="font-size: 13px; color: rgba(255,255,255,0.6); margin-bottom: 12px;">Firebase: ✅ מחובר</p>
-            <input type="password" id="api-key" placeholder="Claude API Key (אופציונלי)" style="margin-bottom: 0;">
-            <button class="btn btn-secondary" onclick="saveAPIKey()" style="margin-top: 12px;">שמור מפתח</button>
+            <p style="font-size: 13px; color: rgba(255,255,255,0.5); margin-bottom: 12px;">Firebase: 🟢 מחובר בהצלחה</p>
+            <input type="password" id="api-key" placeholder="Claude API Key (אופציונלי)" style="margin-bottom: 12px;">
+            <button class="btn btn-secondary" onclick="saveAPIKey()" style="margin-bottom: 0;">שמור מפתח</button>
         </div>
     </div>
     
@@ -351,12 +403,14 @@
     <div id="import-modal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h3>📋 בדוק את התרגילים</h3>
+                <h3>📋 אישור תרגילי האימון</h3>
                 <button class="close-btn" onclick="closeModal('import-modal')">×</button>
             </div>
             <div id="import-list"></div>
-            <button class="btn btn-primary" onclick="saveWorkout()" style="margin-top: 20px;">✅ שמור הכל</button>
-            <button class="btn btn-secondary" onclick="closeModal('import-modal')">ביטול</button>
+            <div style="margin-top: 20px;">
+                <button class="btn btn-primary" onclick="saveWorkout()">✅ שמור הכל</button>
+                <button class="btn btn-secondary" onclick="closeModal('import-modal')" style="margin-bottom: 0;">ביטול</button>
+            </div>
         </div>
     </div>
     
@@ -364,38 +418,65 @@
     <div id="edit-modal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h3>✏️ עדכון תרגיל</h3>
+                <h3>✏️ עדכון ביצוע תרגיל</h3>
                 <button class="close-btn" onclick="closeModal('edit-modal')">×</button>
             </div>
+            
             <div class="input-group">
-                <label>שם:</label>
-                <input type="text" id="edit-name" disabled style="opacity: 0.6;">
+                <label>שם התרגיל:</label>
+                <input type="text" id="edit-name" disabled style="opacity: 0.5; background: rgba(255,255,255,0.02)">
             </div>
+            
             <div class="input-group">
                 <label>סטים:</label>
-                <input type="number" id="edit-sets" min="1" max="10">
+                <div class="stepper-container">
+                    <button class="stepper-btn" onclick="step('edit-sets', -1)">-</button>
+                    <input type="number" id="edit-sets" min="1" max="10" inputmode="numeric">
+                    <button class="stepper-btn" onclick="step('edit-sets', 1)">+</button>
+                </div>
             </div>
+            
             <div class="input-group">
                 <label>חזרות:</label>
-                <input type="number" id="edit-reps" min="1" max="50">
+                <div class="stepper-container">
+                    <button class="stepper-btn" onclick="step('edit-reps', -1)">-</button>
+                    <input type="number" id="edit-reps" min="1" max="50" inputmode="numeric">
+                    <button class="stepper-btn" onclick="step('edit-reps', 1)">+</button>
+                </div>
             </div>
+            
             <div class="input-group">
                 <label>משקל (ק״ג):</label>
-                <input type="number" id="edit-weight" step="0.5" min="0">
+                <div class="stepper-container">
+                    <button class="stepper-btn" onclick="step('edit-weight', -2.5)">-</button>
+                    <input type="number" id="edit-weight" step="0.5" min="0" inputmode="decimal">
+                    <button class="stepper-btn" onclick="step('edit-weight', 2.5)">+</button>
+                </div>
             </div>
-            <button class="btn btn-primary" onclick="saveEditedExercise()" style="margin-top: 20px;">✅ שמור שינוי</button>
-            <button class="btn btn-secondary" onclick="closeModal('edit-modal')">ביטול</button>
+            
+            <div style="margin-top: 24px;">
+                <button class="btn btn-primary" onclick="saveEditedExercise()">✅ שמור שינויים</button>
+                <button class="btn btn-secondary" onclick="closeModal('edit-modal')" style="margin-bottom: 0;">ביטול</button>
+            </div>
         </div>
     </div>
 
     <script>
-        console.log('FitPro initialized');
-        
+        // שימוש בפונקציות הקיים שלך מהקוד המקורי
         const DB_URL = 'https://gymo-2093a-default-rtdb.firebaseio.com';
         let workouts = [];
+        let currentWorkout = [];
         let editingIndex = null;
         
-        // Open edit modal
+        // פונקציית עזר החדשה לשינוי ערכים מהיר בסטפרים
+        function step(id, amount) {
+            const input = document.getElementById(id);
+            let val = parseFloat(input.value) || 0;
+            val += amount;
+            if (val < parseFloat(input.min || 0)) val = parseFloat(input.min);
+            input.value = val;
+        }
+
         function editExercise(idx) {
             editingIndex = idx;
             const latestWorkout = workouts[workouts.length - 1];
@@ -409,10 +490,8 @@
             openModal('edit-modal');
         }
         
-        // Save edited exercise
         async function saveEditedExercise() {
             if (editingIndex === null) return;
-            
             const latestWorkout = workouts[workouts.length - 1];
             const ex = latestWorkout.exercises[editingIndex];
             
@@ -424,7 +503,6 @@
             ex.reps = parseInt(document.getElementById('edit-reps').value);
             ex.weight = parseFloat(document.getElementById('edit-weight').value);
             
-            // Track change
             if (!ex.history) ex.history = [];
             ex.history.push({
                 date: new Date().toISOString(),
@@ -437,613 +515,215 @@
             closeModal('edit-modal');
             renderWeekly();
             generateChanges();
-            showToast('✅ עדכון שמור!');
+            showToast('✅ העדכון נשמר בהצלחה!');
         }
         
-        // Fetch from Firebase
         async function fetchData(path) {
             try {
-                const url = `${DB_URL}${path}.json`;
-                console.log('Fetching from:', url);
-                
-                const res = await fetch(url);
-                console.log('Fetch response status:', res.status);
-                
-                if (!res.ok) {
-                    console.error('Fetch failed:', res.status);
-                    return null;
-                }
-                
-                const data = await res.json();
-                console.log('Fetched data:', data);
-                return data;
-            } catch(e) {
-                console.error('Fetch error:', e);
-                return null;
-            }
+                const res = await fetch(`${DB_URL}${path}.json`);
+                if (!res.ok) return null;
+                return await res.json();
+            } catch(e) { return null; }
         }
         
-        // Save to Firebase
         async function saveData(path, data) {
             try {
-                console.log('Saving to', path, data);
-                const url = `${DB_URL}${path}.json`;
-                console.log('URL:', url);
-                
-                const res = await fetch(url, {
+                const res = await fetch(`${DB_URL}${path}.json`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(data)
                 });
-                
-                console.log('Response status:', res.status);
-                
-                if (res.ok) {
-                    const result = await res.json();
-                    console.log('Save success:', result);
-                    return result;
-                } else {
-                    console.error('Save failed:', res.status, res.statusText);
-                }
-            } catch(e) {
-                console.error('Save error:', e);
-                showToast('❌ שגיאה בשמירה: ' + e.message);
-            }
-            return null;
+                return res.ok ? await res.json() : null;
+            } catch(e) { showToast('❌ שגיאה בשמירה'); return null; }
         }
         
-        // Parse Hebrew workout
         function parseWorkout(text) {
-            console.log('parseWorkout called with:', text);
-            
             const lines = text.split('\n').filter(l => l.trim());
-            console.log('Lines:', lines);
-            
             const workout = [];
-            
-            lines.forEach((line, idx) => {
-                if (!line.trim() || line.length < 3) {
-                    console.log(`Skipping line ${idx}: too short`);
-                    return;
-                }
-                
-                // Check for superset (contains +)
-                let isSupersetLine = line.includes('+');
-                console.log(`Line ${idx} is superset:`, isSupersetLine);
-                
-                if (isSupersetLine) {
-                    // Split by + to get two exercises
+            lines.forEach((line) => {
+                if (line.trim().length < 3) return;
+                if (line.includes('+')) {
                     const parts = line.split('+').map(p => p.trim());
-                    console.log('Superset parts:', parts);
-                    
                     parts.forEach((part, partIdx) => {
-                        const ex = parseExercisePart(part, partIdx === 0);
-                        if (ex) {
-                            ex.superset = true;
-                            workout.push(ex);
-                            console.log('Added superset exercise:', ex);
-                        }
+                        const ex = parseExercisePart(part);
+                        if (ex) { ex.superset = true; workout.push(ex); }
                     });
                 } else {
-                    // Regular single exercise
-                    const ex = parseExercisePart(line, false);
-                    if (ex) {
-                        workout.push(ex);
-                        console.log('Added regular exercise:', ex);
-                    }
+                    const ex = parseExercisePart(line);
+                    if (ex) workout.push(ex);
                 }
             });
-            
-            console.log('Final workout array:', workout);
             return workout;
         }
         
-        // Parse a single exercise part
-        function parseExercisePart(part, isFirst) {
+        function parseExercisePart(part) {
             const match = part.match(/(\d+)[×x](\d+)/);
-            console.log(`Parsing "${part.substring(0, 30)}..." - match:`, match);
-            
-            if (!match) {
-                console.log('No reps/sets match found');
-                return null;
-            }
-            
+            if (!match) return null;
             const [, reps, sets] = match;
             const weightMatch = part.match(/\((\d+\.?\d*)\)?/);
             const weight = weightMatch ? parseFloat(weightMatch[1]) : 0;
-            
-            let name = part
-                .replace(/\d+[×x]\d+/g, '')
-                .replace(/\(\d+\.?\d*\)?/g, '')
-                .trim();
-            
-            console.log(`Extracted: name="${name}", sets=${sets}, reps=${reps}, weight=${weight}`);
-            
+            let name = part.replace(/\d+[×x]\d+/g, '').replace(/\(\d+\.?\d*\)?/g, '').trim();
             if (name.length > 2) {
-                return {
-                    name: name,
-                    sets: parseInt(sets),
-                    reps: parseInt(reps),
-                    weight: weight,
-                    superset: false
-                };
+                return { name, sets: parseInt(sets), reps: parseInt(reps), weight, superset: false };
             }
-            
             return null;
         }
         
-        // Analyze workout
         function analyzeWorkout() {
             const text = document.getElementById('coach-message').value.trim();
-            console.log('analyzeWorkout called with text:', text);
-            
-            if (!text) {
-                showToast('⚠️ הדבק הודעה');
-                return;
-            }
-            
+            if (!text) { showToast('⚠️ נא להדביק הודעה'); return; }
             currentWorkout = parseWorkout(text);
-            console.log('Parsed workout:', currentWorkout);
-            
-            if (currentWorkout.length === 0) {
-                showToast('❌ לא נמצאו תרגילים');
-                return;
-            }
-            
+            if (currentWorkout.length === 0) { showToast('❌ לא נמצאו תרגילים תקינים'); return; }
             renderImportReview();
             openModal('import-modal');
         }
         
-        // Render import review
         function renderImportReview() {
             let html = '';
             let i = 0;
-            
             while (i < currentWorkout.length) {
                 const ex = currentWorkout[i];
-                
                 if (ex.superset && i + 1 < currentWorkout.length && currentWorkout[i + 1].superset) {
-                    // Render superset pair
                     const ex1 = currentWorkout[i];
                     const ex2 = currentWorkout[i + 1];
-                    
                     html += `
-                        <div style="display: grid; grid-template-columns: 1fr auto 1fr; gap: 12px; align-items: center; margin-bottom: 16px;">
-                            <div class="workout-card" style="margin-bottom: 0;">
-                                <h3>${ex1.name}</h3>
-                                <div class="details">
-                                    <div class="detail-item">
-                                        <div class="detail-label">סטים</div>
-                                        <input type="number" value="${ex1.sets}" onchange="currentWorkout[${i}].sets = parseInt(this.value)" style="width: 100%; margin: 0;">
-                                    </div>
-                                    <div class="detail-item">
-                                        <div class="detail-label">חזרות</div>
-                                        <input type="number" value="${ex1.reps}" onchange="currentWorkout[${i}].reps = parseInt(this.value)" style="width: 100%; margin: 0;">
-                                    </div>
-                                    <div class="detail-item">
-                                        <div class="detail-label">משקל</div>
-                                        <input type="number" step="0.5" value="${ex1.weight}" onchange="currentWorkout[${i}].weight = parseFloat(this.value)" style="width: 100%; margin: 0;">
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div style="text-align: center;">
-                                <div style="background: rgba(255,149,0,0.2); color: #FF9500; padding: 12px 8px; border-radius: 8px; font-size: 11px; font-weight: 600; white-space: nowrap;">⚡ SUPER SET</div>
-                            </div>
-                            
-                            <div class="workout-card" style="margin-bottom: 0;">
-                                <h3>${ex2.name}</h3>
-                                <div class="details">
-                                    <div class="detail-item">
-                                        <div class="detail-label">סטים</div>
-                                        <input type="number" value="${ex2.sets}" onchange="currentWorkout[${i+1}].sets = parseInt(this.value)" style="width: 100%; margin: 0;">
-                                    </div>
-                                    <div class="detail-item">
-                                        <div class="detail-label">חזרות</div>
-                                        <input type="number" value="${ex2.reps}" onchange="currentWorkout[${i+1}].reps = parseInt(this.value)" style="width: 100%; margin: 0;">
-                                    </div>
-                                    <div class="detail-item">
-                                        <div class="detail-label">משקל</div>
-                                        <input type="number" step="0.5" value="${ex2.weight}" onchange="currentWorkout[${i+1}].weight = parseFloat(this.value)" style="width: 100%; margin: 0;">
-                                    </div>
-                                </div>
-                            </div>
+                        <div class="superset-container">
+                            <span class="superset-badge">⚡ SUPER SET</span>
+                            ${renderReviewCard(ex1, i)}
+                            ${renderReviewCard(ex2, i+1)}
                         </div>
                     `;
                     i += 2;
                 } else {
-                    // Regular single exercise
-                    html += `<div class="workout-card">
-                        <h3>${ex.name}</h3>
-                        <div class="details">
-                            <div class="detail-item">
-                                <div class="detail-label">סטים</div>
-                                <input type="number" value="${ex.sets}" onchange="currentWorkout[${i}].sets = parseInt(this.value)" style="width: 100%; margin: 0;">
-                            </div>
-                            <div class="detail-item">
-                                <div class="detail-label">חזרות</div>
-                                <input type="number" value="${ex.reps}" onchange="currentWorkout[${i}].reps = parseInt(this.value)" style="width: 100%; margin: 0;">
-                            </div>
-                            <div class="detail-item">
-                                <div class="detail-label">משקל</div>
-                                <input type="number" step="0.5" value="${ex.weight}" onchange="currentWorkout[${i}].weight = parseFloat(this.value)" style="width: 100%; margin: 0;">
-                            </div>
-                        </div>
-                    </div>`;
+                    html += renderReviewCard(ex, i);
                     i += 1;
                 }
             }
-            
             document.getElementById('import-list').innerHTML = html;
         }
+
+        function renderReviewCard(ex, index) {
+            return `
+                <div class="workout-card">
+                    <h3>${ex.name}</h3>
+                    <div class="details">
+                        <div class="detail-item">
+                            <div class="detail-label">סטים</div>
+                            <input type="number" value="${ex.sets}" onchange="currentWorkout[${index}].sets = parseInt(this.value)" inputmode="numeric" style="padding:4px; margin:0; text-align:center;">
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">חזרות</div>
+                            <input type="number" value="${ex.reps}" onchange="currentWorkout[${index}].reps = parseInt(this.value)" inputmode="numeric" style="padding:4px; margin:0; text-align:center;">
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">משקל</div>
+                            <input type="number" step="0.5" value="${ex.weight}" onchange="currentWorkout[${index}].weight = parseFloat(this.value)" inputmode="decimal" style="padding:4px; margin:0; text-align:center;">
+                        </div>
+                    </div>
+                </div>`;
+        }
         
-        // Save workout
         async function saveWorkout() {
-            console.log('saveWorkout called');
-            console.log('currentWorkout:', currentWorkout);
-            
-            const newWorkout = {
-                id: 'workout-' + Date.now(),
-                date: new Date().toISOString(),
-                exercises: currentWorkout
-            };
-            
-            console.log('newWorkout object:', newWorkout);
-            
-            workouts.push(newWorkout);
-            console.log('workouts array after push:', workouts);
-            
-            const saved = await saveData('/workouts', workouts);
-            console.log('saveData returned:', saved);
-            
+            workouts.push({ id: 'workout-' + Date.now(), date: new Date().toISOString(), exercises: currentWorkout });
+            await saveData('/workouts', workouts);
             closeModal('import-modal');
             document.getElementById('coach-message').value = '';
             renderWeekly();
             generateChanges();
-            showToast('✅ שמור בהצלחה!');
+            showToast('✅ האימון נשמר בהצלחה!');
         }
         
-        // Render weekly workout - only latest with edit buttons
         function renderWeekly() {
             if (workouts.length === 0) {
-                document.getElementById('weekly-workout').innerHTML = `
-                    <div class="empty-state">
-                        <p>עדיין אין אימון בשבוע</p>
-                        <p style="font-size: 12px;">העתק הודעת מאמן כדי להתחיל</p>
-                    </div>`;
+                document.getElementById('weekly-workout').innerHTML = `<div class="empty-state"><p>עדיין אין אימון בשבוע</p><p style="font-size: 12px;">העתק הודעת מאמן כדי להתחיל</p></div>`;
                 return;
             }
-            
             const latestWorkout = workouts[workouts.length - 1];
             let html = '';
             let i = 0;
-            
             while (i < latestWorkout.exercises.length) {
                 const ex = latestWorkout.exercises[i];
-                
                 if (ex.superset && i + 1 < latestWorkout.exercises.length && latestWorkout.exercises[i + 1].superset) {
-                    // Render superset pair
-                    const ex1 = latestWorkout.exercises[i];
-                    const ex2 = latestWorkout.exercises[i + 1];
-                    
                     html += `
-                        <div style="display: grid; grid-template-columns: 1fr auto 1fr; gap: 12px; align-items: center; margin-bottom: 16px;">
-                            <div class="workout-card" style="margin-bottom: 0; position: relative;">
-                                <button onclick="editExercise(${i})" style="position: absolute; top: 12px; left: 12px; background: rgba(0,122,255,0.2); border: none; color: #007AFF; padding: 4px 8px; border-radius: 6px; font-size: 12px; cursor: pointer;">✏️</button>
-                                <h3>${ex1.name}</h3>
-                                <div class="details">
-                                    <div class="detail-item">
-                                        <div class="detail-label">סטים</div>
-                                        <div class="detail-value">${ex1.sets}</div>
-                                    </div>
-                                    <div class="detail-item">
-                                        <div class="detail-label">חזרות</div>
-                                        <div class="detail-value">${ex1.reps}</div>
-                                    </div>
-                                    <div class="detail-item">
-                                        <div class="detail-label">משקל</div>
-                                        <div class="detail-value">${ex1.weight}ק״ג</div>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div style="text-align: center;">
-                                <div style="background: rgba(255,149,0,0.2); color: #FF9500; padding: 12px 8px; border-radius: 8px; font-size: 11px; font-weight: 600; white-space: nowrap;">⚡ SUPER SET</div>
-                            </div>
-                            
-                            <div class="workout-card" style="margin-bottom: 0; position: relative;">
-                                <button onclick="editExercise(${i + 1})" style="position: absolute; top: 12px; left: 12px; background: rgba(0,122,255,0.2); border: none; color: #007AFF; padding: 4px 8px; border-radius: 6px; font-size: 12px; cursor: pointer;">✏️</button>
-                                <h3>${ex2.name}</h3>
-                                <div class="details">
-                                    <div class="detail-item">
-                                        <div class="detail-label">סטים</div>
-                                        <div class="detail-value">${ex2.sets}</div>
-                                    </div>
-                                    <div class="detail-item">
-                                        <div class="detail-label">חזרות</div>
-                                        <div class="detail-value">${ex2.reps}</div>
-                                    </div>
-                                    <div class="detail-item">
-                                        <div class="detail-label">משקל</div>
-                                        <div class="detail-value">${ex2.weight}ק״ג</div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    `;
+                        <div class="superset-container">
+                            <span class="superset-badge">⚡ SUPER SET</span>
+                            ${renderLiveCard(latestWorkout.exercises[i], i)}
+                            ${renderLiveCard(latestWorkout.exercises[i+1], i+1)}
+                        </div>`;
                     i += 2;
                 } else {
-                    // Regular single exercise
-                    html += `
-                        <div class="workout-card" style="position: relative;">
-                            <button onclick="editExercise(${i})" style="position: absolute; top: 12px; left: 12px; background: rgba(0,122,255,0.2); border: none; color: #007AFF; padding: 4px 8px; border-radius: 6px; font-size: 12px; cursor: pointer;">✏️</button>
-                            <h3>${ex.name}</h3>
-                            <div class="details">
-                                <div class="detail-item">
-                                    <div class="detail-label">סטים</div>
-                                    <div class="detail-value">${ex.sets}</div>
-                                </div>
-                                <div class="detail-item">
-                                    <div class="detail-label">חזרות</div>
-                                    <div class="detail-value">${ex.reps}</div>
-                                </div>
-                                <div class="detail-item">
-                                    <div class="detail-label">משקל</div>
-                                    <div class="detail-value">${ex.weight}ק״ג</div>
-                                </div>
-                            </div>
-                        </div>
-                    `;
+                    html += renderLiveCard(ex, i);
                     i += 1;
                 }
             }
-            
             document.getElementById('weekly-workout').innerHTML = html;
         }
+
+        function renderLiveCard(ex, index) {
+            return `
+                <div class="workout-card">
+                    <button onclick="editExercise(${index})" class="edit-trigger">✏️</button>
+                    <h3>${ex.name}</h3>
+                    <div class="details">
+                        <div class="detail-item"><div class="detail-label">סטים</div><div class="detail-value">${ex.sets}</div></div>
+                        <div class="detail-item"><div class="detail-label">חזרות</div><div class="detail-value">${ex.reps}</div></div>
+                        <div class="detail-item"><div class="detail-label">משקל</div><div class="detail-value">${ex.weight} ק״ג</div></div>
+                    </div>
+                </div>`;
+        }
         
-        // Generate changes report
         function generateChanges() {
-            if (workouts.length === 0) {
-                document.getElementById('changes-summary').innerHTML = `
-                    <div class="empty-state">
-                        <p>אף שינויים עדיין</p>
-                    </div>`;
-                document.getElementById('send-btn').style.display = 'none';
-                document.getElementById('copy-btn').style.display = 'none';
-                return null;
-            }
-            
+            if (workouts.length === 0) return toggleChangesButtons(false);
             const latestWorkout = workouts[workouts.length - 1];
             let changedExercises = [];
-            let i = 0;
             
-            while (i < latestWorkout.exercises.length) {
-                const ex = latestWorkout.exercises[i];
-                
-                if (ex.superset && i + 1 < latestWorkout.exercises.length && latestWorkout.exercises[i + 1].superset) {
-                    const ex1 = latestWorkout.exercises[i];
-                    const ex2 = latestWorkout.exercises[i + 1];
-                    
-                    if (ex1.history && ex1.history.length > 0) {
-                        const lastHistory = ex1.history[ex1.history.length - 1];
-                        if (lastHistory.weight !== ex1.weight || lastHistory.reps !== ex1.reps || lastHistory.sets !== ex1.sets) {
-                            changedExercises.push({
-                                name: ex1.name,
-                                sets: ex1.sets,
-                                reps: ex1.reps,
-                                weight: ex1.weight,
-                                oldWeight: lastHistory.weight,
-                                oldReps: lastHistory.reps,
-                                isSuperset: true
-                            });
-                        }
-                    }
-                    
-                    if (ex2.history && ex2.history.length > 0) {
-                        const lastHistory = ex2.history[ex2.history.length - 1];
-                        if (lastHistory.weight !== ex2.weight || lastHistory.reps !== ex2.reps || lastHistory.sets !== ex2.sets) {
-                            changedExercises.push({
-                                name: ex2.name,
-                                sets: ex2.sets,
-                                reps: ex2.reps,
-                                weight: ex2.weight,
-                                oldWeight: lastHistory.weight,
-                                oldReps: lastHistory.reps,
-                                isSuperset: true
-                            });
-                        }
-                    }
-                    
-                    i += 2;
-                } else {
-                    if (ex.history && ex.history.length > 0) {
-                        const lastHistory = ex.history[ex.history.length - 1];
-                        if (lastHistory.weight !== ex.weight || lastHistory.reps !== ex.reps || lastHistory.sets !== ex.sets) {
-                            changedExercises.push({
-                                name: ex.name,
-                                sets: ex.sets,
-                                reps: ex.reps,
-                                weight: ex.weight,
-                                oldWeight: lastHistory.weight,
-                                oldReps: lastHistory.reps
-                            });
-                        }
-                    }
-                    i += 1;
-                }
-            }
-            
-            if (changedExercises.length === 0) {
-                document.getElementById('changes-summary').innerHTML = `
-                    <div class="empty-state">
-                        <p>אף שינויים עדיין</p>
-                    </div>`;
-                document.getElementById('send-btn').style.display = 'none';
-                document.getElementById('copy-btn').style.display = 'none';
-                return null;
-            }
-            
-            let report = 'היי 🙋‍♂️\n\nהנה השינויים מהשבוע:\n\n';
-            
-            changedExercises.forEach(ex => {
-                if (ex.weight > 0) {
-                    const weightChange = ex.weight > ex.oldWeight ? `⬆️ ${ex.oldWeight}→${ex.weight}` : `${ex.weight}`;
-                    const repsChange = ex.reps > ex.oldReps ? `⬆️ ${ex.oldReps}→${ex.reps}` : `${ex.reps}`;
-                    
-                    if (ex.isSuperset) {
-                        report += `  💪 ${ex.name}\n     משקל: ${weightChange}ק״ג | חזרות: ${repsChange}\n`;
-                    } else {
-                        report += `💪 ${ex.name}\n   משקל: ${weightChange}ק״ג | חזרות: ${repsChange}\n\n`;
+            latestWorkout.exercises.forEach(ex => {
+                if (ex.history && ex.history.length > 0) {
+                    const last = ex.history[ex.history.length - 1];
+                    if (last.weight !== ex.weight || last.reps !== ex.reps || last.sets !== ex.sets) {
+                        changedExercises.push({ name: ex.name, sets: ex.sets, reps: ex.reps, weight: ex.weight, oldWeight: last.weight, oldReps: last.reps });
                     }
                 }
             });
             
+            if (changedExercises.length === 0) return toggleChangesButtons(false);
+            
+            let report = 'היי 🙋‍♂️\n\nהנה השינויים מהשבוע:\n\n';
+            changedExercises.forEach(ex => {
+                const weightChange = ex.weight > ex.oldWeight ? `⬆️ ${ex.oldWeight}←${ex.weight}` : `${ex.weight}`;
+                const repsChange = ex.reps > ex.oldReps ? `⬆️ ${ex.oldReps}←${ex.reps}` : `${ex.reps}`;
+                report += `💪 ${ex.name}\n   משקל: ${weightChange}ק״ג | חזרות: ${repsChange}\n\n`;
+            });
             report += 'נמשיך ככה! 💪';
             
-            document.getElementById('send-btn').style.display = 'block';
-            document.getElementById('copy-btn').style.display = 'block';
+            toggleChangesButtons(true);
             document.getElementById('changes-summary').innerHTML = `<div class="changes-list">${report.replace(/\n/g, '<br>')}</div>`;
-            
             return report;
         }
+
+        function toggleChangesButtons(show) {
+            const display = show ? 'block' : 'none';
+            document.getElementById('send-btn').style.display = display;
+            document.getElementById('copy-btn').style.display = display;
+            if(!show) document.getElementById('changes-summary').innerHTML = `<div class="empty-state"><p>אין שינויים מתועדים עדיין</p></div>`;
+        }
         
-        // Send to coach
         function sendToCoach() {
-            if (workouts.length === 0) {
-                showToast('אף אימונים');
-                return;
-            }
-            
-            const latestWorkout = workouts[workouts.length - 1];
-            let changedExercises = [];
-            let i = 0;
-            
-            while (i < latestWorkout.exercises.length) {
-                const ex = latestWorkout.exercises[i];
-                
-                if (ex.superset && i + 1 < latestWorkout.exercises.length && latestWorkout.exercises[i + 1].superset) {
-                    const ex1 = latestWorkout.exercises[i];
-                    const ex2 = latestWorkout.exercises[i + 1];
-                    
-                    if (ex1.history && ex1.history.length > 0) {
-                        const lastHistory = ex1.history[ex1.history.length - 1];
-                        if (lastHistory.weight !== ex1.weight || lastHistory.reps !== ex1.reps || lastHistory.sets !== ex1.sets) {
-                            changedExercises.push({
-                                name: ex1.name,
-                                sets: ex1.sets,
-                                reps: ex1.reps,
-                                weight: ex1.weight,
-                                oldWeight: lastHistory.weight,
-                                oldReps: lastHistory.reps
-                            });
-                        }
-                    }
-                    
-                    if (ex2.history && ex2.history.length > 0) {
-                        const lastHistory = ex2.history[ex2.history.length - 1];
-                        if (lastHistory.weight !== ex2.weight || lastHistory.reps !== ex2.reps || lastHistory.sets !== ex2.sets) {
-                            changedExercises.push({
-                                name: ex2.name,
-                                sets: ex2.sets,
-                                reps: ex2.reps,
-                                weight: ex2.weight,
-                                oldWeight: lastHistory.weight,
-                                oldReps: lastHistory.reps
-                            });
-                        }
-                    }
-                    
-                    i += 2;
-                } else {
-                    if (ex.history && ex.history.length > 0) {
-                        const lastHistory = ex.history[ex.history.length - 1];
-                        if (lastHistory.weight !== ex.weight || lastHistory.reps !== ex.reps || lastHistory.sets !== ex.sets) {
-                            changedExercises.push({
-                                name: ex.name,
-                                sets: ex.sets,
-                                reps: ex.reps,
-                                weight: ex.weight,
-                                oldWeight: lastHistory.weight,
-                                oldReps: lastHistory.reps
-                            });
-                        }
-                    }
-                    i += 1;
-                }
-            }
-            
-            let report = 'היי 🙋‍♂️\n\nהנה השינויים מהשבוע:\n\n';
-            
-            if (changedExercises.length > 0) {
-                changedExercises.forEach(ex => {
-                    if (ex.weight > 0) {
-                        const weightChange = ex.weight > ex.oldWeight ? `⬆️ ${ex.oldWeight}→${ex.weight}` : `${ex.weight}`;
-                        const repsChange = ex.reps > ex.oldReps ? `⬆️ ${ex.oldReps}→${ex.reps}` : `${ex.reps}`;
-                        report += `💪 ${ex.name}\n   משקל: ${weightChange}ק״ג | חזרות: ${repsChange}\n\n`;
-                    }
-                });
-            } else {
-                report += 'אף שינויים עדיין\n\n';
-            }
-            
-            report += 'נמשיך ככה! 💪';
-            
-            const encoded = encodeURIComponent(report);
-            window.location.href = `https://wa.me/?text=${encoded}`;
+            const report = generateChanges();
+            if (report) window.location.href = `https://wa.me/?text=${encodeURIComponent(report)}`;
         }
         
-        // Copy to clipboard
         function copyChanges() {
-            if (workouts.length === 0) {
-                showToast('אף אימונים');
-                return;
+            const report = generateChanges();
+            if (report) {
+                navigator.clipboard.writeText(report).then(() => showToast('📋 הדווח הועתק ללוח!'));
             }
-            
-            const latestWorkout = workouts[workouts.length - 1];
-            let report = 'היי 🙋‍♂️\n\nהנה השינויים מהשבוע:\n\n';
-            let i = 0;
-            
-            while (i < latestWorkout.exercises.length) {
-                const ex = latestWorkout.exercises[i];
-                
-                if (ex.superset && i + 1 < latestWorkout.exercises.length && latestWorkout.exercises[i + 1].superset) {
-                    const ex1 = latestWorkout.exercises[i];
-                    const ex2 = latestWorkout.exercises[i + 1];
-                    
-                    report += `⚡ SUPERSET:\n`;
-                    if (ex1.weight > 0) {
-                        report += `  💪 ${ex1.name}\n     משקל: ${ex1.weight}ק״ג | חזרות: ${ex1.reps}x${ex1.sets}\n`;
-                    }
-                    if (ex2.weight > 0) {
-                        report += `  💪 ${ex2.name}\n     משקל: ${ex2.weight}ק״ג | חזרות: ${ex2.reps}x${ex2.sets}\n`;
-                    }
-                    report += '\n';
-                    i += 2;
-                } else {
-                    if (ex.weight > 0) {
-                        report += `💪 ${ex.name}\n   משקל: ${ex.weight}ק״ג | חזרות: ${ex.reps}x${ex.sets}\n\n`;
-                    }
-                    i += 1;
-                }
-            }
-            
-            report += 'נמשיך ככה! 💪';
-            
-            navigator.clipboard.writeText(report).then(() => {
-                showToast('✅ הועתק!');
-            });
         }
         
-        // Modal
-        function openModal(id) {
-            document.getElementById(id).classList.add('active');
-        }
+        function openModal(id) { document.getElementById(id).classList.add('active'); }
+        // ניקוי בחירת האינדקס בעת סגירה
+        function closeModal(id) { document.getElementById(id).classList.remove('active'); if(id==='edit-modal') editingIndex = null; }
         
-        function closeModal(id) {
-            document.getElementById(id).classList.remove('active');
-        }
-        
-        // Toast
         function showToast(msg) {
             const toast = document.createElement('div');
             toast.className = 'toast';
@@ -1052,31 +732,19 @@
             setTimeout(() => toast.remove(), 2000);
         }
         
-        // Save API Key
         function saveAPIKey() {
             const key = document.getElementById('api-key').value;
-            if (key) {
-                localStorage.setItem('api-key', key);
-                showToast('✅ שמור!');
-            }
+            if (key) { localStorage.setItem('api-key', key); showToast('✅ המפתח נשמר מקומית'); }
         }
         
-        // Init
         async function init() {
-            console.log('Init started');
             const data = await fetchData('/workouts');
-            console.log('fetchData returned:', data);
-            
             if (data) {
                 workouts = Array.isArray(data) ? data : Object.values(data);
-                console.log('workouts loaded:', workouts);
                 renderWeekly();
                 generateChanges();
-            } else {
-                console.log('No data returned from Firebase');
             }
         }
-        
         window.addEventListener('load', init);
     </script>
 </body>
