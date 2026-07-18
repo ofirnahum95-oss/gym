@@ -3,329 +3,620 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>FitPro</title>
+    <title>FitPro - מעקב אימונים</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         
         body {
-            background: #000;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%);
             color: #fff;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
             font-size: 16px;
+            line-height: 1.5;
         }
         
-        #loadingScreen {
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            padding-top: 20px;
+            padding-bottom: 100px;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        header h1 {
+            font-size: 32px;
+            margin-bottom: 6px;
+            background: linear-gradient(135deg, #007AFF, #5AC8FA);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        header p {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 14px;
+        }
+        
+        .section {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .section h2 {
+            font-size: 18px;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .workout-card {
+            background: rgba(0, 122, 255, 0.08);
+            border: 1px solid rgba(0, 122, 255, 0.2);
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 12px;
+        }
+        
+        .workout-card h3 {
+            font-size: 16px;
+            margin-bottom: 8px;
+            color: #007AFF;
+        }
+        
+        .workout-card .details {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 12px;
+            font-size: 13px;
+            margin-top: 12px;
+        }
+        
+        .detail-item {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 8px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        
+        .detail-label {
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 11px;
+            margin-bottom: 4px;
+            text-transform: uppercase;
+        }
+        
+        .detail-value {
+            font-weight: 600;
+            font-size: 14px;
+        }
+        
+        .btn {
+            padding: 14px 20px;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+            margin-bottom: 10px;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #007AFF, #0051BA);
+            color: white;
+        }
+        
+        .btn-primary:active {
+            transform: scale(0.98);
+            opacity: 0.9;
+        }
+        
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: #007AFF;
+            border: 1px solid rgba(0, 122, 255, 0.3);
+        }
+        
+        .btn-secondary:active {
+            background: rgba(0, 122, 255, 0.2);
+        }
+        
+        .btn-success {
+            background: linear-gradient(135deg, #34C759, #00B54B);
+            color: white;
+        }
+        
+        input, textarea, select {
+            width: 100%;
+            padding: 14px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 12px;
+            color: #fff;
+            font-size: 16px;
+            margin-bottom: 12px;
+            font-family: inherit;
+        }
+        
+        input:focus, textarea:focus, select:focus {
+            outline: none;
+            border-color: #007AFF;
+            background: rgba(0, 122, 255, 0.1);
+        }
+        
+        textarea {
+            resize: vertical;
+            min-height: 120px;
+            font-family: monospace;
+            font-size: 14px;
+        }
+        
+        .modal {
+            display: none;
             position: fixed;
             top: 0;
             left: 0;
             right: 0;
             bottom: 0;
-            background: #000;
-            display: flex;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
             align-items: center;
             justify-content: center;
-            flex-direction: column;
-            gap: 20px;
         }
         
-        .spinner {
-            width: 40px;
-            height: 40px;
-            border: 3px solid rgba(255,255,255,0.2);
-            border-top-color: #007AFF;
-            border-radius: 50%;
-            animation: spin 0.8s linear infinite;
-        }
-        
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-        
-        #appContent {
-            display: none;
-            max-width: 600px;
-            margin: 0 auto;
-        }
-        
-        .navbar {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            height: 60px;
-            background: rgba(0,0,0,0.8);
-            border-top: 1px solid rgba(255,255,255,0.1);
+        .modal.active {
             display: flex;
-            justify-content: space-around;
-            align-items: center;
         }
         
-        .nav-item {
-            flex: 1;
-            height: 100%;
+        .modal-content {
+            background: #1a1a1a;
+            border-radius: 20px;
+            padding: 24px;
+            max-width: 90vw;
+            max-height: 90vh;
+            overflow-y: auto;
+            width: 100%;
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .modal-header h3 {
+            font-size: 20px;
+        }
+        
+        .close-btn {
             background: none;
             border: none;
-            color: rgba(255,255,255,0.5);
+            font-size: 28px;
+            color: rgba(255, 255, 255, 0.6);
             cursor: pointer;
+        }
+        
+        .badge {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 20px;
             font-size: 12px;
+            font-weight: 600;
+            margin: 4px 0;
+        }
+        
+        .badge-new {
+            background: rgba(34, 197, 89, 0.2);
+            color: #34C759;
+        }
+        
+        .badge-existing {
+            background: rgba(0, 122, 255, 0.2);
+            color: #007AFF;
+        }
+        
+        .badge-change {
+            background: rgba(255, 149, 0, 0.2);
+            color: #FF9500;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: rgba(255, 255, 255, 0.5);
+        }
+        
+        .empty-state p {
+            font-size: 14px;
+            margin-bottom: 20px;
+        }
+        
+        .stat-row {
             display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            gap: 2px;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         }
         
-        .nav-item.active {
-            color: #007AFF;
+        .stat-row:last-child {
+            border-bottom: none;
         }
         
-        .page {
-            display: none;
-            padding: 20px;
-            padding-bottom: 80px;
-        }
-        
-        .page.active {
-            display: block;
-        }
-        
-        .btn {
-            padding: 10px 16px;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
+        .stat-label {
+            color: rgba(255, 255, 255, 0.6);
             font-size: 14px;
+        }
+        
+        .stat-value {
             font-weight: 600;
+            font-size: 16px;
         }
         
-        .btn-primary {
-            background: #007AFF;
+        .toast {
+            position: fixed;
+            bottom: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #34C759;
             color: white;
-        }
-        
-        .btn-secondary {
-            background: rgba(255,255,255,0.1);
-            color: #007AFF;
-        }
-        
-        h1 { font-size: 28px; margin-bottom: 8px; }
-        h2 { font-size: 18px; margin-top: 20px; margin-bottom: 12px; }
-        h3 { font-size: 16px; margin-bottom: 4px; }
-        
-        .card {
-            background: rgba(255,255,255,0.05);
-            padding: 16px;
+            padding: 14px 20px;
             border-radius: 12px;
-            margin-bottom: 12px;
-        }
-        
-        .input-group {
-            margin-bottom: 12px;
-        }
-        
-        .input-group label {
-            display: block;
-            font-size: 12px;
-            color: rgba(255,255,255,0.6);
-            margin-bottom: 6px;
-            font-weight: 600;
-        }
-        
-        .input-group input,
-        .input-group textarea,
-        .input-group select {
-            width: 100%;
-            padding: 10px;
-            background: rgba(255,255,255,0.05);
-            border: 1px solid rgba(0,122,255,0.2);
-            border-radius: 8px;
-            color: white;
             font-size: 14px;
+            font-weight: 600;
+            z-index: 2000;
+            animation: slideUp 0.3s ease;
         }
         
-        textarea {
-            resize: vertical;
-            font-family: monospace;
+        @keyframes slideUp {
+            from { transform: translateX(-50%) translateY(20px); opacity: 0; }
+            to { transform: translateX(-50%) translateY(0); opacity: 1; }
+        }
+        
+        .changes-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .change-item {
+            background: rgba(255, 149, 0, 0.08);
+            border-left: 3px solid #FF9500;
+            padding: 12px;
+            margin-bottom: 8px;
+            border-radius: 8px;
+        }
+        
+        .change-item strong {
+            color: #FF9500;
         }
     </style>
 </head>
 <body dir="rtl">
-    <div id="loadingScreen" style="display:flex;">
-        <div class="spinner"></div>
-        <p>טוען FitPro...</p>
+    <div class="container">
+        <header>
+            <h1>💪 FitPro</h1>
+            <p>מעקב אימונים עם מאמן אישי</p>
+        </header>
+        
+        <!-- Weekly Workout -->
+        <div class="section">
+            <h2>📅 האימון השבועי שלך</h2>
+            <div id="weekly-workout">
+                <div class="empty-state">
+                    <p>עדיין אין אימון בשבוע</p>
+                    <p style="font-size: 12px;">העתק הודעת מאמן כדי להתחיל</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Add Workout -->
+        <div class="section">
+            <h2>📝 הוסף אימון חדש</h2>
+            <textarea id="coach-message" placeholder="הדבק כאן את הודעת המאמן מ-WhatsApp..."></textarea>
+            <button class="btn btn-primary" onclick="analyzeWorkout()">🤖 ניתוח אימון</button>
+        </div>
+        
+        <!-- Changes Report -->
+        <div class="section">
+            <h2>📊 שינויים מהשבוע שעבר</h2>
+            <div id="changes-summary">
+                <div class="empty-state">
+                    <p>אף שינויים עדיין</p>
+                </div>
+            </div>
+            <button class="btn btn-success" onclick="sendToCoach()" id="send-btn" style="display:none;">💬 שלח למאמן</button>
+            <button class="btn btn-secondary" onclick="copyChanges()" id="copy-btn" style="display:none;">📋 העתק</button>
+        </div>
+        
+        <!-- Settings -->
+        <div class="section">
+            <h2>⚙️ הגדרות</h2>
+            <p style="font-size: 13px; color: rgba(255,255,255,0.6); margin-bottom: 12px;">Firebase: ✅ מחובר</p>
+            <input type="password" id="api-key" placeholder="Claude API Key (אופציונלי)" style="margin-bottom: 0;">
+            <button class="btn btn-secondary" onclick="saveAPIKey()" style="margin-top: 12px;">שמור מפתח</button>
+        </div>
     </div>
     
-    <div id="appContent">
-        <nav class="navbar" id="navbar">
-            <button class="nav-item active" onclick="switchPage('dashboard')">📊 לוח</button>
-            <button class="nav-item" onclick="switchPage('exercises')">💪 תרגילים</button>
-            <button class="nav-item" onclick="switchPage('import')">📝 הוספה</button>
-            <button class="nav-item" onclick="switchPage('analytics')">📈 סטטיסטיקה</button>
-            <button class="nav-item" onclick="switchPage('settings')">⚙️ הגדרות</button>
-        </nav>
-        
-        <div id="dashboard" class="page active">
-            <h1>💪 FitPro</h1>
-            <p style="color: rgba(255,255,255,0.7); margin-bottom: 16px;">עוקב אימונים אישי</p>
-            <button class="btn btn-primary" onclick="addExercise()">➕ הוסף תרגיל</button>
-            <div id="exercises-list" style="margin-top: 16px;"></div>
-        </div>
-        
-        <div id="exercises" class="page">
-            <h1>🏋️ תרגילים</h1>
-            <div id="exercises-display"></div>
-        </div>
-        
-        <div id="import" class="page">
-            <h1>📝 הוספה</h1>
-            <div class="input-group">
-                <label>הדבק הודעה:</label>
-                <textarea id="import-text" placeholder="הדבק כאן..."></textarea>
+    <!-- Import Review Modal -->
+    <div id="import-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>📋 בדוק את התרגילים</h3>
+                <button class="close-btn" onclick="closeModal('import-modal')">×</button>
             </div>
-            <button class="btn btn-primary" onclick="importWorkout()">📊 ניתוח</button>
-        </div>
-        
-        <div id="analytics" class="page">
-            <h1>📈 סטטיסטיקה</h1>
-            <p id="stats"></p>
-        </div>
-        
-        <div id="settings" class="page">
-            <h1>⚙️ הגדרות</h1>
-            <div class="card">
-                <h3>Firebase</h3>
-                <p style="font-size: 13px; color: rgba(255,255,255,0.7);">✅ מחובר</p>
-            </div>
+            <div id="import-list"></div>
+            <button class="btn btn-primary" onclick="saveWorkout()" style="margin-top: 20px;">✅ שמור הכל</button>
+            <button class="btn btn-secondary" onclick="closeModal('import-modal')">ביטול</button>
         </div>
     </div>
 
     <script>
-        console.log('✅ Script loaded');
+        console.log('FitPro initialized');
         
         const DB_URL = 'https://baby-88eb0-default-rtdb.firebaseio.com';
         let exercises = {};
-        let sessions = {};
+        let currentWorkout = [];
         
-        function switchPage(page) {
-            try {
-                document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-                document.getElementById(page).classList.add('active');
-                document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
-                event.target.classList.add('active');
-            } catch(e) {
-                console.error('switchPage error:', e);
-            }
-        }
-        
+        // Fetch from Firebase
         async function fetchData(path) {
             try {
                 const res = await fetch(`${DB_URL}${path}.json`);
                 if (!res.ok) return null;
                 return await res.json();
             } catch(e) {
-                console.error('fetchData error:', e);
+                console.error('Fetch error:', e);
                 return null;
             }
         }
         
-        async function putData(path, data) {
+        // Save to Firebase
+        async function saveData(path, data) {
             try {
                 const res = await fetch(`${DB_URL}${path}.json`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(data)
                 });
-                if (!res.ok) return null;
-                return await res.json();
+                if (res.ok) return await res.json();
             } catch(e) {
-                console.error('putData error:', e);
+                console.error('Save error:', e);
+            }
+            return null;
+        }
+        
+        // Parse Hebrew workout
+        function parseWorkout(text) {
+            const lines = text.split('\n').filter(l => l.trim());
+            const workout = [];
+            
+            lines.forEach((line, idx) => {
+                if (!line.trim() || line.length < 3) return;
+                
+                const match = line.match(/(\d+)[×x](\d+)/);
+                if (!match) return;
+                
+                const [, reps, sets] = match;
+                const weightMatch = line.match(/\((\d+\.?\d*)\)?/);
+                const weight = weightMatch ? parseFloat(weightMatch[1]) : 0;
+                
+                let name = line
+                    .replace(/\d+[×x]\d+/g, '')
+                    .replace(/\(\d+\.?\d*\)?/g, '')
+                    .trim();
+                
+                if (name.length > 2) {
+                    workout.push({
+                        name: name,
+                        sets: parseInt(sets),
+                        reps: parseInt(reps),
+                        weight: weight
+                    });
+                }
+            });
+            
+            return workout;
+        }
+        
+        // Analyze workout
+        function analyzeWorkout() {
+            const text = document.getElementById('coach-message').value.trim();
+            if (!text) {
+                showToast('⚠️ הדבק הודעה');
+                return;
+            }
+            
+            currentWorkout = parseWorkout(text);
+            
+            if (currentWorkout.length === 0) {
+                showToast('❌ לא נמצאו תרגילים');
+                return;
+            }
+            
+            renderImportReview();
+            openModal('import-modal');
+        }
+        
+        // Render import review
+        function renderImportReview() {
+            const html = currentWorkout.map((ex, idx) => {
+                const existing = Object.values(exercises).find(e => 
+                    e.name.toLowerCase().includes(ex.name.toLowerCase()) ||
+                    ex.name.toLowerCase().includes(e.name.toLowerCase())
+                );
+                
+                return `<div class="workout-card">
+                    <h3>${ex.name}</h3>
+                    ${existing ? `<span class="badge badge-existing">✅ קיים</span>` : `<span class="badge badge-new">🆕 חדש</span>`}
+                    <div class="details">
+                        <div class="detail-item">
+                            <div class="detail-label">סטים</div>
+                            <input type="number" value="${ex.sets}" onchange="currentWorkout[${idx}].sets = parseInt(this.value)" style="width: 100%; margin: 0;">
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">חזרות</div>
+                            <input type="number" value="${ex.reps}" onchange="currentWorkout[${idx}].reps = parseInt(this.value)" style="width: 100%; margin: 0;">
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">משקל</div>
+                            <input type="number" step="0.5" value="${ex.weight}" onchange="currentWorkout[${idx}].weight = parseFloat(this.value)" style="width: 100%; margin: 0;">
+                        </div>
+                    </div>
+                </div>`;
+            }).join('');
+            
+            document.getElementById('import-list').innerHTML = html;
+        }
+        
+        // Save workout
+        async function saveWorkout() {
+            currentWorkout.forEach(ex => {
+                const id = 'ex-' + Date.now() + Math.random();
+                exercises[id] = {
+                    name: ex.name,
+                    sets: ex.sets,
+                    reps: ex.reps,
+                    weight: ex.weight,
+                    date: new Date().toISOString()
+                };
+            });
+            
+            await saveData('/exercises', exercises);
+            closeModal('import-modal');
+            document.getElementById('coach-message').value = '';
+            renderWeekly();
+            showToast('✅ שמור בהצלחה!');
+        }
+        
+        // Render weekly workout
+        function renderWeekly() {
+            if (Object.keys(exercises).length === 0) {
+                document.getElementById('weekly-workout').innerHTML = `
+                    <div class="empty-state">
+                        <p>עדיין אין אימון בשבוע</p>
+                        <p style="font-size: 12px;">העתק הודעת מאמן כדי להתחיל</p>
+                    </div>`;
+                return;
+            }
+            
+            const html = Object.entries(exercises).map(([id, ex]) => `
+                <div class="workout-card">
+                    <h3>${ex.name}</h3>
+                    <div class="details">
+                        <div class="detail-item">
+                            <div class="detail-label">סטים</div>
+                            <div class="detail-value">${ex.sets}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">חזרות</div>
+                            <div class="detail-value">${ex.reps}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">משקל</div>
+                            <div class="detail-value">${ex.weight}ק״ג</div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+            
+            document.getElementById('weekly-workout').innerHTML = html;
+        }
+        
+        // Generate changes report
+        function generateChanges() {
+            let report = 'היי 🙋‍♂️\n\nהנה השינויים מהשבוע:\n\n';
+            let hasChanges = false;
+            
+            Object.entries(exercises).forEach(([id, ex]) => {
+                if (ex.weight > 0) {
+                    report += `💪 ${ex.name}\n   משקל: ${ex.weight}ק״ג\n   חזרות: ${ex.reps}x${ex.sets}\n\n`;
+                    hasChanges = true;
+                }
+            });
+            
+            if (hasChanges) {
+                report += 'נמשיך ככה! 💪';
+                
+                document.getElementById('send-btn').style.display = 'block';
+                document.getElementById('copy-btn').style.display = 'block';
+                document.getElementById('changes-summary').innerHTML = `<div class="changes-list">${report.replace(/\n/g, '<br>')}</div>`;
+                
+                return report;
+            } else {
+                document.getElementById('changes-summary').innerHTML = `
+                    <div class="empty-state">
+                        <p>אף שינויים עדיין</p>
+                    </div>`;
                 return null;
             }
         }
         
-        function addExercise() {
-            const name = prompt('שם התרגיל:');
-            if (!name) return;
+        // Send to coach
+        function sendToCoach() {
+            const report = generateChanges();
+            if (!report) return;
             
-            const id = 'ex-' + Date.now();
-            exercises[id] = {
-                name: name,
-                muscleGroup: 'חזה',
-                sets: 4,
-                minReps: 6,
-                maxReps: 10,
-                targetWeight: 0
-            };
-            
-            putData('/exercises', exercises);
-            renderExercises();
-            alert('✅ נוסף!');
+            const encoded = encodeURIComponent(report);
+            window.location.href = `https://wa.me/?text=${encoded}`;
         }
         
-        function renderExercises() {
-            try {
-                const list = document.getElementById('exercises-list');
-                const display = document.getElementById('exercises-display');
-                
-                if (Object.keys(exercises).length === 0) {
-                    list.innerHTML = '<p>אין תרגילים</p>';
-                    display.innerHTML = '<p>אין תרגילים</p>';
-                    return;
-                }
-                
-                let html = '';
-                for (const [id, ex] of Object.entries(exercises)) {
-                    html += `<div style="padding: 12px; background: rgba(255,255,255,0.05); border-radius: 8px; margin-bottom: 8px;">
-                        <h3>${ex.name}</h3>
-                        <p style="font-size: 13px; color: rgba(255,255,255,0.6);">${ex.sets} סטים • ${ex.minReps}-${ex.maxReps} חזרות</p>
-                    </div>`;
-                }
-                
-                list.innerHTML = html;
-                display.innerHTML = html;
-            } catch(e) {
-                console.error('renderExercises error:', e);
+        // Copy to clipboard
+        function copyChanges() {
+            const report = generateChanges();
+            if (!report) return;
+            
+            navigator.clipboard.writeText(report).then(() => {
+                showToast('✅ הועתק!');
+            });
+        }
+        
+        // Modal
+        function openModal(id) {
+            document.getElementById(id).classList.add('active');
+        }
+        
+        function closeModal(id) {
+            document.getElementById(id).classList.remove('active');
+        }
+        
+        // Toast
+        function showToast(msg) {
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.textContent = msg;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 2000);
+        }
+        
+        // Save API Key
+        function saveAPIKey() {
+            const key = document.getElementById('api-key').value;
+            if (key) {
+                localStorage.setItem('api-key', key);
+                showToast('✅ שמור!');
             }
         }
         
-        function importWorkout() {
-            const text = document.getElementById('import-text').value;
-            if (!text) {
-                alert('הדבק תוכנית');
-                return;
-            }
-            alert('וקיבלת: ' + text.substring(0, 50));
-        }
-        
+        // Init
         async function init() {
-            try {
-                console.log('Init starting...');
-                
-                const exData = await fetchData('/exercises');
-                console.log('Exercises:', exData);
-                exercises = exData || {};
-                
-                const sesData = await fetchData('/sessions');
-                console.log('Sessions:', sesData);
-                sessions = sesData || {};
-                
-                renderExercises();
-                
-                document.getElementById('loadingScreen').style.display = 'none';
-                document.getElementById('appContent').style.display = 'block';
-                
-                console.log('✅ Init complete!');
-            } catch(e) {
-                console.error('Init error:', e);
-                console.error('Stack:', e.stack);
-                document.getElementById('loadingScreen').innerHTML = '<p>Error: ' + e.message + '</p>';
+            const data = await fetchData('/exercises');
+            if (data) {
+                exercises = data;
+                renderWeekly();
+                generateChanges();
             }
         }
         
-        window.addEventListener('load', function() {
-            console.log('Window load event');
-            init();
-        });
+        window.addEventListener('load', init);
     </script>
 </body>
 </html>
