@@ -1190,7 +1190,6 @@
 
     <script>
         // ============ FIREBASE CONFIGURATION ============
-        // ⚠️ QA FIX #1: Use the correct Firebase endpoint from BabyBloom setup
         const FIREBASE_ENDPOINT = 'https://baby-88eb0-default-rtdb.firebaseio.com/fitpro';
         
         // ============ STATE MANAGEMENT ============
@@ -1245,7 +1244,6 @@
             stopwatchSecondsElapsed = 0;
             updateStopwatchDisplay();
             
-            // QA FIX #2: Don't auto-start on reset - let user control it
             if (isStopwatchRunning) {
                 clearInterval(stopwatchInterval);
                 document.getElementById('stopwatch-toggle-btn').textContent = '▶️';
@@ -1296,6 +1294,16 @@
             let numVal = parseFloat(value) || 0;
             if (numVal < 0) numVal = 0;
 
+            if (field === 'reps') numVal = Math.max(1, Math.floor(numVal));
+
+            // QA FIX #2: מניעת כפילויות בהיסטוריה אם הערך לא השתנה באמת
+            if ((field === 'weight' && targetExercise.weight === numVal) || 
+                (field === 'reps' && targetExercise.reps === numVal)) {
+                const inputField = document.getElementById(`inp-${field === 'weight' ? 'w' : 'r'}-${exerciseIndex}`);
+                if (inputField) inputField.classList.remove('active');
+                return;
+            }
+
             const oldRecord = { 
                 date: new Date().toISOString(), 
                 sets: targetExercise.sets, 
@@ -1307,11 +1315,15 @@
             targetExercise.history.push(oldRecord);
 
             if (field === 'weight') targetExercise.weight = numVal;
-            if (field === 'reps') targetExercise.reps = Math.max(1, Math.floor(numVal));
+            if (field === 'reps') targetExercise.reps = numVal;
 
             await syncToCloud('/workouts', stateWorkouts);
             renderWeeklyWorkoutDashboard();
             rebuildChangesSummaryReport();
+            
+            // QA FIX #5: העלמת שדה הקלט בסיום השמירה
+            const inputField = document.getElementById(`inp-${field === 'weight' ? 'w' : 'r'}-${exerciseIndex}`);
+            if (inputField) inputField.classList.remove('active');
         }
 
         async function modifyMetric(exerciseIndex, field, delta) {
@@ -1339,7 +1351,6 @@
             renderWeeklyWorkoutDashboard();
             rebuildChangesSummaryReport();
 
-            // Animate the update
             setTimeout(() => {
                 const elem = field === 'weight' ? 
                     document.querySelector(`#inp-w-${exerciseIndex} + .step-value`) :
@@ -1425,7 +1436,6 @@
                     let currentImportDate = null;
                     let currentImportExercises = [];
                     
-                    // QA FIX #3: More flexible date regex for WhatsApp exports
                     const whatsappHeaderRegex = /^\[?(\d{1,2})[\.\/](\d{1,2})[\.\/](\d{2,4})/;
 
                     for (let i = 0; i < lines.length; i++) {
@@ -1525,7 +1535,6 @@
         }
 
         function parseExerciseStringToken(str) {
-            // QA FIX #4: Better parsing with edge case handling
             const match = str.match(/(\d+)[×x](\d+)/);
             if (!match) return null;
             
@@ -1592,7 +1601,6 @@
 
         // ============ EXERCISE NAME NORMALIZATION ============
         function normalizeExerciseName(name) {
-            // Convert to lowercase, remove extra spaces, split into words, sort, rejoin
             return name
                 .toLowerCase()
                 .trim()
@@ -1602,14 +1610,13 @@
         }
 
         function getUniqueExercises() {
-            let exerciseMap = new Map(); // normalized name → original name
+            let exerciseMap = new Map();
             
             stateWorkouts.forEach(w => {
                 w.exercises?.forEach(ex => {
                     const originalName = ex.name.trim();
                     const normalized = normalizeExerciseName(originalName);
                     
-                    // Keep track of normalized → display name
                     if (!exerciseMap.has(normalized)) {
                         exerciseMap.set(normalized, originalName);
                     }
@@ -1654,15 +1661,15 @@
             });
         }
 
-        function handleAnalyticsSelect(index) {
+        // QA FIX #1: עדכון שליפת האלמנט באנליזה באמצעות השם המנורמל במקום אינדקס
+        function handleAnalyticsSelect(normalizedName) {
             const exerciseMap = getUniqueExercises();
-            const exercises = Array.from(exerciseMap.entries());
+            const displayName = exerciseMap.get(normalizedName);
             
-            if (index >= 0 && index < exercises.length) {
-                const [normalized, display] = exercises[index];
-                document.getElementById('analytics-picker').value = display;
+            if (displayName) {
+                document.getElementById('analytics-picker').value = displayName;
                 document.getElementById('analytics-suggestions').style.display = 'none';
-                runExerciseAnalytics(normalized);
+                runExerciseAnalytics(normalizedName);
             }
         }
 
@@ -1670,7 +1677,7 @@
             const suggestionBox = document.getElementById('analytics-suggestions');
             const exerciseMap = getUniqueExercises();
             
-            analyticsSelectedIndex = -1; // Reset selection
+            analyticsSelectedIndex = -1; 
             
             if (!searchQuery.trim()) {
                 suggestionBox.style.display = 'none';
@@ -1680,14 +1687,11 @@
             const normalizedQuery = normalizeExerciseName(searchQuery);
             const matches = [];
             
-            let index = 0;
             exerciseMap.forEach((displayName, normalizedName) => {
-                // Check if normalized name contains all words from query
                 const queryWords = normalizedQuery.split(/\s+/);
                 if (queryWords.every(word => normalizedName.includes(word))) {
-                    matches.push({ index: index, normalized: normalizedName, display: displayName });
+                    matches.push({ normalized: normalizedName, display: displayName });
                 }
-                index++;
             });
             
             if (matches.length === 0) {
@@ -1695,22 +1699,18 @@
                 return;
             }
             
+            // QA FIX #1: העברת הסטרינג המנורמל בצורה בטוחה ישירות ל-onclick
             suggestionBox.innerHTML = matches.map(m => `
                 <div 
                     style="padding: 12px 14px; border-bottom: 1px solid rgba(0,0,0,0.04); cursor: pointer; font-size: 14px; transition: background 0.15s;" 
                     onmouseover="this.style.background='rgba(0,82,204,0.05)'"
                     onmouseout="this.style.background='transparent'"
-                    onclick="handleAnalyticsSelect(${m.index})">
+                    onclick="handleAnalyticsSelect('${m.normalized.replace(/'/g, "\\'")}')">
                     ${m.display}
                 </div>
             `).join('');
             
             suggestionBox.style.display = 'block';
-        }
-
-        function populateAnalyticsDropdown() {
-            // Legacy function - no longer needed
-            // Exercise suggestions are now handled dynamically by filterAnalyticsExercises
         }
 
         function runExerciseAnalytics(normalizedName) {
@@ -1753,10 +1753,12 @@
                         
                         if (ex.history) {
                             ex.history.forEach(h => {
-                                if (h.weight > maxWeight) maxWeight = h.weight;
+                                // QA FIX #3: וידוא קיום משקל תקין למניעת גרפים עם ערכי NaN
+                                const currentWeight = parseFloat(h.weight) || 0;
+                                if (currentWeight > maxWeight) maxWeight = currentWeight;
                                 const hd = new Date(h.date);
                                 dataPoints.push({ 
-                                    weight: h.weight, 
+                                    weight: currentWeight, 
                                     label: hd.toLocaleDateString('he-IL', {day:'numeric', month:'short'}), 
                                     timestamp: hd.getTime() 
                                 });
@@ -1907,7 +1909,6 @@
                     displayNativeToast('⚠️ בעיה בסנכרון - בדוק חיבור');
                 }
                 
-                // QA FIX #5: Save to localStorage as backup
                 saveLocalBackup(data);
             } catch (e) { 
                 setSyncStatus(false);
@@ -2075,7 +2076,6 @@
         }
 
         function applyMicroInteractions() {
-            // Better button feedback
             document.querySelectorAll('.btn').forEach(btn => {
                 btn.addEventListener('mousedown', function() {
                     this.style.transform = 'scale(0.98)';
@@ -2085,7 +2085,6 @@
                 });
             });
 
-            // Card hover effects
             document.querySelectorAll('.card, .workout-card').forEach(card => {
                 card.addEventListener('mouseenter', function() {
                     this.style.cursor = 'pointer';
@@ -2094,42 +2093,38 @@
         }
 
         function initializeTheme() {
-            // Load dark mode preference
             if (localStorage.getItem('fitpro-darkMode') === 'true') {
                 document.body.classList.add('dark-mode');
             }
 
-            // Load color scheme preference
             const savedColor = localStorage.getItem('fitpro-color');
             if (savedColor) {
                 document.documentElement.setAttribute('data-color', savedColor);
             }
 
-            // Apply micro-interactions
             applyMicroInteractions();
         }
 
         // ============ INIT ============
         window.addEventListener('load', async () => {
-            // Initialize theme and visual enhancements
             initializeTheme();
             
-            // Try cloud sync first
             let data = await syncFromCloud('/workouts');
             let dataSource = 'Firebase Cloud ☁️';
             
-            // Fallback to local backup
             if (!data) {
                 data = loadLocalBackup();
                 dataSource = 'Local Storage 📱';
                 if (data) displayNativeToast('📱 טוען מגיבוי מקומי...');
             }
             
+            // QA FIX #4: טיפול בבסיס נתונים ריק לחלוטין (null) כדי למנוע קריסת אתחול
             if (data) {
                 stateWorkouts = Array.isArray(data) ? data : Object.values(data);
                 stateWorkouts.sort((a, b) => new Date(a.date) - new Date(b.date));
                 console.log(`✅ Loaded ${stateWorkouts.length} workouts from: ${dataSource}`);
             } else {
+                stateWorkouts = [];
                 console.log('📭 No data found (Firebase empty & no local backup)');
             }
             
@@ -2142,7 +2137,6 @@
             updateStopwatchDisplay();
         });
 
-        // Prevent accidental navigation
         window.addEventListener('beforeunload', (e) => {
             if (isSyncing) {
                 e.preventDefault();
