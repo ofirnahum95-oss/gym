@@ -14,35 +14,117 @@
             font-size: 16px;
             line-height: 1.5;
             -webkit-font-smoothing: antialiased;
+            overflow-x: hidden;
         }
         
+        /* Navigation Top Bar */
+        .top-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: rgba(22, 22, 26, 0.8);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            padding: 16px 20px;
+            position: sticky;
+            top: 0;
+            z-index: 900;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .top-bar h1 {
+            font-size: 20px;
+            font-weight: 800;
+            background: linear-gradient(135deg, #007AFF, #5AC8FA);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .menu-toggle {
+            background: none;
+            border: none;
+            color: #007AFF;
+            font-size: 24px;
+            cursor: pointer;
+        }
+
+        /* Side Hamburger Menu Drawer */
+        .drawer {
+            position: fixed;
+            top: 0;
+            right: -280px;
+            width: 280px;
+            height: 100vh;
+            background: #1c1c1e;
+            z-index: 1100;
+            box-shadow: -5px 0 25px rgba(0,0,0,0.5);
+            transition: right 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            padding: 30px 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .drawer.active {
+            right: 0;
+        }
+
+        .drawer-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+            padding-bottom: 14px;
+        }
+
+        .drawer-item {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.05);
+            padding: 14px 18px;
+            border-radius: 14px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 15px;
+            transition: all 0.2s;
+            text-align: right;
+        }
+
+        .drawer-item:active, .drawer-item.active {
+            background: rgba(0, 122, 255, 0.15);
+            border-color: #007AFF;
+            color: #007AFF;
+        }
+
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.6);
+            z-index: 1050;
+            display: none;
+        }
+
+        .overlay.active {
+            display: block;
+        }
+        
+        /* App Containers */
         .container {
             max-width: 500px;
             margin: 0 auto;
             padding: 20px;
-            padding-bottom: 100px;
+            padding-bottom: 60px;
         }
         
-        header {
-            text-align: center;
-            margin-bottom: 30px;
-            padding-top: 10px;
+        .app-page {
+            display: none;
         }
-        
-        header h1 {
-            font-size: 34px;
-            font-weight: 800;
-            margin-bottom: 6px;
-            background: linear-gradient(135deg, #007AFF, #5AC8FA);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-        
-        header p {
-            color: rgba(255, 255, 255, 0.6);
-            font-size: 14px;
-            letter-spacing: 0.3px;
+
+        .app-page.active {
+            display: block;
         }
         
         .section {
@@ -51,8 +133,6 @@
             border-radius: 24px;
             padding: 20px;
             margin-bottom: 24px;
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
         }
         
         .section h2 {
@@ -62,9 +142,9 @@
             display: flex;
             align-items: center;
             gap: 10px;
-            color: rgba(255, 255, 255, 0.9);
         }
         
+        /* Workout Cards Layout */
         .workout-card {
             background: rgba(255, 255, 255, 0.03);
             border: 1px solid rgba(255, 255, 255, 0.08);
@@ -72,7 +152,6 @@
             padding: 16px;
             margin-bottom: 12px;
             position: relative;
-            transition: transform 0.2s ease;
         }
 
         .superset-container {
@@ -92,15 +171,13 @@
             font-weight: 700;
             display: inline-block;
             margin-bottom: 10px;
-            margin-right: 4px;
         }
         
         .workout-card h3 {
             font-size: 16px;
             font-weight: 600;
             margin-bottom: 12px;
-            color: #fff;
-            padding-left: 35px; /* מניעת דריסה של כפתור העריכה */
+            padding-left: 35px;
         }
         
         .workout-card .details {
@@ -111,7 +188,6 @@
         
         .detail-item {
             background: rgba(255, 255, 255, 0.04);
-            border: 1px solid rgba(255, 255, 255, 0.05);
             padding: 10px 6px;
             border-radius: 12px;
             text-align: center;
@@ -121,7 +197,6 @@
             color: rgba(255, 255, 255, 0.4);
             font-size: 11px;
             margin-bottom: 4px;
-            font-weight: 500;
         }
         
         .detail-value {
@@ -130,6 +205,7 @@
             color: #007AFF;
         }
         
+        /* UI Elements & Buttons */
         .btn {
             padding: 15px 20px;
             border: none;
@@ -137,7 +213,7 @@
             font-size: 16px;
             font-weight: 600;
             cursor: pointer;
-            transition: background 0.2s ease, transform 0.1s ease;
+            transition: all 0.2s;
             width: 100%;
             margin-bottom: 10px;
             display: flex;
@@ -146,36 +222,13 @@
             gap: 8px;
         }
         
-        .btn-primary {
-            background: #007AFF;
-            color: white;
-        }
+        .btn-primary { background: #007AFF; color: white; }
+        .btn-primary:active { transform: scale(0.98); background: #0066d6; }
+        .btn-secondary { background: rgba(255, 255, 255, 0.08); color: #007AFF; border: 1px solid rgba(0, 122, 255, 0.2); }
+        .btn-secondary:active { background: rgba(0, 122, 255, 0.15); }
+        .btn-success { background: #34C759; color: white; }
         
-        .btn-primary:active {
-            transform: scale(0.98);
-            background: #0066d6;
-        }
-        
-        .btn-secondary {
-            background: rgba(255, 255, 255, 0.08);
-            color: #007AFF;
-            border: 1px solid rgba(0, 122, 255, 0.2);
-        }
-        
-        .btn-secondary:active {
-            background: rgba(0, 122, 255, 0.15);
-        }
-        
-        .btn-success {
-            background: #34C759;
-            color: white;
-        }
-
-        .btn-success:active {
-            background: #2cb04e;
-        }
-        
-        input, textarea, select {
+        input, textarea {
             width: 100%;
             padding: 14px;
             background: rgba(255, 255, 255, 0.06);
@@ -185,37 +238,22 @@
             font-size: 16px;
             margin-bottom: 14px;
             font-family: inherit;
-            transition: border-color 0.2s;
         }
         
-        input:focus, textarea:focus, select:focus {
-            outline: none;
-            border-color: #007AFF;
-            background: rgba(0, 122, 255, 0.05);
-        }
+        textarea { resize: none; min-height: 120px; }
         
-        textarea {
-            resize: none;
-            min-height: 100px;
-            font-size: 15px;
-        }
-        
+        /* Modals & Popups */
         .modal {
             display: none;
             position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
+            top: 0; left: 0; right: 0; bottom: 0;
             background: rgba(0, 0, 0, 0.85);
-            z-index: 1000;
-            align-items: flex-end; /* פתיחה מלמטה בסגנון מובייל Native */
+            z-index: 1200;
+            align-items: flex-end;
             justify-content: center;
         }
         
-        .modal.active {
-            display: flex;
-        }
+        .modal.active { display: flex; }
         
         .modal-content {
             background: #1c1c1e;
@@ -226,177 +264,183 @@
             max-height: 85vh;
             overflow-y: auto;
             width: 100%;
-            box-shadow: 0 -10px 25px rgba(0,0,0,0.5);
             animation: slideUp 0.25s cubic-bezier(0.15, 1, 0.3, 1);
         }
 
-        @keyframes slideUp {
-            from { transform: translateY(100%); }
-            to { transform: translateY(0); }
-        }
-        
-        .modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 24px;
-        }
-        
-        .modal-header h3 {
-            font-size: 19px;
-            font-weight: 700;
-        }
+        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
         
         .close-btn {
             background: rgba(255,255,255,0.1);
-            border: none;
-            width: 30px;
-            height: 30px;
-            border-radius: 50%;
-            font-size: 20px;
-            color: rgba(255, 255, 255, 0.7);
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        
-        .input-group {
-            margin-bottom: 16px;
-        }
-
-        .input-group label {
-            display: block;
-            font-size: 13px;
-            color: rgba(255,255,255,0.5);
-            margin-bottom: 6px;
-            font-weight: 500;
-        }
-
-        .stepper-container {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .stepper-btn {
-            background: rgba(255, 255, 255, 0.08);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            color: #fff;
-            font-size: 20px;
-            width: 48px;
-            height: 48px;
-            border-radius: 12px;
-            cursor: pointer;
-            user-select: none;
-        }
-
-        .stepper-container input {
-            margin-bottom: 0;
-            text-align: center;
-            font-weight: 600;
+            border: none; width: 30px; height: 30px;
+            border-radius: 50%; color: rgba(255, 255, 255, 0.7);
+            cursor: pointer; display: flex; align-items: center; justify-content: center;
         }
         
         .edit-trigger {
-            position: absolute; 
-            top: 12px; 
-            left: 12px; 
-            background: rgba(255,255,255,0.06); 
-            border: 1px solid rgba(255,255,255,0.08); 
-            color: #007AFF; 
-            width: 32px;
-            height: 32px;
-            border-radius: 10px; 
-            font-size: 14px; 
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            position: absolute; top: 12px; left: 12px; 
+            background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08); 
+            color: #007AFF; width: 32px; height: 32px; border-radius: 10px;
+            cursor: pointer; display: flex; align-items: center; justify-content: center;
         }
+
+        .stepper-container { display: flex; align-items: center; gap: 8px; }
+        .stepper-btn { background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.1); color: #fff; font-size: 20px; width: 48px; height: 48px; border-radius: 12px; cursor: pointer; }
+        .stepper-container input { margin-bottom: 0; text-align: center; font-weight: 600; }
+        .input-group { margin-bottom: 16px; }
+        .input-group label { display: block; font-size: 13px; color: rgba(255,255,255,0.5); margin-bottom: 6px; }
         
-        .empty-state {
-            text-align: center;
-            padding: 30px 10px;
-            color: rgba(255, 255, 255, 0.4);
-        }
-        
-        .empty-state p {
-            font-size: 14px;
-            margin-bottom: 8px;
-        }
+        .empty-state { text-align: center; padding: 30px 10px; color: rgba(255, 255, 255, 0.4); font-size: 14px; }
         
         .toast {
-            position: fixed;
-            bottom: 30px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: #34C759;
-            color: white;
-            padding: 14px 24px;
-            border-radius: 16px;
-            font-size: 14px;
-            font-weight: 600;
-            z-index: 2000;
-            box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+            position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
+            background: #34C759; color: white; padding: 14px 24px; border-radius: 16px;
+            font-size: 14px; font-weight: 600; z-index: 2000; box-shadow: 0 8px 20px rgba(0,0,0,0.3);
         }
         
-        .changes-list {
-            max-height: 250px;
-            overflow-y: auto;
-            font-size: 14px;
-            background: rgba(0,0,0,0.15);
-            padding: 12px;
-            border-radius: 14px;
-            line-height: 1.6;
+        .changes-list { font-size: 14px; background: rgba(0,0,0,0.15); padding: 12px; border-radius: 14px; line-height: 1.6; }
+
+        /* --- UI עבור כרטיסיית אנליזת התקדמות --- */
+        .analytics-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 18px;
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+
+        .analytics-card h4 {
+            font-size: 16px;
+            color: #fff;
+            margin-bottom: 12px;
+            font-weight: 600;
+            border-right: 3px solid #007AFF;
+            padding-right: 8px;
+        }
+
+        .chart-row {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+            gap: 10px;
+        }
+
+        .chart-date {
+            font-size: 11px;
+            color: rgba(255,255,255,0.4);
+            width: 75px;
+            white-space: nowrap;
+        }
+
+        .chart-bar-wrapper {
+            flex-grow: 1;
+            background: rgba(255,255,255,0.05);
+            height: 16px;
+            border-radius: 6px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .chart-bar-fill {
+            background: linear-gradient(90deg, #0051BA, #007AFF);
+            height: 100%;
+            border-radius: 6px;
+            transition: width 0.5s ease-out;
+        }
+
+        .chart-value {
+            font-size: 12px;
+            font-weight: 700;
+            color: #fff;
+            width: 65px;
+            text-align: left;
         }
     </style>
 </head>
 <body dir="rtl">
+
+    <!-- Top Bar Navigation -->
+    <div class="top-bar">
+        <h1>💪 FitPro</h1>
+        <button class="menu-toggle" onclick="toggleDrawer(true)">☰</button>
+    </div>
+
+    <!-- Overlay Grid background -->
+    <div class="overlay" id="menu-overlay" onclick="toggleDrawer(false)"></div>
+
+    <!-- Hamburger Navigation Drawer -->
+    <div class="drawer" id="nav-drawer">
+        <div class="drawer-header">
+            <h3 style="font-weight:700;">ניווט מהיר</h3>
+            <button class="close-btn" onclick="toggleDrawer(false)">×</button>
+        </div>
+        <div class="drawer-item active" id="btn-tab-workout" onclick="switchTab('workout')">📅 האימון השבועי שלי</div>
+        <div class="drawer-item" id="btn-tab-add" onclick="switchTab('add')">📝 הוספת אימון חדש</div>
+        <div class="drawer-item" id="btn-tab-progress" onclick="switchTab('progress')">📊 אנליזת התקדמות</div>
+        <div class="drawer-item" id="btn-tab-settings" onclick="switchTab('settings')">⚙️ הגדרות מערכת</div>
+    </div>
+
+    <!-- Main App Container -->
     <div class="container">
-        <header>
-            <h1>💪 FitPro</h1>
-            <p>מעקב אימונים עם מאמן אישי</p>
-        </header>
-        
-        <!-- Weekly Workout -->
-        <div class="section">
-            <h2>📅 האימון השבועי שלך</h2>
-            <div id="weekly-workout">
-                <div class="empty-state">
-                    <p>עדיין אין אימון בשבוע</p>
-                    <p style="font-size: 12px;">העתק הודעת מאמן כדי להתחיל</p>
+
+        <!-- כרטיסייה 1: האימון השבועי שלך -->
+        <div id="tab-workout" class="app-page active">
+            <div class="section">
+                <h2>📅 תוכנית האימונים שלך</h2>
+                <div id="weekly-workout">
+                    <div class="empty-state">
+                        <p>עדיין אין אימון רשום בשבוע הנוכחי</p>
+                        <p style="font-size: 12px;">פתח את התפריט להוספת אימון חדש</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="section">
+                <h2>📊 שינויים ומעקב ביצועים</h2>
+                <div id="changes-summary">
+                    <div class="empty-state">
+                        <p>אין שינויים מתועדים בשבוע זה</p>
+                    </div>
+                </div>
+                <div style="margin-top: 14px; display: flex; gap: 10px;">
+                    <button class="btn btn-success" onclick="sendToCoach()" id="send-btn" style="display:none; flex: 2; margin-bottom: 0;">💬 שלח למאמן</button>
+                    <button class="btn btn-secondary" onclick="copyChanges()" id="copy-btn" style="display:none; flex: 1; margin-bottom: 0;">📋 העתק</button>
                 </div>
             </div>
         </div>
-        
-        <!-- Add Workout -->
-        <div class="section">
-            <h2>📝 הוסף אימון חדש</h2>
-            <textarea id="coach-message" placeholder="הדבק כאן את הודעת המאמן מ-WhatsApp..."></textarea>
-            <button class="btn btn-primary" onclick="analyzeWorkout()">🤖 ניתוח אימון</button>
+
+        <!-- כרטיסייה 2: הוספת אימון חדש -->
+        <div id="tab-add" class="app-page">
+            <div class="section">
+                <h2>📝 קליטת אימון חדש</h2>
+                <p style="font-size:13px; color:rgba(255,255,255,0.5); margin-bottom:14px;">הדבק את מבנה התרגילים מתוך הודעת ה-WhatsApp של המאמן שלך.</p>
+                <textarea id="coach-message" placeholder="הדבק כאן הודעת תרגילים... למשל: לחיצת חזה 10x4 (60)"></textarea>
+                <button class="btn btn-primary" onclick="analyzeWorkout()">🤖 ניתוח וקליטת אימון</button>
+            </div>
         </div>
-        
-        <!-- Changes Report -->
-        <div class="section">
-            <h2>📊 שינויים מהשבוע שעבר</h2>
-            <div id="changes-summary">
-                <div class="empty-state">
-                    <p>אין שינויים מתועדים עדיין</p>
+
+        <!-- כרטיסייה 3: אנליזת התקדמות פר תרגיל לאורך זמן -->
+        <div id="tab-progress" class="app-page">
+            <div class="section">
+                <h2>📊 מדדי התקדמות פר תרגיל</h2>
+                <p style="font-size:13px; color:rgba(255,255,255,0.5); margin-bottom:16px;">ניתוח אוטומטי של המשקלים והנפחים שביצעת בכל האימונים השמורים ב-Firebase:</p>
+                <div id="analytics-container">
+                    <div class="empty-state">
+                        <p>אין מידע היסטורי מספק להפקת גרפי התקדמות</p>
+                    </div>
                 </div>
             </div>
-            <div style="margin-top: 14px; display: flex; gap: 10px;">
-                <button class="btn btn-success" onclick="sendToCoach()" id="send-btn" style="display:none; flex: 2; margin-bottom: 0;">💬 שלח למאמן</button>
-                <button class="btn btn-secondary" onclick="copyChanges()" id="copy-btn" style="display:none; flex: 1; margin-bottom: 0;">📋 העתק</button>
+        </div>
+
+        <!-- כרטיסייה 4: הגדרות מערכת -->
+        <div id="tab-settings" class="app-page">
+            <div class="section">
+                <h2>⚙️ הגדרות תצורה</h2>
+                <p style="font-size: 13px; color: rgba(255,255,255,0.5); margin-bottom: 14px;">Firebase Realtime DB: 🟢 מחובר תקין</p>
+                <input type="password" id="api-key" placeholder="Claude API Key (אופציונלי)" style="margin-bottom: 12px;">
+                <button class="btn btn-secondary" onclick="saveAPIKey()" style="margin-bottom: 0;">שמור מפתח מנוע</button>
             </div>
         </div>
-        
-        <!-- Settings -->
-        <div class="section">
-            <h2>⚙️ הגדרות</h2>
-            <p style="font-size: 13px; color: rgba(255,255,255,0.5); margin-bottom: 12px;">Firebase: 🟢 מחובר בהצלחה</p>
-            <input type="password" id="api-key" placeholder="Claude API Key (אופציונלי)" style="margin-bottom: 12px;">
-            <button class="btn btn-secondary" onclick="saveAPIKey()" style="margin-bottom: 0;">שמור מפתח</button>
-        </div>
+
     </div>
     
     <!-- Import Review Modal -->
@@ -408,7 +452,7 @@
             </div>
             <div id="import-list"></div>
             <div style="margin-top: 20px;">
-                <button class="btn btn-primary" onclick="saveWorkout()">✅ שמור הכל</button>
+                <button class="btn btn-primary" onclick="saveWorkout()">✅ שמור הכל ל-DB</button>
                 <button class="btn btn-secondary" onclick="closeModal('import-modal')" style="margin-bottom: 0;">ביטול</button>
             </div>
         </div>
@@ -462,13 +506,35 @@
     </div>
 
     <script>
-        // שימוש בפונקציות הקיים שלך מהקוד המקורי
         const DB_URL = 'https://gymo-2093a-default-rtdb.firebaseio.com';
         let workouts = [];
         let currentWorkout = [];
         let editingIndex = null;
         
-        // פונקציית עזר החדשה לשינוי ערכים מהיר בסטפרים
+        // --- ניהול כרטיסיות ותפריט המבורגר ---
+        function toggleDrawer(open) {
+            document.getElementById('nav-drawer').classList.toggle('active', open);
+            document.getElementById('menu-overlay').classList.toggle('active', open);
+        }
+
+        function switchTab(tabId) {
+            // הסתרת כל הדפים
+            document.querySelectorAll('.app-page').forEach(page => page.classList.remove('active'));
+            // הסרת סימון אקטיבי מפריטי התפריט
+            document.querySelectorAll('.drawer-item').forEach(item => item.classList.remove('active'));
+            
+            // הפעלת הדף והפריט הנבחרים
+            document.getElementById(`tab-${tabId}`).classList.add('active');
+            document.getElementById(`btn-tab-${tabId}`).classList.add('active');
+            
+            toggleDrawer(false); // סגירת התפריט
+
+            // הפקת הגרפים מחדש אם נכנסים לכרטיסיית ההתקדמות
+            if (tabId === 'progress') {
+                renderAnalyticsCharts();
+            }
+        }
+
         function step(id, amount) {
             const input = document.getElementById(id);
             let val = parseFloat(input.value) || 0;
@@ -544,7 +610,7 @@
                 if (line.trim().length < 3) return;
                 if (line.includes('+')) {
                     const parts = line.split('+').map(p => p.trim());
-                    parts.forEach((part, partIdx) => {
+                    parts.forEach((part) => {
                         const ex = parseExercisePart(part);
                         if (ex) { ex.superset = true; workout.push(ex); }
                     });
@@ -584,15 +650,12 @@
             while (i < currentWorkout.length) {
                 const ex = currentWorkout[i];
                 if (ex.superset && i + 1 < currentWorkout.length && currentWorkout[i + 1].superset) {
-                    const ex1 = currentWorkout[i];
-                    const ex2 = currentWorkout[i + 1];
                     html += `
                         <div class="superset-container">
                             <span class="superset-badge">⚡ SUPER SET</span>
-                            ${renderReviewCard(ex1, i)}
-                            ${renderReviewCard(ex2, i+1)}
-                        </div>
-                    `;
+                            ${renderReviewCard(currentWorkout[i], i)}
+                            ${renderReviewCard(currentWorkout[i+1], i+1)}
+                        </div>`;
                     i += 2;
                 } else {
                     html += renderReviewCard(ex, i);
@@ -607,18 +670,9 @@
                 <div class="workout-card">
                     <h3>${ex.name}</h3>
                     <div class="details">
-                        <div class="detail-item">
-                            <div class="detail-label">סטים</div>
-                            <input type="number" value="${ex.sets}" onchange="currentWorkout[${index}].sets = parseInt(this.value)" inputmode="numeric" style="padding:4px; margin:0; text-align:center;">
-                        </div>
-                        <div class="detail-item">
-                            <div class="detail-label">חזרות</div>
-                            <input type="number" value="${ex.reps}" onchange="currentWorkout[${index}].reps = parseInt(this.value)" inputmode="numeric" style="padding:4px; margin:0; text-align:center;">
-                        </div>
-                        <div class="detail-item">
-                            <div class="detail-label">משקל</div>
-                            <input type="number" step="0.5" value="${ex.weight}" onchange="currentWorkout[${index}].weight = parseFloat(this.value)" inputmode="decimal" style="padding:4px; margin:0; text-align:center;">
-                        </div>
+                        <div class="detail-item"><div class="detail-label">סטים</div><input type="number" value="${ex.sets}" onchange="currentWorkout[${index}].sets = parseInt(this.value)" inputmode="numeric" style="padding:4px; margin:0; text-align:center;"></div>
+                        <div class="detail-item"><div class="detail-label">חזרות</div><input type="number" value="${ex.reps}" onchange="currentWorkout[${index}].reps = parseInt(this.value)" inputmode="numeric" style="padding:4px; margin:0; text-align:center;"></div>
+                        <div class="detail-item"><div class="detail-label">משקל</div><input type="number" step="0.5" value="${ex.weight}" onchange="currentWorkout[${index}].weight = parseFloat(this.value)" inputmode="decimal" style="padding:4px; margin:0; text-align:center;"></div>
                     </div>
                 </div>`;
         }
@@ -630,12 +684,13 @@
             document.getElementById('coach-message').value = '';
             renderWeekly();
             generateChanges();
+            switchTab('workout'); // מעבר אוטומטי לעמוד הראשי לצפייה באימון
             showToast('✅ האימון נשמר בהצלחה!');
         }
         
         function renderWeekly() {
             if (workouts.length === 0) {
-                document.getElementById('weekly-workout').innerHTML = `<div class="empty-state"><p>עדיין אין אימון בשבוע</p><p style="font-size: 12px;">העתק הודעת מאמן כדי להתחיל</p></div>`;
+                document.getElementById('weekly-workout').innerHTML = `<div class="empty-state"><p>עדיין אין אימון רשום בשבוע הנוכחי</p><p style="font-size: 12px;">פתח את התפריט להוספת אימון חדש</p></div>`;
                 return;
             }
             const latestWorkout = workouts[workouts.length - 1];
@@ -705,7 +760,7 @@
             const display = show ? 'block' : 'none';
             document.getElementById('send-btn').style.display = display;
             document.getElementById('copy-btn').style.display = display;
-            if(!show) document.getElementById('changes-summary').innerHTML = `<div class="empty-state"><p>אין שינויים מתועדים עדיין</p></div>`;
+            if(!show) document.getElementById('changes-summary').innerHTML = `<div class="empty-state"><p>אין שינויים מתועדים בשבוע זה</p></div>`;
         }
         
         function sendToCoach() {
@@ -715,19 +770,94 @@
         
         function copyChanges() {
             const report = generateChanges();
-            if (report) {
-                navigator.clipboard.writeText(report).then(() => showToast('📋 הדווח הועתק ללוח!'));
+            if (report) { navigator.clipboard.writeText(report).then(() => showToast('📋 הדווח הועתק!')); }
+        }
+
+        // --- 📊 מנוע הפקת גרפי אנליזה והתקדמות ---
+        function renderAnalyticsCharts() {
+            if (workouts.length === 0) {
+                document.getElementById('analytics-container').innerHTML = `<div class="empty-state"><p>אין מידע היסטורי מספק להפקת גרפים</p></div>`;
+                return;
             }
+
+            // מיפוי של כל התרגילים והמשקלים לאורך ההיסטוריה
+            let exerciseMap = {};
+
+            workouts.forEach(workout => {
+                const dateLabel = new Date(workout.date).toLocaleDateString('he-IL', {day: 'numeric', month: 'short'});
+                
+                workout.exercises.forEach(ex => {
+                    if (!exerciseMap[ex.name]) {
+                        exerciseMap[ex.name] = [];
+                    }
+                    
+                    // הוספת נקודת ההיסטוריה הראשונית של האימון
+                    exerciseMap[ex.name].push({
+                        date: dateLabel,
+                        weight: ex.weight,
+                        reps: ex.reps
+                    });
+
+                    // במידה ויש היסטוריית שינויים בתוך אותו אימון, נמשוך גם אותה
+                    if (ex.history && ex.history.length > 0) {
+                        ex.history.forEach(hist => {
+                            const histDate = new Date(hist.date).toLocaleDateString('he-IL', {day: 'numeric', month: 'short'});
+                            exerciseMap[ex.name].push({
+                                date: histDate,
+                                weight: hist.weight,
+                                reps: hist.reps
+                            });
+                        });
+                    }
+                });
+            });
+
+            let html = '';
+
+            // יצירת ויזואליזציה לכל תרגיל שנמצא
+            for (let exName in exerciseMap) {
+                let dataPoints = exerciseMap[exName];
+                
+                // הסרת כפילויות תאריכים/ערכים סמוכים לטובת בהירות הגרף
+                dataPoints = dataPoints.filter((v, i, a) => a.findIndex(t => (t.date === v.date && t.weight === v.weight)) === i);
+                
+                if (dataPoints.length === 0) continue;
+
+                // מציאת משקל מקסימלי לתרגיל זה לצורך חישוב אחוז רוחב הגרף
+                const maxWeight = Math.max(...dataPoints.map(d => d.weight), 1);
+
+                html += `
+                    <div class="analytics-card">
+                        <h4>${exName}</h4>
+                `;
+
+                dataPoints.forEach(pt => {
+                    // חישוב רוחב עמודה יחסי באחוזים
+                    const barWidth = Math.max((pt.weight / maxWeight) * 100, 8); 
+                    
+                    html += `
+                        <div class="chart-row">
+                            <div class="chart-date">${pt.date}</div>
+                            <div class="chart-bar-wrapper">
+                                <div class="chart-bar-fill" style="width: ${barWidth}%"></div>
+                            </div>
+                            <div class="chart-value">${pt.weight} ק״ג <span style="font-size:10px; color:rgba(255,255,255,0.4)">(${pt.reps}ח')</span></div>
+                        </div>
+                    `;
+                });
+
+                html += `</div>`;
+            }
+
+            document.getElementById('analytics-container').innerHTML = html || `<div class="empty-state"><p>אין מידע היסטורי מספק להפקת גרפים</p></div>`;
         }
         
         function openModal(id) { document.getElementById(id).classList.add('active'); }
-        // ניקוי בחירת האינדקס בעת סגירה
         function closeModal(id) { document.getElementById(id).classList.remove('active'); if(id==='edit-modal') editingIndex = null; }
         
         function showToast(msg) {
             const toast = document.createElement('div');
-            toast.className = 'toast';
-            toast.textContent = msg;
+            toast.className = 'toast'; toast.textContent = msg;
             document.body.appendChild(toast);
             setTimeout(() => toast.remove(), 2000);
         }
