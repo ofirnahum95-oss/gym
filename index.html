@@ -94,8 +94,6 @@
             display: flex;
             flex-direction: column;
             overflow: hidden;
-            width: 100vw;
-            height: 100vh;
             margin: 0;
             padding: 0;
         }
@@ -457,7 +455,7 @@
         /* Bottom Tab Navigation */
         .bottom-nav {
             position: fixed; 
-            bottom: -1px; 
+            bottom: 0; 
             left: 0; 
             right: 0;
             background: rgba(245, 247, 250, 0.95);
@@ -466,14 +464,12 @@
             -webkit-backdrop-filter: blur(20px);
             display: flex; 
             justify-content: space-around;
-            align-items: flex-end;
-            padding: 10px 10px 0;
+            align-items: center;
+            padding: 8px 10px calc(6px + env(safe-area-inset-bottom));
             z-index: 1000;
             box-shadow: 0 -4px 20px rgba(0,0,0,0.04);
             box-sizing: border-box;
-            height: auto;
-            min-height: 70px;
-            width: 100vw;
+            width: 100%;
             margin: 0;
         }
 
@@ -484,15 +480,13 @@
             display: flex; 
             flex-direction: column; 
             align-items: center;
-            gap: 3px; 
+            gap: 4px; 
             font-size: 11px; 
             font-weight: 700; 
             cursor: pointer; 
-            width: 60px;
-            padding: 6px 4px;
+            padding: 4px;
             transition: color 0.2s, transform 0.15s;
             -webkit-user-select: none;
-            min-height: 48px;
             justify-content: center;
             flex: 1;
         }
@@ -1296,7 +1290,6 @@
 
             if (field === 'reps') numVal = Math.max(1, Math.floor(numVal));
 
-            // QA FIX #2: מניעת כפילויות בהיסטוריה אם הערך לא השתנה באמת
             if ((field === 'weight' && targetExercise.weight === numVal) || 
                 (field === 'reps' && targetExercise.reps === numVal)) {
                 const inputField = document.getElementById(`inp-${field === 'weight' ? 'w' : 'r'}-${exerciseIndex}`);
@@ -1321,7 +1314,6 @@
             renderWeeklyWorkoutDashboard();
             rebuildChangesSummaryReport();
             
-            // QA FIX #5: העלמת שדה הקלט בסיום השמירה
             const inputField = document.getElementById(`inp-${field === 'weight' ? 'w' : 'r'}-${exerciseIndex}`);
             if (inputField) inputField.classList.remove('active');
         }
@@ -1661,7 +1653,6 @@
             });
         }
 
-        // QA FIX #1: עדכון שליפת האלמנט באנליזה באמצעות השם המנורמל במקום אינדקס
         function handleAnalyticsSelect(normalizedName) {
             const exerciseMap = getUniqueExercises();
             const displayName = exerciseMap.get(normalizedName);
@@ -1699,7 +1690,6 @@
                 return;
             }
             
-            // QA FIX #1: העברת הסטרינג המנורמל בצורה בטוחה ישירות ל-onclick
             suggestionBox.innerHTML = matches.map(m => `
                 <div 
                     style="padding: 12px 14px; border-bottom: 1px solid rgba(0,0,0,0.04); cursor: pointer; font-size: 14px; transition: background 0.15s;" 
@@ -1753,7 +1743,6 @@
                         
                         if (ex.history) {
                             ex.history.forEach(h => {
-                                // QA FIX #3: וידוא קיום משקל תקין למניעת גרפים עם ערכי NaN
                                 const currentWeight = parseFloat(h.weight) || 0;
                                 if (currentWeight > maxWeight) maxWeight = currentWeight;
                                 const hd = new Date(h.date);
@@ -2118,7 +2107,6 @@
                 if (data) displayNativeToast('📱 טוען מגיבוי מקומי...');
             }
             
-            // QA FIX #4: טיפול בבסיס נתונים ריק לחלוטין (null) כדי למנוע קריסת אתחול
             if (data) {
                 stateWorkouts = Array.isArray(data) ? data : Object.values(data);
                 stateWorkouts.sort((a, b) => new Date(a.date) - new Date(b.date));
