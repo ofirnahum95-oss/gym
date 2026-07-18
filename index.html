@@ -497,7 +497,7 @@
             showToast('✅ שמור בהצלחה!');
         }
         
-        // Render weekly workout
+        // Render weekly workout - only latest
         function renderWeekly() {
             if (Object.keys(exercises).length === 0) {
                 document.getElementById('weekly-workout').innerHTML = `
@@ -508,25 +508,28 @@
                 return;
             }
             
-            const html = Object.entries(exercises).map(([id, ex]) => `
+            const entries = Object.entries(exercises);
+            const [latestId, latestEx] = entries[entries.length - 1];
+            
+            const html = `
                 <div class="workout-card">
-                    <h3>${ex.name}</h3>
+                    <h3>${latestEx.name}</h3>
                     <div class="details">
                         <div class="detail-item">
                             <div class="detail-label">סטים</div>
-                            <div class="detail-value">${ex.sets}</div>
+                            <div class="detail-value">${latestEx.sets}</div>
                         </div>
                         <div class="detail-item">
                             <div class="detail-label">חזרות</div>
-                            <div class="detail-value">${ex.reps}</div>
+                            <div class="detail-value">${latestEx.reps}</div>
                         </div>
                         <div class="detail-item">
                             <div class="detail-label">משקל</div>
-                            <div class="detail-value">${ex.weight}ק״ג</div>
+                            <div class="detail-value">${latestEx.weight}ק״ג</div>
                         </div>
                     </div>
                 </div>
-            `).join('');
+            `;
             
             document.getElementById('weekly-workout').innerHTML = html;
         }
