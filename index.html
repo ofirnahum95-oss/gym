@@ -363,16 +363,27 @@
     <script>
         console.log('FitPro initialized');
         
-        const DB_URL = 'https://baby-88eb0-default-rtdb.firebaseio.com';
-        let exercises = {};
+        const DB_URL = 'https://gymo-2093a-default-rtdb.firebaseio.com';
+        let workouts = [];
         let currentWorkout = [];
         
         // Fetch from Firebase
         async function fetchData(path) {
             try {
-                const res = await fetch(`${DB_URL}${path}.json`);
-                if (!res.ok) return null;
-                return await res.json();
+                const url = `${DB_URL}${path}.json`;
+                console.log('Fetching from:', url);
+                
+                const res = await fetch(url);
+                console.log('Fetch response status:', res.status);
+                
+                if (!res.ok) {
+                    console.error('Fetch failed:', res.status);
+                    return null;
+                }
+                
+                const data = await res.json();
+                console.log('Fetched data:', data);
+                return data;
             } catch(e) {
                 console.error('Fetch error:', e);
                 return null;
@@ -382,28 +393,54 @@
         // Save to Firebase
         async function saveData(path, data) {
             try {
-                const res = await fetch(`${DB_URL}${path}.json`, {
+                console.log('Saving to', path, data);
+                const url = `${DB_URL}${path}.json`;
+                console.log('URL:', url);
+                
+                const res = await fetch(url, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(data)
                 });
-                if (res.ok) return await res.json();
+                
+                console.log('Response status:', res.status);
+                
+                if (res.ok) {
+                    const result = await res.json();
+                    console.log('Save success:', result);
+                    return result;
+                } else {
+                    console.error('Save failed:', res.status, res.statusText);
+                }
             } catch(e) {
                 console.error('Save error:', e);
+                showToast('❌ שגיאה בשמירה: ' + e.message);
             }
             return null;
         }
         
         // Parse Hebrew workout
         function parseWorkout(text) {
+            console.log('parseWorkout called with:', text);
+            
             const lines = text.split('\n').filter(l => l.trim());
+            console.log('Lines:', lines);
+            
             const workout = [];
             
             lines.forEach((line, idx) => {
-                if (!line.trim() || line.length < 3) return;
+                if (!line.trim() || line.length < 3) {
+                    console.log(`Skipping line ${idx}: too short`);
+                    return;
+                }
                 
                 const match = line.match(/(\d+)[×x](\d+)/);
-                if (!match) return;
+                console.log(`Line ${idx} match:`, match);
+                
+                if (!match) {
+                    console.log(`No match for line ${idx}: ${line}`);
+                    return;
+                }
                 
                 const [, reps, sets] = match;
                 const weightMatch = line.match(/\((\d+\.?\d*)\)?/);
@@ -413,6 +450,8 @@
                     .replace(/\d+[×x]\d+/g, '')
                     .replace(/\(\d+\.?\d*\)?/g, '')
                     .trim();
+                
+                console.log(`Extracted: name="${name}", sets=${sets}, reps=${reps}, weight=${weight}`);
                 
                 if (name.length > 2) {
                     workout.push({
@@ -424,18 +463,22 @@
                 }
             });
             
+            console.log('Final workout array:', workout);
             return workout;
         }
         
         // Analyze workout
         function analyzeWorkout() {
             const text = document.getElementById('coach-message').value.trim();
+            console.log('analyzeWorkout called with text:', text);
+            
             if (!text) {
                 showToast('⚠️ הדבק הודעה');
                 return;
             }
             
             currentWorkout = parseWorkout(text);
+            console.log('Parsed workout:', currentWorkout);
             
             if (currentWorkout.length === 0) {
                 showToast('❌ לא נמצאו תרגילים');
@@ -449,14 +492,8 @@
         // Render import review
         function renderImportReview() {
             const html = currentWorkout.map((ex, idx) => {
-                const existing = Object.values(exercises).find(e => 
-                    e.name.toLowerCase().includes(ex.name.toLowerCase()) ||
-                    ex.name.toLowerCase().includes(e.name.toLowerCase())
-                );
-                
                 return `<div class="workout-card">
                     <h3>${ex.name}</h3>
-                    ${existing ? `<span class="badge badge-existing">✅ קיים</span>` : `<span class="badge badge-new">🆕 חדש</span>`}
                     <div class="details">
                         <div class="detail-item">
                             <div class="detail-label">סטים</div>
@@ -479,27 +516,33 @@
         
         // Save workout
         async function saveWorkout() {
-            currentWorkout.forEach(ex => {
-                const id = 'ex-' + Date.now() + Math.random();
-                exercises[id] = {
-                    name: ex.name,
-                    sets: ex.sets,
-                    reps: ex.reps,
-                    weight: ex.weight,
-                    date: new Date().toISOString()
-                };
-            });
+            console.log('saveWorkout called');
+            console.log('currentWorkout:', currentWorkout);
             
-            await saveData('/exercises', exercises);
+            const newWorkout = {
+                id: 'workout-' + Date.now(),
+                date: new Date().toISOString(),
+                exercises: currentWorkout
+            };
+            
+            console.log('newWorkout object:', newWorkout);
+            
+            workouts.push(newWorkout);
+            console.log('workouts array after push:', workouts);
+            
+            const saved = await saveData('/workouts', workouts);
+            console.log('saveData returned:', saved);
+            
             closeModal('import-modal');
             document.getElementById('coach-message').value = '';
             renderWeekly();
+            generateChanges();
             showToast('✅ שמור בהצלחה!');
         }
         
         // Render weekly workout - only latest
         function renderWeekly() {
-            if (Object.keys(exercises).length === 0) {
+            if (workouts.length === 0) {
                 document.getElementById('weekly-workout').innerHTML = `
                     <div class="empty-state">
                         <p>עדיין אין אימון בשבוע</p>
@@ -508,59 +551,56 @@
                 return;
             }
             
-            const entries = Object.entries(exercises);
-            const [latestId, latestEx] = entries[entries.length - 1];
-            
-            const html = `
+            const latestWorkout = workouts[workouts.length - 1];
+            const html = latestWorkout.exercises.map(ex => `
                 <div class="workout-card">
-                    <h3>${latestEx.name}</h3>
+                    <h3>${ex.name}</h3>
                     <div class="details">
                         <div class="detail-item">
                             <div class="detail-label">סטים</div>
-                            <div class="detail-value">${latestEx.sets}</div>
+                            <div class="detail-value">${ex.sets}</div>
                         </div>
                         <div class="detail-item">
                             <div class="detail-label">חזרות</div>
-                            <div class="detail-value">${latestEx.reps}</div>
+                            <div class="detail-value">${ex.reps}</div>
                         </div>
                         <div class="detail-item">
                             <div class="detail-label">משקל</div>
-                            <div class="detail-value">${latestEx.weight}ק״ג</div>
+                            <div class="detail-value">${ex.weight}ק״ג</div>
                         </div>
                     </div>
                 </div>
-            `;
+            `).join('');
             
             document.getElementById('weekly-workout').innerHTML = html;
         }
         
         // Generate changes report
         function generateChanges() {
-            let report = 'היי 🙋‍♂️\n\nהנה השינויים מהשבוע:\n\n';
-            let hasChanges = false;
-            
-            Object.entries(exercises).forEach(([id, ex]) => {
-                if (ex.weight > 0) {
-                    report += `💪 ${ex.name}\n   משקל: ${ex.weight}ק״ג\n   חזרות: ${ex.reps}x${ex.sets}\n\n`;
-                    hasChanges = true;
-                }
-            });
-            
-            if (hasChanges) {
-                report += 'נמשיך ככה! 💪';
-                
-                document.getElementById('send-btn').style.display = 'block';
-                document.getElementById('copy-btn').style.display = 'block';
-                document.getElementById('changes-summary').innerHTML = `<div class="changes-list">${report.replace(/\n/g, '<br>')}</div>`;
-                
-                return report;
-            } else {
+            if (workouts.length === 0) {
                 document.getElementById('changes-summary').innerHTML = `
                     <div class="empty-state">
                         <p>אף שינויים עדיין</p>
                     </div>`;
                 return null;
             }
+            
+            const latestWorkout = workouts[workouts.length - 1];
+            let report = 'היי 🙋‍♂️\n\nהנה השינויים מהשבוע:\n\n';
+            
+            latestWorkout.exercises.forEach(ex => {
+                if (ex.weight > 0) {
+                    report += `💪 ${ex.name}\n   משקל: ${ex.weight}ק״ג\n   חזרות: ${ex.reps}x${ex.sets}\n\n`;
+                }
+            });
+            
+            report += 'נמשיך ככה! 💪';
+            
+            document.getElementById('send-btn').style.display = 'block';
+            document.getElementById('copy-btn').style.display = 'block';
+            document.getElementById('changes-summary').innerHTML = `<div class="changes-list">${report.replace(/\n/g, '<br>')}</div>`;
+            
+            return report;
         }
         
         // Send to coach
@@ -611,11 +651,17 @@
         
         // Init
         async function init() {
-            const data = await fetchData('/exercises');
+            console.log('Init started');
+            const data = await fetchData('/workouts');
+            console.log('fetchData returned:', data);
+            
             if (data) {
-                exercises = data;
+                workouts = Array.isArray(data) ? data : Object.values(data);
+                console.log('workouts loaded:', workouts);
                 renderWeekly();
                 generateChanges();
+            } else {
+                console.log('No data returned from Firebase');
             }
         }
         
