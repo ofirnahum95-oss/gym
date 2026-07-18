@@ -5,20 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="theme-color" content="#007AFF">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="FitPro">
     <title>FitPro - Workout Tracker</title>
-    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js"></script>
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            -webkit-touch-callout: none;
-            -webkit-user-select: none;
-            user-select: none;
         }
         input, textarea, button { -webkit-user-select: text; user-select: text; }
 
@@ -79,40 +71,14 @@
             flex: 1;
         }
 
-        .metric-label {
-            font-size: 12px;
-            color: rgba(255, 255, 255, 0.7);
-            margin-bottom: 6px;
-            font-weight: 600;
-        }
+        .metric-label { font-size: 12px; color: rgba(255, 255, 255, 0.7); margin-bottom: 6px; }
+        .metric-value { font-size: 28px; font-weight: 800; }
 
-        .metric-value {
-            font-size: 28px;
-            font-weight: 800;
-        }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 20px; }
 
-        .grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 12px;
-            margin-bottom: 20px;
-        }
-
-        .input-group {
-            margin-bottom: 12px;
-        }
-
-        .input-group label {
-            display: block;
-            font-size: 13px;
-            font-weight: 700;
-            margin-bottom: 6px;
-            color: #FFFFFF;
-        }
-
-        .input-group input,
-        .input-group textarea,
-        .input-group select {
+        .input-group { margin-bottom: 12px; }
+        .input-group label { display: block; font-size: 13px; font-weight: 700; margin-bottom: 6px; color: #FFFFFF; }
+        .input-group input, .input-group textarea, .input-group select {
             width: 100%;
             padding: 12px;
             background: rgba(255, 255, 255, 0.08);
@@ -120,14 +86,6 @@
             border-radius: 10px;
             color: #FFFFFF;
             font-size: 16px;
-        }
-
-        .input-group input:focus,
-        .input-group textarea:focus,
-        .input-group select:focus {
-            border-color: #007AFF;
-            outline: none;
-            background: rgba(255, 255, 255, 0.12);
         }
 
         .exercise-item {
@@ -141,16 +99,8 @@
             align-items: center;
         }
 
-        .exercise-info h3 {
-            font-size: 15px;
-            font-weight: 700;
-            margin-bottom: 4px;
-        }
-
-        .exercise-info p {
-            font-size: 13px;
-            color: rgba(255, 255, 255, 0.7);
-        }
+        .exercise-info h3 { font-size: 15px; font-weight: 700; margin-bottom: 4px; }
+        .exercise-info p { font-size: 13px; color: rgba(255, 255, 255, 0.7); }
 
         .badge {
             display: inline-block;
@@ -164,8 +114,6 @@
         .badge-back { background: rgba(59, 130, 246, 0.25); color: #a7d8ff; }
         .badge-legs { background: rgba(168, 85, 247, 0.25); color: #dbbcff; }
         .badge-shoulders { background: rgba(234, 179, 8, 0.25); color: #ffd966; }
-        .badge-arms { background: rgba(249, 115, 22, 0.25); color: #ffb88a; }
-        .badge-core { background: rgba(34, 197, 94, 0.25); color: #86efac; }
 
         .navbar {
             position: fixed;
@@ -191,9 +139,7 @@
             font-size: 11px;
         }
 
-        .nav-item.active {
-            color: #007AFF;
-        }
+        .nav-item.active { color: #007AFF; }
 
         .modal {
             display: none;
@@ -207,9 +153,7 @@
             align-items: flex-end;
         }
 
-        .modal.active {
-            display: flex;
-        }
+        .modal.active { display: flex; }
 
         .modal-content {
             background: #1A1A1A;
@@ -252,6 +196,11 @@
         .loading {
             text-align: center;
             padding: 40px 20px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
         }
 
         .spinner {
@@ -261,7 +210,7 @@
             width: 40px;
             height: 40px;
             animation: spin 0.8s linear infinite;
-            margin: 0 auto 16px;
+            margin-bottom: 16px;
         }
 
         @keyframes spin {
@@ -287,7 +236,7 @@
                 <div class="grid">
                     <div class="metric">
                         <div class="metric-label">This Week</div>
-                        <div class="metric-value" id="volume">0<span style="font-size: 14px;">kg</span></div>
+                        <div class="metric-value" id="volume">0</div>
                     </div>
                     <div class="metric">
                         <div class="metric-label">Workouts</div>
@@ -333,23 +282,14 @@
                         <div class="metric-value" id="analytics-consistency">0%</div>
                     </div>
                 </div>
-
-                <div class="card">
-                    <h3>💡 Insights</h3>
-                    <div id="insights" style="font-size: 14px; color: rgba(255, 255, 255, 0.7); line-height: 1.6;"></div>
-                </div>
             </div>
 
             <!-- SETTINGS -->
             <div id="settings" class="page">
                 <h1>⚙️ Settings</h1>
                 <div class="card">
-                    <h3>☁️ Firebase</h3>
-                    <p style="font-size: 13px; color: rgba(255, 255, 255, 0.7);">✅ Connected to Firestore<br>Your data syncs in real-time</p>
-                </div>
-                <div class="card">
-                    <h3>📥 Export</h3>
-                    <button class="btn btn-secondary" onclick="exportData()">💾 Download JSON</button>
+                    <h3>☁️ Firebase Realtime Database</h3>
+                    <p style="font-size: 13px; color: rgba(255, 255, 255, 0.7);">✅ Connected</p>
                 </div>
             </div>
         </div>
@@ -391,8 +331,6 @@
                     <option>Back</option>
                     <option>Legs</option>
                     <option>Shoulders</option>
-                    <option>Arms</option>
-                    <option>Core</option>
                 </select>
             </div>
             <div class="input-group">
@@ -424,11 +362,11 @@
             </div>
             <div class="input-group">
                 <label>Weight (kg)</label>
-                <input type="number" id="session-weight" placeholder="100">
+                <input type="number" id="session-weight">
             </div>
             <div class="input-group">
                 <label>Reps</label>
-                <input type="number" id="session-reps" placeholder="10">
+                <input type="number" id="session-reps">
             </div>
             <div class="input-group">
                 <label>Duration (min)</label>
@@ -436,7 +374,7 @@
             </div>
             <div class="input-group">
                 <label>Notes</label>
-                <textarea id="session-notes" placeholder="How did it go?"></textarea>
+                <textarea id="session-notes"></textarea>
             </div>
             <button class="btn btn-primary" onclick="saveWorkout()">Save</button>
             <button class="btn btn-secondary" onclick="closeModal('session-modal')">Cancel</button>
@@ -444,57 +382,80 @@
     </div>
 
     <script>
-        const firebaseConfig = {
-            apiKey: "AIzaSyCRyiWkSsI5RbFWi-7A_NsSnJW2OGBSJlU",
-            authDomain: "gymo-2093a.firebaseapp.com",
-            projectId: "gymo-2093a",
-            storageBucket: "gymo-2093a.firebasestorage.app",
-            messagingSenderId: "585256903236",
-            appId: "1:585256903236:web:2893e4904e299f53bbd211"
-        };
-
-        firebase.initializeApp(firebaseConfig);
-        const auth = firebase.auth();
-        const db = firebase.firestore();
-
-        let userId = null;
-        let exercises = [];
-        let sessions = [];
+        const DB_URL = 'https://baby-88eb0-default-rtdb.firebaseio.com';
+        
+        let exercises = {};
+        let sessions = {};
         let currentExerciseId = null;
+
+        async function fetchData(path) {
+            try {
+                const res = await fetch(`${DB_URL}${path}.json`);
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                return await res.json();
+            } catch (error) {
+                console.error(`Error fetching ${path}:`, error);
+                return null;
+            }
+        }
+
+        async function putData(path, data) {
+            try {
+                const res = await fetch(`${DB_URL}${path}.json`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                return await res.json();
+            } catch (error) {
+                console.error(`Error putting ${path}:`, error);
+                return null;
+            }
+        }
+
+        async function postData(path, data) {
+            try {
+                const res = await fetch(`${DB_URL}${path}.json`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                return await res.json();
+            } catch (error) {
+                console.error(`Error posting ${path}:`, error);
+                return null;
+            }
+        }
 
         async function init() {
             try {
-                const user = await auth.signInAnonymously();
-                userId = user.user.uid;
-                await loadData();
+                const exData = await fetchData('/exercises');
+                exercises = exData || {};
+
+                const sesData = await fetchData('/sessions');
+                sessions = sesData || {};
+
+                if (Object.keys(exercises).length === 0) {
+                    await initDemo();
+                }
+
+                renderAll();
                 showApp();
             } catch (error) {
-                alert('Error: ' + error.message);
+                console.error('Init error:', error);
             }
-        }
-
-        async function loadData() {
-            const exSnap = await db.collection('users').doc(userId).collection('exercises').get();
-            exercises = exSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-
-            const sesSnap = await db.collection('users').doc(userId).collection('sessions').get();
-            sessions = sesSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-
-            if (exercises.length === 0) await initDemo();
-            renderAll();
         }
 
         async function initDemo() {
-            const demos = [
-                { name: 'Bench Press', muscleGroup: 'Chest', sets: 4, minReps: 6, maxReps: 10, targetWeight: 100 },
-                { name: 'Squats', muscleGroup: 'Legs', sets: 4, minReps: 8, maxReps: 12, targetWeight: 140 },
-                { name: 'Deadlifts', muscleGroup: 'Back', sets: 3, minReps: 3, maxReps: 6, targetWeight: 180 }
-            ];
-
-            for (const ex of demos) {
-                const doc = await db.collection('users').doc(userId).collection('exercises').add(ex);
-                exercises.push({ id: doc.id, ...ex });
-            }
+            const demos = {
+                'ex1': { name: 'Bench Press', muscleGroup: 'Chest', sets: 4, minReps: 6, maxReps: 10, targetWeight: 100 },
+                'ex2': { name: 'Squats', muscleGroup: 'Legs', sets: 4, minReps: 8, maxReps: 12, targetWeight: 140 },
+                'ex3': { name: 'Deadlifts', muscleGroup: 'Back', sets: 3, minReps: 3, maxReps: 6, targetWeight: 180 }
+            };
+            await putData('/exercises', demos);
+            exercises = demos;
         }
 
         function showApp() {
@@ -530,6 +491,7 @@
             const name = document.getElementById('exercise-name').value;
             if (!name) return;
 
+            const id = 'ex-' + Date.now();
             const ex = {
                 name,
                 muscleGroup: document.getElementById('exercise-muscle').value,
@@ -539,8 +501,8 @@
                 targetWeight: parseInt(document.getElementById('exercise-weight').value)
             };
 
-            const doc = await db.collection('users').doc(userId).collection('exercises').add(ex);
-            exercises.push({ id: doc.id, ...ex });
+            exercises[id] = ex;
+            await putData('/exercises', exercises);
             closeModal('exercise-modal');
             renderAll();
             showToast('✅ Added!');
@@ -556,17 +518,18 @@
         async function saveWorkout() {
             if (!currentExerciseId) return;
 
+            const id = 'session-' + Date.now();
             const session = {
                 exerciseId: currentExerciseId,
                 weight: parseInt(document.getElementById('session-weight').value) || 0,
                 reps: parseInt(document.getElementById('session-reps').value) || 0,
                 duration: parseInt(document.getElementById('session-duration').value) || 60,
                 notes: document.getElementById('session-notes').value,
-                date: new Date()
+                date: new Date().toISOString()
             };
 
-            const doc = await db.collection('users').doc(userId).collection('sessions').add(session);
-            sessions.push({ id: doc.id, ...session });
+            sessions[id] = session;
+            await putData('/sessions', sessions);
             closeModal('session-modal');
             renderAll();
             showToast('✅ Saved!');
@@ -581,7 +544,7 @@
 
         function renderDashboard() {
             const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-            const week = sessions.filter(s => new Date(s.date.toDate ? s.date.toDate() : s.date) > weekAgo);
+            const week = Object.values(sessions).filter(s => new Date(s.date) > weekAgo);
 
             let volume = 0, duration = 0;
             week.forEach(s => {
@@ -593,7 +556,7 @@
             document.getElementById('workout-count').textContent = week.length;
             document.getElementById('avg-duration').textContent = week.length > 0 ? Math.round(duration / week.length) : 0;
 
-            const html = exercises.slice(0, 3).map(ex => `
+            const html = Object.entries(exercises).slice(0, 3).map(([id, ex]) => `
                 <div class="exercise-item">
                     <div class="exercise-info">
                         <h3>${ex.name}</h3>
@@ -606,7 +569,7 @@
         }
 
         function renderExercises() {
-            const html = exercises.map(ex => `
+            const html = Object.entries(exercises).map(([id, ex]) => `
                 <div class="exercise-item">
                     <div class="exercise-info">
                         <h3>${ex.name}</h3>
@@ -619,8 +582,8 @@
         }
 
         function renderPrograms() {
-            const html = exercises.map(ex => `
-                <button class="btn btn-secondary" onclick="startSession('${ex.id}')" style="margin-bottom: 8px;">
+            const html = Object.entries(exercises).map(([id, ex]) => `
+                <button class="btn btn-secondary" onclick="startSession('${id}')" style="margin-bottom: 8px;">
                     ${ex.name}
                 </button>
             `).join('');
@@ -629,32 +592,13 @@
 
         function renderAnalytics() {
             let totalVolume = 0;
-            sessions.forEach(s => {
+            Object.values(sessions).forEach(s => {
                 totalVolume += (s.weight * s.reps) || 0;
             });
 
             document.getElementById('analytics-volume').textContent = totalVolume.toLocaleString();
-            document.getElementById('analytics-workouts').textContent = sessions.length;
-            document.getElementById('analytics-consistency').textContent = sessions.length > 0 ? Math.round((sessions.length / 30) * 100) : 0;
-
-            const insights = [
-                '💪 Keep crushing it!',
-                `📊 Total workouts: ${sessions.length}`,
-                `🔥 Total volume: ${totalVolume.toLocaleString()}kg`
-            ];
-
-            document.getElementById('insights').innerHTML = insights.map(i => `<p>• ${i}</p>`).join('');
-        }
-
-        function exportData() {
-            const data = { exercises, sessions, date: new Date().toISOString() };
-            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `fitpro-${Date.now()}.json`;
-            a.click();
-            showToast('✅ Downloaded!');
+            document.getElementById('analytics-workouts').textContent = Object.keys(sessions).length;
+            document.getElementById('analytics-consistency').textContent = Object.keys(sessions).length > 0 ? Math.round((Object.keys(sessions).length / 30) * 100) : 0;
         }
 
         function showToast(msg) {
