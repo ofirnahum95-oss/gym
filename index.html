@@ -79,7 +79,6 @@
             margin: 0;
             padding: 0;
             width: 100%;
-            padding-bottom: calc(62px + max(8px, env(safe-area-inset-bottom)));
         }
 
         .content-area::-webkit-scrollbar {
@@ -100,6 +99,7 @@
             margin: 0 auto;
             padding: 20px 16px;
             width: 100%;
+            padding-bottom: calc(90px + max(8px, env(safe-area-inset-bottom)));
         }
         
         /* App Header */
@@ -438,14 +438,14 @@
             display: flex; 
             justify-content: space-around;
             align-items: flex-end;
-            padding: 8px 10px;
-            padding-bottom: max(8px, env(safe-area-inset-bottom));
+            padding: 10px 10px;
+            padding-bottom: env(safe-area-inset-bottom);
             z-index: 1000;
             box-shadow: 0 -4px 20px rgba(0,0,0,0.04);
             box-sizing: border-box;
             height: auto;
-            min-height: 54px;
-            width: 100%;
+            min-height: 70px;
+            width: 100vw;
             margin: 0;
         }
 
