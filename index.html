@@ -863,7 +863,8 @@
 
                     <div>
                         <button class="btn btn-secondary" onclick="exportDataAsJSON()" style="margin-bottom: 10px;">📥 ייצא נתונים</button>
-                        <button class="btn btn-secondary" onclick="clearAllData()" style="opacity: 0.6;">🗑️ מחק הכל</button>
+                        <button class="btn btn-secondary" onclick="clearLocalStorageOnly()" style="margin-bottom: 10px; opacity: 0.8;">🗑️ מחק Backup מקומי</button>
+                        <button class="btn btn-secondary" onclick="clearAllData()" style="opacity: 0.6;">☠️ מחק הכל (Cloud + Local)</button>
                     </div>
                 </div>
             </div>
@@ -1577,6 +1578,13 @@
             }
         }
 
+        function clearLocalStorageOnly() {
+            if (confirm('⚠️ זה ימחק רק את ה-backup המקומי. בטוח?')) {
+                localStorage.removeItem('fitpro-backup');
+                displayNativeToast('🗑️ Backup מקומי נמחק - refresh כדי לראות שינוי');
+            }
+        }
+
         function clearAllData() {
             if (confirm('⚠️ זה ימחק את כל הנתונים. בטוח?')) {
                 stateWorkouts = [];
@@ -1592,16 +1600,21 @@
         window.addEventListener('load', async () => {
             // Try cloud sync first
             let data = await syncFromCloud('/workouts');
+            let dataSource = 'Firebase Cloud ☁️';
             
             // Fallback to local backup
             if (!data) {
                 data = loadLocalBackup();
+                dataSource = 'Local Storage 📱';
                 if (data) displayNativeToast('📱 טוען מגיבוי מקומי...');
             }
             
             if (data) {
                 stateWorkouts = Array.isArray(data) ? data : Object.values(data);
                 stateWorkouts.sort((a, b) => new Date(a.date) - new Date(b.date));
+                console.log(`✅ Loaded ${stateWorkouts.length} workouts from: ${dataSource}`);
+            } else {
+                console.log('📭 No data found (Firebase empty & no local backup)');
             }
             
             renderWeeklyWorkoutDashboard();
