@@ -84,6 +84,69 @@
         .edit-toggle-btn.editing-active {
             background: var(--accent); color: #fff;
         }
+
+        /* Rest Timer Widget Style */
+        .timer-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 20px;
+            padding: 14px 16px;
+            margin-bottom: 16px;
+            box-shadow: var(--shadow);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            transition: background-color 0.3s ease;
+        }
+        .timer-card.timer-finished {
+            background-color: rgba(48, 209, 88, 0.3);
+            animation: pulseBg 1s infinite alternate;
+        }
+        @keyframes pulseBg { from { background-color: rgba(48, 209, 88, 0.15); } to { background-color: rgba(48, 209, 88, 0.4); } }
+
+        .timer-main-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .timer-display {
+            font-size: 28px;
+            font-weight: 800;
+            font-variant-numeric: tabular-nums;
+            color: var(--text-main);
+        }
+        .timer-controls {
+            display: flex;
+            gap: 8px;
+        }
+        .timer-btn {
+            background: rgba(0, 0, 0, 0.05);
+            border: none;
+            color: var(--text-main);
+            padding: 8px 14px;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .timer-btn:active { background: rgba(0, 0, 0, 0.1); }
+        .timer-btn.action-trigger { background: var(--accent); color: #fff; }
+
+        .timer-presets {
+            display: flex;
+            gap: 6px;
+        }
+        .preset-btn {
+            background: rgba(0, 0, 0, 0.03);
+            border: 1px solid rgba(0, 0, 0, 0.04);
+            color: var(--text-muted);
+            padding: 4px 10px;
+            border-radius: 8px;
+            font-size: 11px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+        .preset-btn:active { background: rgba(0, 0, 0, 0.08); color: var(--text-main); }
         
         /* Custom Workout Cards & Layout */
         .workout-card {
@@ -146,10 +209,18 @@
         .is-editing .ctrl-btn { display: flex; }
         .ctrl-btn:active { background: rgba(0, 0, 0, 0.1); }
         
-        .step-value { font-weight: 700; font-size: 14px; min-width: 45px; text-align: center; width: 100%; }
-        .is-editing .step-value { width: auto; }
+        .step-value { font-weight: 700; font-size: 14px; min-width: 45px; text-align: center; width: 100%; display: inline-block; }
+        .is-editing .step-value { width: auto; cursor: pointer; }
         .step-value.weight { color: var(--accent); }
         .step-value.reps { color: #d97706; }
+
+        .inline-edit-input {
+            width: 55px; padding: 4px; background: #fff; border: 1px solid var(--accent);
+            border-radius: 8px; color: var(--text-main); font-size: 14px; font-weight: 700;
+            text-align: center; margin: 0; display: none;
+        }
+        .is-editing .inline-edit-input.active { display: inline-block; }
+        .is-editing .inline-edit-input.active + .step-value { display: none; }
 
         /* Bottom Tab Navigation Bar */
         .bottom-nav {
@@ -250,6 +321,25 @@
                 <div class="view-title">📅 אימון נוכחי שבועי</div>
                 <button id="edit-mode-toggle" class="edit-toggle-btn" onclick="toggleEditMode()">✏️ ערוך משקלים</button>
             </div>
+            
+            <!-- NEW: Built-in Quick Rest Timer Component Widget -->
+            <div class="timer-card" id="timer-widget">
+                <div class="timer-main-row">
+                    <div style="font-size: 12px; color: var(--text-muted); font-weight: 700;">⏱️ טיימר מנוחה בין סטים</div>
+                    <div class="timer-display" id="timer-clock">01:30</div>
+                    <div class="timer-controls">
+                        <button class="timer-btn action-trigger" id="timer-toggle-btn" onclick="toggleTimer()">▶️</button>
+                        <button class="timer-btn" onclick="resetTimer()">🔄</button>
+                    </div>
+                </div>
+                <div class="timer-presets">
+                    <button class="preset-btn" onclick="setTimerPreset(60)">60 שנ׳</button>
+                    <button class="preset-btn" onclick="setTimerPreset(90)">90 שנ׳</button>
+                    <button class="preset-btn" onclick="setTimerPreset(120)">2 דק׳</button>
+                    <button class="preset-btn" onclick="setTimerPreset(180)">3 דק׳</button>
+                </div>
+            </div>
+
             <div id="weekly-workout-container"></div>
         </div>
 
@@ -350,15 +440,93 @@
         let temporaryStagedWorkout = [];
         let isEditingModeActive = false;
 
-        function switchTab(tabId, buttonElement) {
-            // אם אנחנו עוברים מסך, נבטל את מצב העריכה אוטומטית לבטיחות
-            if (isEditingModeActive) toggleEditMode();
+        // Timer State Variables
+        let timerInterval = null;
+        let timerDurationSeconds = 90; // Default preset 1:30
+        let timerTimeLeft = 90;
+        let isTimerRunning = false;
 
+        function switchTab(tabId, buttonElement) {
+            if (isEditingModeActive) toggleEditMode();
             document.querySelectorAll('.tab-view').forEach(view => view.classList.remove('active'));
             document.querySelectorAll('.nav-tab').forEach(btn => btn.classList.remove('active'));
-            
             document.getElementById(tabId).classList.add('active');
             buttonElement.classList.add('active');
+        }
+
+        // Timer Logic Functions
+        function updateTimerDisplay() {
+            const minutes = Math.floor(timerTimeLeft / 60);
+            const seconds = timerTimeLeft % 60;
+            document.getElementById('timer-clock').textContent = 
+                `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+        }
+
+        function setTimerPreset(seconds) {
+            clearInterval(timerInterval);
+            isTimerRunning = false;
+            timerDurationSeconds = seconds;
+            timerTimeLeft = seconds;
+            document.getElementById('timer-widget').classList.remove('timer-finished');
+            document.getElementById('timer-toggle-btn').textContent = '▶️';
+            updateTimerDisplay();
+        }
+
+        function toggleTimer() {
+            const btn = document.getElementById('timer-toggle-btn');
+            document.getElementById('timer-widget').classList.remove('timer-finished');
+            
+            if (isTimerRunning) {
+                clearInterval(timerInterval);
+                btn.textContent = '▶️';
+            } else {
+                btn.textContent = '⏸️';
+                timerInterval = setInterval(() => {
+                    if (timerTimeLeft > 0) {
+                        timerTimeLeft--;
+                        updateTimerDisplay();
+                    } else {
+                        clearInterval(timerInterval);
+                        isTimerRunning = false;
+                        btn.textContent = '▶️';
+                        document.getElementById('timer-widget').classList.add('timer-finished');
+                        triggerTimerAlertBeep();
+                    }
+                }, 1000);
+            }
+            isTimerRunning = !isTimerRunning;
+        }
+
+        function resetTimer() {
+            clearInterval(timerInterval);
+            isTimerRunning = false;
+            timerTimeLeft = timerDurationSeconds;
+            document.getElementById('timer-widget').classList.remove('timer-finished');
+            document.getElementById('timer-toggle-btn').textContent = '▶️';
+            updateTimerDisplay();
+        }
+
+        // Web Audio Context Synthesizer for Device Independence Alerts
+        function triggerTimerAlertBeep() {
+            try {
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const oscillator = audioCtx.createOscillator();
+                const gainNode = audioCtx.createGain();
+                
+                oscillator.type = 'sine';
+                oscillator.frequency.setValueAtTime(880, audioCtx.currentTime); // High pitched A note
+                gainNode.gain.setValueAtTime(0.15, audioCtx.currentTime);
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+                
+                oscillator.start();
+                // Three quick alert beeps
+                setTimeout(() => oscillator.stop(), 400);
+                displayNativeToast('💪 הזמן נגמר! חוזרים לסט הבא.');
+            } catch(e) {
+                displayNativeToast('💪 הזמן נגמר! חוזרים לסט הבא.');
+            }
         }
 
         function toggleEditMode() {
@@ -374,12 +542,41 @@
                 toggleBtn.textContent = '✏️ ערוך משקלים';
                 toggleBtn.classList.remove('editing-active');
                 container.classList.remove('is-editing');
+                document.querySelectorAll('.inline-edit-input').forEach(el => el.classList.remove('active'));
                 displayNativeToast('🔒 השינויים ננעלו ונשמרו');
             }
         }
 
         function toggleReviewSheet(show) {
             document.getElementById('review-sheet').classList.toggle('active', show);
+        }
+
+        function enableManualInput(elementId) {
+            if (!isEditingModeActive) return;
+            const inputField = document.getElementById(elementId);
+            inputField.classList.add('active');
+            inputField.focus();
+            inputField.select();
+        }
+
+        async function saveManualInputValue(exerciseIndex, field, value) {
+            const currentActiveWorkout = stateWorkouts[stateWorkouts.length - 1];
+            if (!currentActiveWorkout) return;
+
+            const targetExercise = currentActiveWorkout.exercises[exerciseIndex];
+            let numVal = parseFloat(value) || 0;
+            if(numVal < 0) numVal = 0;
+
+            const oldRecord = { date: new Date().toISOString(), sets: targetExercise.sets, reps: targetExercise.reps, weight: targetExercise.weight };
+            if (!targetExercise.history) targetExercise.history = [];
+            targetExercise.history.push(oldRecord);
+
+            if (field === 'weight') targetExercise.weight = numVal;
+            if (field === 'reps') targetExercise.reps = Math.max(1, Math.floor(numVal));
+
+            await syncToCloud('/workouts', stateWorkouts);
+            renderWeeklyWorkoutDashboard();
+            rebuildChangesSummaryReport();
         }
 
         async function modifyMetric(exerciseIndex, field, delta) {
@@ -395,7 +592,6 @@
             if (field === 'weight') {
                 targetExercise.weight = Math.max(0, targetExercise.weight + delta);
             } else {
-                if (field === 'sets') targetExercise.sets = Math.max(1, targetExercise.sets + delta);
                 if (field === 'reps') targetExercise.reps = Math.max(1, targetExercise.reps + delta);
             }
 
@@ -434,7 +630,6 @@
             }
             displayZone.innerHTML = htmlBuffer;
             
-            // שמירה על סטטוס המחלקות של מצב עריכה בעת רינדור מחדש
             if (isEditingModeActive) {
                 displayZone.classList.add('is-editing');
             } else {
@@ -449,14 +644,16 @@
                     <div class="card-selectors">
                         <div class="inline-stepper">
                             <span class="stepper-label">משקל</span>
-                            <button class="ctrl-btn" onclick="modifyMetric(${index}, 'weight', -2.5)">-</button>
-                            <span class="step-value weight">${ex.weight} <small>ק"ג</small></span>
-                            <button class="ctrl-btn" onclick="modifyMetric(${index}, 'weight', 2.5)">+</button>
+                            <button class="ctrl-btn" onclick="modifyMetric(${index}, 'weight', -0.5)">-</button>
+                            <input type="number" step="0.5" id="inp-w-${index}" class="inline-edit-input" value="${ex.weight}" inputmode="decimal" onblur="saveManualInputValue(${index}, 'weight', this.value)">
+                            <span class="step-value weight" onclick="enableManualInput('inp-w-${index}')">${ex.weight} <small>ק"ג</small></span>
+                            <button class="ctrl-btn" onclick="modifyMetric(${index}, 'weight', 0.5)">+</button>
                         </div>
                         <div class="inline-stepper">
                             <span class="stepper-label">חזרות × סטים</span>
                             <button class="ctrl-btn" onclick="modifyMetric(${index}, 'reps', -1)">-</button>
-                            <span class="step-value reps">${ex.reps}×${ex.sets}</span>
+                            <input type="number" id="inp-r-${index}" class="inline-edit-input" value="${ex.reps}" inputmode="numeric" onblur="saveManualInputValue(${index}, 'reps', this.value)">
+                            <span class="step-value reps" onclick="enableManualInput('inp-r-${index}')">${ex.reps}×${ex.sets}</span>
                             <button class="ctrl-btn" onclick="modifyMetric(${index}, 'reps', 1)">+</button>
                         </div>
                     </div>
@@ -465,9 +662,7 @@
 
         function importWhatsAppHistoryFile() {
             const fileInput = document.getElementById('whatsapp-file-input');
-            if (!fileInput.files || fileInput.files.length === 0) {
-                return displayNativeToast('⚠️ אנא בחר קובץ txt תחילה');
-            }
+            if (!fileInput.files || fileInput.files.length === 0) return displayNativeToast('⚠️ אנא בחר קובץ txt תחילה');
 
             const file = fileInput.files[0];
             const reader = new FileReader();
@@ -475,7 +670,6 @@
             reader.onload = async function(e) {
                 const text = e.target.result;
                 const lines = text.split('\n');
-                
                 let parsedWorkoutsCount = 0;
                 let currentImportDate = null;
                 let currentImportExercises = [];
@@ -518,11 +712,7 @@
                 }
 
                 if (currentImportExercises.length > 0 && currentImportDate) {
-                    stateWorkouts.push({
-                        id: 'wk-hist-' + Date.parse(currentImportDate),
-                        date: currentImportDate.toISOString(),
-                        exercises: currentImportExercises
-                    });
+                    stateWorkouts.push({ id: 'wk-hist-' + Date.parse(currentImportDate), date: currentImportDate.toISOString(), exercises: currentImportExercises });
                     parsedWorkoutsCount++;
                 }
 
@@ -537,7 +727,6 @@
                     displayNativeToast('❌ לא אותרו מבני אימונים תקינים בקובץ');
                 }
             };
-
             reader.readAsText(file);
         }
 
@@ -561,7 +750,6 @@
             });
 
             if (temporaryStagedWorkout.length === 0) return displayNativeToast('❌ לא נמצאו תרגילים מתאימים לפירסור');
-            
             renderReviewSheetUI();
             toggleReviewSheet(true);
         }
@@ -606,10 +794,8 @@
         function populateAnalyticsDropdown() {
             const picker = document.getElementById('analytics-picker');
             picker.innerHTML = '<option value="">-- בחר תרגיל לניתוח --</option>';
-            
             let uniqueSet = new Set();
             stateWorkouts.forEach(w => w.exercises?.forEach(ex => uniqueSet.add(ex.name.trim())));
-            
             if(uniqueSet.size === 0) return;
             uniqueSet.forEach(name => {
                 let opt = document.createElement('option');
@@ -622,7 +808,6 @@
             const panel = document.getElementById('analytics-panel');
             const empty = document.getElementById('analytics-empty');
             if (!name) { panel.style.display = 'none'; empty.style.display = 'block'; return; }
-            
             panel.style.display = 'block'; empty.style.display = 'none';
 
             let dataPoints = [];
@@ -636,7 +821,6 @@
                         totalSetsCount += ex.sets;
                         if(ex.weight > maxWeight) maxWeight = ex.weight;
                         const d = new Date(w.date);
-                        
                         dataPoints.push({ weight: ex.weight, label: d.toLocaleDateString('he-IL', {day:'numeric', month:'short'}), timestamp: d.getTime() });
                         
                         logHtml += `
@@ -657,11 +841,9 @@
             });
 
             dataPoints.sort((a,b) => a.timestamp - b.timestamp);
-
             document.getElementById('meta-pr').textContent = maxWeight + ' ק"ג';
             document.getElementById('meta-count').textContent = totalSetsCount;
             document.getElementById('analytics-logs').innerHTML = logHtml || '<div class="empty-state">אין היסטוריה רשומה</div>';
-            
             buildSVGVectorGraph(dataPoints);
         }
 
@@ -675,7 +857,6 @@
             const stepWidth = Math.max(60, 300 / (points.length - 1));
             const width = Math.max(360, points.length * stepWidth);
             const height = 150, padding = 35;
-            
             const maxVal = Math.max(...points.map(p => p.weight)) * 1.1 || 10;
             const minVal = Math.max(0, Math.min(...points.map(p => p.weight)) * 0.8);
             
@@ -704,7 +885,6 @@
 
             svgStr += `</svg>`;
             container.innerHTML = svgStr;
-            
             setTimeout(() => { container.scrollLeft = width; }, 50);
         }
 
@@ -786,6 +966,7 @@
             rebuildChangesSummaryReport();
             const localK = localStorage.getItem('claude-key');
             if(localK) document.getElementById('local-key-store').value = localK;
+            updateTimerDisplay(); // Render baseline display
         });
     </script>
 </body>
