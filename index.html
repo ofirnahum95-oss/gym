@@ -1065,7 +1065,6 @@ Return ONLY the JSON array, nothing else.`
                     const num2 = parseInt(repsMatch[2]);
                     
                     // Determine which is sets and which is reps
-                    // Usually sets are 2-4, reps are 6-20
                     if (num1 <= 4 && num2 >= 6) {
                         sets = num1;
                         minReps = maxReps = num2;
@@ -1073,7 +1072,6 @@ Return ONLY the JSON array, nothing else.`
                         sets = num2;
                         minReps = maxReps = num1;
                     } else {
-                        // Default guess
                         sets = num1 > num2 ? num1 : num2;
                         minReps = maxReps = num1 < num2 ? num1 : num2;
                     }
@@ -1095,8 +1093,7 @@ Return ONLY the JSON array, nothing else.`
                     .split(',')[0]
                     .trim();
 
-                // Translate Hebrew to English
-                name = translateHebrewExercise(name);
+                // Keep original Hebrew name - NO TRANSLATION!
 
                 // Extract notes from parentheses
                 const notesMatch = cleanLine.match(/\(([^)]+)\)/g);
@@ -1108,7 +1105,7 @@ Return ONLY the JSON array, nothing else.`
 
                 if (name && name.length > 2) {
                     exercises.push({
-                        name,
+                        name,  // שמור בעברית בדיוק כפי שהוא
                         sets,
                         minReps,
                         maxReps,
@@ -1120,68 +1117,6 @@ Return ONLY the JSON array, nothing else.`
             });
 
             return exercises;
-        }
-
-        // ============================================================================
-        // HEBREW TO ENGLISH TRANSLATION
-        // ============================================================================
-
-        function translateHebrewExercise(hebrewName) {
-            const hebrewMap = {
-                // Main exercises
-                'חתירה עם מוט חופשי': 'Barbell Row',
-                'חתירה': 'Row',
-                'לחיצה': 'Press',
-                'לחיצת חזה': 'Chest Press',
-                'פשיטה': 'Extension',
-                'פשיטת כתף': 'Shoulder Extension',
-                'כפיפה': 'Curl',
-                'כפיפת מרפקים': 'Bicep Curl',
-                'הרמה': 'Raise',
-                'הרמות רגליים': 'Leg Raise',
-                'קראנצ': 'Crunch',
-                'היפטראסט': 'Hip Thrust',
-                'סקווט': 'Squat',
-                'ספליט סקווט': 'Split Squat',
-                'בולגריאן': 'Bulgarian',
-                'פרפר': 'Fly',
-                'פרפר הפוך': 'Reverse Fly',
-                'פולי': 'Cable',
-                'מוט': 'Barbell',
-                'משקולות': 'Dumbbell',
-                
-                // Positions
-                'בעמידה': 'Standing',
-                'בשכיבה': 'Lying',
-                'בישיבה': 'Sitting',
-                'בשיפוע חיובי': 'Incline',
-                'בשיפוע': 'Decline',
-                
-                // Equipment
-                'סמית משין': 'Smith Machine',
-                'משקולות חופשיות': 'Dumbbell',
-                'מוט חופשי': 'Barbell',
-                'פולי עליון': 'Upper Cable',
-                'פולי תחתון': 'Lower Cable',
-                'פטישים': 'Hammer',
-            };
-
-            let english = hebrewName;
-            
-            // Try exact matches first
-            for (const [hebrew, eng] of Object.entries(hebrewMap)) {
-                if (english.toLowerCase().includes(hebrew.toLowerCase())) {
-                    english = english.toLowerCase().replace(hebrew.toLowerCase(), eng);
-                }
-            }
-
-            // Capitalize first letter
-            english = english.replace(/^\w/, c => c.toUpperCase());
-            
-            // Clean up extra spaces
-            english = english.replace(/\s+/g, ' ').trim();
-
-            return english || hebrewName;
         }
 
         function showImportReview() {
@@ -1229,13 +1164,47 @@ Return ONLY the JSON array, nothing else.`
         }
 
         function findExistingExercise(name) {
+            if (!name) return null;
+
             const lowerName = name.toLowerCase().trim();
+            
+            // Exact match first
             for (const [id, ex] of Object.entries(exercises)) {
-                if (ex.name.toLowerCase().includes(lowerName) || lowerName.includes(ex.name.toLowerCase())) {
+                if (ex.name.toLowerCase().trim() === lowerName) {
                     return ex;
                 }
             }
+
+            // Smart Hebrew matching - find key words
+            const keyWords = extractKeyWords(name);
+            
+            for (const [id, ex] of Object.entries(exercises)) {
+                const exKeyWords = extractKeyWords(ex.name);
+                
+                // If they share key words, it's likely the same exercise
+                const commonKeyWords = keyWords.filter(w => exKeyWords.includes(w));
+                if (commonKeyWords.length > 0) {
+                    // At least one key word in common
+                    return ex;
+                }
+            }
+
             return null;
+        }
+
+        function extractKeyWords(hebrewName) {
+            if (!hebrewName) return [];
+
+            // Key words for matching exercises in Hebrew
+            const keywords = [
+                'חתירה', 'לחיצה', 'פשיטה', 'כפיפה', 'הרמה', 'קראנצ', 'היפטראסט', 
+                'סקווט', 'ספליט', 'פרפר', 'מוט', 'משקולות', 'פולי', 'סמית',
+                'חזה', 'גב', 'כתף', 'רגל', 'זרוע', 'מרפק', 'כתפיים',
+                'בעמידה', 'בשכיבה', 'בישיבה', 'בשיפוע', 'טיפול'
+            ];
+
+            const words = hebrewName.toLowerCase().split(/[\s,]+/);
+            return words.filter(w => keywords.some(kw => w.includes(kw) || kw.includes(w)));
         }
 
         function saveImportedExercises() {
