@@ -41,6 +41,8 @@
             overflow: hidden;
             -webkit-user-select: none;
             user-select: none;
+            margin: 0;
+            padding: 0;
         }
 
         body {
@@ -63,6 +65,10 @@
             display: flex;
             flex-direction: column;
             overflow: hidden;
+            width: 100vw;
+            height: 100vh;
+            margin: 0;
+            padding: 0;
         }
 
         .content-area {
@@ -70,6 +76,9 @@
             overflow-y: auto;
             -webkit-overflow-scrolling: touch;
             overflow-scrolling: auto;
+            margin: 0;
+            padding: 0;
+            width: 100%;
         }
 
         .content-area::-webkit-scrollbar {
@@ -90,7 +99,7 @@
             margin: 0 auto;
             padding: 20px 16px;
             width: 100%;
-            padding-bottom: calc(30px + var(--safe-bottom));
+            padding-bottom: calc(90px + max(8px, env(safe-area-inset-bottom)));
         }
         
         /* App Header */
@@ -99,7 +108,7 @@
             justify-content: space-between;
             align-items: center;
             margin-bottom: 24px;
-            padding: 4px 0;
+            padding: max(12px, env(safe-area-inset-top)) 0 4px 0;
         }
         
         header h1 {
@@ -428,11 +437,13 @@
             display: flex; 
             justify-content: space-around;
             align-items: flex-end;
-            padding: 8px 10px;
-            padding-bottom: calc(8px + max(8px, env(safe-area-inset-bottom)));
+            padding: 10px 10px 0 10px;
+            padding-bottom: max(8px, env(safe-area-inset-bottom));
             z-index: 1000;
             box-shadow: 0 -4px 20px rgba(0,0,0,0.04);
-            height: calc(70px + max(8px, env(safe-area-inset-bottom)));
+            height: auto;
+            min-height: 70px;
+            width: 100vw;
         }
 
         .nav-tab {
@@ -442,16 +453,17 @@
             display: flex; 
             flex-direction: column; 
             align-items: center;
-            gap: 4px; 
+            gap: 3px; 
             font-size: 11px; 
             font-weight: 700; 
             cursor: pointer; 
             width: 60px;
-            padding: 6px 0;
+            padding: 8px 4px;
             transition: color 0.2s, transform 0.15s;
             -webkit-user-select: none;
-            min-height: 44px;
+            min-height: 50px;
             justify-content: center;
+            flex: 1;
         }
 
         .nav-tab:active {
