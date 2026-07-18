@@ -99,7 +99,7 @@
             margin: 0 auto;
             padding: 20px 16px;
             width: 100%;
-            padding-bottom: calc(90px + max(8px, env(safe-area-inset-bottom)));
+            padding-bottom: calc(80px + max(8px, env(safe-area-inset-bottom)));
         }
         
         /* App Header */
@@ -256,6 +256,7 @@
             gap: 8px;
             align-items: center;
             flex-wrap: wrap;
+            justify-content: center;
         }
         .preset-indicator {
             background: rgba(0, 0, 0, 0.03);
@@ -437,13 +438,15 @@
             display: flex; 
             justify-content: space-around;
             align-items: flex-end;
-            padding: 10px 10px 0 10px;
+            padding: 12px 10px;
             padding-bottom: max(8px, env(safe-area-inset-bottom));
             z-index: 1000;
             box-shadow: 0 -4px 20px rgba(0,0,0,0.04);
+            box-sizing: border-box;
             height: auto;
-            min-height: 70px;
-            width: 100vw;
+            min-height: 60px;
+            width: 100%;
+            margin: 0;
         }
 
         .nav-tab {
@@ -782,12 +785,6 @@
                                 <button class="timer-btn action-trigger" id="stopwatch-toggle-btn" onclick="toggleStopwatch()">▶️</button>
                                 <button class="timer-btn" onclick="resetStopwatch()">🔄</button>
                             </div>
-                        </div>
-                        <div class="timer-presets">
-                            <span style="font-size: 11px; color: var(--text-muted); font-weight: 700;">יעדי מנוחה:</span>
-                            <div class="preset-indicator">60 שנ׳</div>
-                            <div class="preset-indicator">90 שנ׳</div>
-                            <div class="preset-indicator">2 דק׳</div>
                         </div>
                     </div>
 
