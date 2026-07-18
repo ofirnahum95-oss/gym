@@ -389,6 +389,21 @@
                         <div class="metric-value" id="analytics-consistency">0%</div>
                     </div>
                 </div>
+
+                <div class="card" style="margin-top: 20px;">
+                    <h3>📋 דוח שבועי</h3>
+                    <p style="font-size: 13px; color: rgba(255, 255, 255, 0.7); margin-bottom: 12px;">
+                        יצור דוח עם התרגילים שהשתנו השבוע וזלח אל המאמן ב-WhatsApp
+                    </p>
+                    <button class="btn btn-primary" onclick="generateWeeklyReport()">📊 צור דוח שבועי</button>
+                    <button class="btn btn-secondary" onclick="copyReportToClipboard()" style="margin-top: 6px;" id="copy-btn" style="display: none;">
+                        📋 העתק דוח
+                    </button>
+                    <button class="btn btn-secondary" onclick="sendToWhatsApp()" style="margin-top: 6px;" id="whatsapp-btn" style="display: none;">
+                        💬 שלח ל-WhatsApp
+                    </button>
+                    <div id="report-preview" style="margin-top: 12px; padding: 12px; background: rgba(255, 255, 255, 0.04); border-radius: 8px; display: none; font-size: 13px; color: rgba(255, 255, 255, 0.8); white-space: pre-wrap; max-height: 300px; overflow-y: auto;"></div>
+                </div>
             </div>
 
             <!-- SETTINGS -->
@@ -774,6 +789,118 @@
             document.getElementById('analytics-volume').textContent = totalVolume > 0 ? totalVolume.toLocaleString() : '0';
             document.getElementById('analytics-workouts').textContent = workoutCount;
             document.getElementById('analytics-consistency').textContent = consistency + '%';
+        }
+
+        // ============================================================================
+        // WHATSAPP WEEKLY REPORT
+        // ============================================================================
+
+        let lastReportData = null;
+
+        function generateWeeklyReport() {
+            const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+            const weekSessions = Object.entries(sessions).filter(([id, s]) => new Date(s.date) > weekAgo);
+
+            if (weekSessions.length === 0) {
+                showToast('⚠️ אין אימונים בשבוע האחרון');
+                return;
+            }
+
+            // Track changes per exercise
+            const changes = {};
+            weekSessions.forEach(([id, session]) => {
+                const ex = exercises[session.exerciseId];
+                if (!ex) return;
+
+                if (!changes[session.exerciseId]) {
+                    changes[session.exerciseId] = {
+                        name: ex.name,
+                        weights: [],
+                        reps: [],
+                        dates: []
+                    };
+                }
+                changes[session.exerciseId].weights.push(session.weight || ex.targetWeight);
+                changes[session.exerciseId].reps.push(session.reps);
+                changes[session.exerciseId].dates.push(new Date(session.date));
+            });
+
+            // Build report
+            let report = 'היי 🙋‍♂️\n\nמצרף עדכונים מהשבוע האחרון:\n\n';
+            let changedCount = 0;
+
+            Object.entries(changes).forEach(([exId, data]) => {
+                const prevWeight = data.weights[0];
+                const lastWeight = data.weights[data.weights.length - 1];
+                const prevReps = data.reps[0];
+                const lastReps = data.reps[data.reps.length - 1];
+
+                const weightChanged = prevWeight !== lastWeight;
+                const repsChanged = prevReps !== lastReps;
+
+                if (weightChanged || repsChanged) {
+                    changedCount++;
+                    report += `💪 ${data.name}\n`;
+                    
+                    if (weightChanged) {
+                        report += `   משקל: ${prevWeight}kg → ${lastWeight}kg ⬆️\n`;
+                    }
+                    if (repsChanged) {
+                        report += `   חזרות: ${prevReps} → ${lastReps} ⬆️\n`;
+                    }
+                    report += '\n';
+                }
+            });
+
+            if (changedCount === 0) {
+                report = 'היי 🙋‍♂️\n\nנעשיתי אימונים בשבוע אבל עדיין לא יש שינויים במשקלים או חזרות. נמשיך לעבוד! 💪';
+            } else {
+                report += `\nסה״כ שינויים: ${changedCount} תרגילים ✅\nנמשיך ככה! 💪`;
+            }
+
+            lastReportData = report;
+
+            // Show preview
+            document.getElementById('report-preview').textContent = report;
+            document.getElementById('report-preview').style.display = 'block';
+            document.getElementById('copy-btn').style.display = 'block';
+            document.getElementById('whatsapp-btn').style.display = 'block';
+
+            showToast('✅ דוח נוצר בהצלחה!');
+        }
+
+        function copyReportToClipboard() {
+            if (!lastReportData) return;
+
+            navigator.clipboard.writeText(lastReportData).then(() => {
+                showToast('✅ דוח הועתק ללוח');
+            }).catch(() => {
+                // Fallback
+                const textarea = document.createElement('textarea');
+                textarea.value = lastReportData;
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textarea);
+                showToast('✅ דוח הועתק ללוח');
+            });
+        }
+
+        function sendToWhatsApp() {
+            if (!lastReportData) return;
+
+            // Create WhatsApp Deep Link
+            const encodedMessage = encodeURIComponent(lastReportData);
+            const whatsappUrl = `https://wa.me/?text=${encodedMessage}`;
+
+            // Try to open WhatsApp
+            window.location.href = whatsappUrl;
+
+            // Fallback to copy
+            setTimeout(() => {
+                copyReportToClipboard();
+                showToast('💬 WhatsApp נפתחה');
+            }, 500);
         }
 
         function showToast(msg) {
