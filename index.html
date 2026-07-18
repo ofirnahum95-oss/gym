@@ -251,6 +251,65 @@
         @keyframes spin {
             to { transform: rotate(360deg); }
         }
+
+        .import-exercise-item {
+            background: rgba(0, 122, 255, 0.08);
+            border: 1px solid rgba(0, 122, 255, 0.2);
+            border-radius: 12px;
+            padding: 12px;
+            margin-bottom: 10px;
+        }
+
+        .import-field {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        .import-field label {
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.6);
+            font-weight: 600;
+            min-width: 70px;
+            text-transform: uppercase;
+        }
+
+        .import-field input {
+            flex: 1;
+            padding: 6px 8px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(0, 122, 255, 0.2);
+            border-radius: 6px;
+            color: #FFFFFF;
+            font-size: 13px;
+        }
+
+        .import-status {
+            font-size: 11px;
+            padding: 6px 10px;
+            border-radius: 6px;
+            font-weight: 600;
+            display: inline-block;
+        }
+
+        .import-status-new {
+            background: rgba(34, 197, 94, 0.2);
+            color: #86efac;
+        }
+
+        .import-status-existing {
+            background: rgba(59, 130, 246, 0.2);
+            color: #a7d8ff;
+        }
+
+        a {
+            color: #007AFF;
+            text-decoration: none;
+        }
+
+        a:visited {
+            color: #0051D5;
+        }
     </style>
 </head>
 <body>
@@ -300,6 +359,19 @@
                 </button>
             </div>
 
+            <!-- IMPORT -->
+            <div id="import" class="page">
+                <h1>📝 Import Workout</h1>
+                <p style="color: rgba(255, 255, 255, 0.7); margin: 0 0 12px 0; font-size: 14px;">Copy your coach's WhatsApp message and paste below</p>
+                
+                <div class="input-group">
+                    <textarea id="import-text" placeholder="Paste workout here... (Hebrew, English, or mixed)&#10;&#10;Example:&#10;- בעמידה בהטיית גו, חתירה עם מוט 12×3 (12.5)&#10;- Bench Press 4x8-10 @ 100kg" style="height: 180px; resize: vertical;"></textarea>
+                </div>
+
+                <button class="btn btn-primary" onclick="analyzeWorkout()">🤖 Analyze with AI</button>
+                <button class="btn btn-secondary" onclick="document.getElementById('import-text').value = ''">Clear</button>
+            </div>
+
             <!-- ANALYTICS -->
             <div id="analytics" class="page">
                 <h1>📈 Analytics</h1>
@@ -325,6 +397,34 @@
                 <div class="card">
                     <h3>☁️ Firebase Realtime Database</h3>
                     <p style="font-size: 13px; color: rgba(255, 255, 255, 0.7);">✅ Connected</p>
+                    <p style="font-size: 12px; color: rgba(255, 255, 255, 0.5); margin-top: 6px;">Data syncs in real-time</p>
+                </div>
+
+                <div class="card" style="margin-top: 12px;">
+                    <h3>🤖 Claude AI (Workout Import)</h3>
+                    <p style="font-size: 13px; color: rgba(255, 255, 255, 0.7); margin-bottom: 12px;">
+                        Needed to analyze your coach's messages (Hebrew + English support)
+                    </p>
+                    <div class="input-group">
+                        <label>Anthropic API Key</label>
+                        <input type="password" id="api-key-input" placeholder="sk-... (from console.anthropic.com)">
+                    </div>
+                    <button class="btn btn-primary" onclick="saveAPIKey()">Save API Key</button>
+                    <p style="font-size: 12px; color: rgba(255, 255, 255, 0.5); margin-top: 8px;">
+                        🔗 <a href="https://console.anthropic.com" target="_blank">Get your free API key</a>
+                    </p>
+                </div>
+
+                <div class="card" style="margin-top: 12px;">
+                    <h3>📋 How Workout Import Works</h3>
+                    <ol style="font-size: 12px; color: rgba(255, 255, 255, 0.7); margin: 8px 0; padding-left: 18px;">
+                        <li>Copy your coach's WhatsApp message</li>
+                        <li>Go to <strong>📝 Import</strong></li>
+                        <li>Paste the message</li>
+                        <li>Click <strong>🤖 Analyze</strong></li>
+                        <li>Review and edit exercise details</li>
+                        <li>Click <strong>💾 Save All</strong></li>
+                    </ol>
                 </div>
             </div>
         </div>
@@ -334,6 +434,7 @@
     <nav class="navbar" id="navbar" style="display: none;">
         <button class="nav-item active" onclick="switchPage('dashboard')">📊 Dashboard</button>
         <button class="nav-item" onclick="switchPage('exercises')">💪 Exercises</button>
+        <button class="nav-item" onclick="switchPage('import')">📝 Import</button>
         <button class="nav-item" onclick="switchPage('analytics')">📈 Analytics</button>
         <button class="nav-item" onclick="switchPage('settings')">⚙️ Settings</button>
     </nav>
@@ -413,6 +514,25 @@
             </div>
             <button class="btn btn-primary" onclick="saveWorkout()">Save</button>
             <button class="btn btn-secondary" onclick="closeModal('session-modal')">Cancel</button>
+        </div>
+    </div>
+
+    <div class="modal" id="import-review-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Review Workout Plan</h3>
+                <button class="modal-close" onclick="closeModal('import-review-modal')">✕</button>
+            </div>
+            <div id="import-review-list" style="max-height: 500px; overflow-y: auto;"></div>
+            <button class="btn btn-primary" onclick="saveImportedExercises()" style="margin-top: 12px;">💾 Save All</button>
+            <button class="btn btn-secondary" onclick="closeModal('import-review-modal')">Cancel</button>
+        </div>
+    </div>
+
+    <div class="modal" id="import-loading-modal">
+        <div class="modal-content" style="text-align: center; padding: 40px 20px;">
+            <div class="spinner" style="margin: 0 auto 20px;"></div>
+            <p>Analyzing workout plan with AI...</p>
         </div>
     </div>
 
@@ -591,35 +711,51 @@
             document.getElementById('workout-count').textContent = week.length;
             document.getElementById('avg-duration').textContent = week.length > 0 ? Math.round(duration / week.length) : 0;
 
-            const html = Object.entries(exercises).slice(0, 3).map(([id, ex]) => `
-                <div class="exercise-item">
-                    <div class="exercise-info">
-                        <h3>${ex.name}</h3>
-                        <p>${ex.sets}x${ex.minReps}-${ex.maxReps} @ ${ex.targetWeight}kg</p>
+            const exerciseList = Object.entries(exercises).slice(0, 5);
+            const html = exerciseList.length > 0 
+                ? exerciseList.map(([id, ex]) => `
+                    <div class="exercise-item">
+                        <div class="exercise-info">
+                            <h3>${ex.name}</h3>
+                            <p>${ex.sets}x${ex.minReps}${ex.minReps !== ex.maxReps ? '-' + ex.maxReps : ''} @ ${ex.targetWeight || 0}kg</p>
+                        </div>
+                        <span class="badge badge-${(ex.muscleGroup || 'Chest').toLowerCase()}">${ex.muscleGroup || '—'}</span>
                     </div>
-                    <span class="badge badge-${ex.muscleGroup.toLowerCase()}">${ex.muscleGroup}</span>
-                </div>
-            `).join('');
+                `).join('')
+                : '<p style="color: rgba(255, 255, 255, 0.5); text-align: center; padding: 20px;">No exercises yet. Go to 📝 Import or add manually!</p>';
+            
             document.getElementById('next-workout').innerHTML = html;
         }
 
         function renderExercises() {
-            const html = Object.entries(exercises).map(([id, ex]) => `
+            const exercises_list = Object.entries(exercises);
+            if (exercises_list.length === 0) {
+                document.getElementById('exercises-list').innerHTML = '<p style="color: rgba(255, 255, 255, 0.5); text-align: center; padding: 20px;">No exercises yet. Click "Add Exercise" to get started!</p>';
+                return;
+            }
+
+            const html = exercises_list.map(([id, ex]) => `
                 <div class="exercise-item">
                     <div class="exercise-info">
                         <h3>${ex.name}</h3>
-                        <p>${ex.sets} sets • ${ex.minReps}-${ex.maxReps} reps • ${ex.targetWeight}kg</p>
+                        <p>${ex.sets} sets • ${ex.minReps}${ex.minReps !== ex.maxReps ? '-' + ex.maxReps : ''} reps • ${ex.targetWeight || 0}kg</p>
                     </div>
-                    <span class="badge badge-${ex.muscleGroup.toLowerCase()}">${ex.muscleGroup}</span>
+                    <span class="badge badge-${(ex.muscleGroup || 'chest').toLowerCase()}">${ex.muscleGroup || '—'}</span>
                 </div>
             `).join('');
             document.getElementById('exercises-list').innerHTML = html;
         }
 
         function renderPrograms() {
-            const html = Object.entries(exercises).map(([id, ex]) => `
-                <button class="btn btn-secondary" onclick="startSession('${id}')" style="margin-bottom: 8px;">
-                    ${ex.name}
+            const exercises_list = Object.entries(exercises);
+            if (exercises_list.length === 0) {
+                document.getElementById('programs-list').innerHTML = '<p style="color: rgba(255, 255, 255, 0.5); text-align: center; padding: 20px;">No exercises yet. Add one to start!</p>';
+                return;
+            }
+
+            const html = exercises_list.map(([id, ex]) => `
+                <button class="btn btn-secondary" onclick="startSession('${id}')" style="margin-bottom: 6px;">
+                    💪 ${ex.name} (${ex.sets}x${ex.minReps}${ex.minReps !== ex.maxReps ? '-' + ex.maxReps : ''})
                 </button>
             `).join('');
             document.getElementById('programs-list').innerHTML = html;
@@ -631,9 +767,13 @@
                 totalVolume += (s.weight * s.reps) || 0;
             });
 
-            document.getElementById('analytics-volume').textContent = totalVolume.toLocaleString();
-            document.getElementById('analytics-workouts').textContent = Object.keys(sessions).length;
-            document.getElementById('analytics-consistency').textContent = Object.keys(sessions).length > 0 ? Math.round((Object.keys(sessions).length / 30) * 100) : 0;
+            const workoutCount = Object.keys(sessions).length;
+            const exerciseCount = Object.keys(exercises).length;
+            const consistency = workoutCount > 0 ? Math.round((workoutCount / 30) * 100) : 0;
+
+            document.getElementById('analytics-volume').textContent = totalVolume > 0 ? totalVolume.toLocaleString() : '0';
+            document.getElementById('analytics-workouts').textContent = workoutCount;
+            document.getElementById('analytics-consistency').textContent = consistency + '%';
         }
 
         function showToast(msg) {
@@ -644,6 +784,267 @@
             setTimeout(() => toast.remove(), 2000);
         }
 
+        // ============================================================================
+        // WORKOUT IMPORT & AI ANALYSIS
+        // ============================================================================
+
+        let parsedWorkout = [];
+
+        async function analyzeWorkout() {
+            const text = document.getElementById('import-text').value.trim();
+            if (!text) {
+                showToast('⚠️ Please paste a workout plan');
+                return;
+            }
+
+            openModal('import-loading-modal');
+
+            try {
+                const response = await fetch("https://api.anthropic.com/v1/messages", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "x-api-key": localStorage.getItem('anthropic_api_key') || '',
+                    },
+                    body: JSON.stringify({
+                        model: "claude-opus-4-6",
+                        max_tokens: 3000,
+                        messages: [
+                            {
+                                role: "user",
+                                content: `You are analyzing a Hebrew workout plan. Extract each exercise and return ONLY a valid JSON array (no markdown, no backticks, no explanations).
+
+Format: [{"name":"Exercise Name","sets":3,"minReps":12,"maxReps":12,"targetWeight":12.5,"notes":"Standing, bent over","order":1}]
+
+Rules for parsing:
+1. Each line starting with "- " or a bullet is ONE exercise
+2. Format patterns:
+   - "description 12×3 (12.5)" → 12 reps, 3 sets, 12.5kg weight
+   - "description 3×12 (weight)" → 12 reps, 3 sets, weight kg
+   - "description 3×10 (12.5)" → 10 reps, 3 sets, 12.5kg
+   - "description 15×3" → 15 reps, 3 sets, no weight
+3. If there's a range like "6-10", extract min and max
+4. Everything in parentheses () are notes/details EXCEPT if it's just a number (that's weight)
+5. Extract Hebrew exercise names and translate to English equivalent
+6. Keep Hebrew instructions in notes field
+7. If weight has "?" (like "6?"), use the number but note uncertainty
+
+Hebrew context help:
+- "בעמידה" = standing
+- "בשכיבה" = lying
+- "בישיבה" = sitting
+- "חתירה" = row
+- "לחיצה" = press
+- "פשיטה" = extension
+- "כפיפה" = curl
+- "בטן" = abs/core
+- "קראנצ'" = crunch
+- "הרמה" = raise/lift
+- "משקולות חופשיות" = dumbbell/free weights
+- "פולי" = cable machine
+- "סמית משין" = smith machine
+- "ספליט סקווט" = split squat
+
+Workout to analyze:
+${text}
+
+Return ONLY the JSON array, nothing else.`
+                            }
+                        ],
+                    })
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    if (response.status === 401) {
+                        throw new Error('API key missing. Go to Settings to add your key.');
+                    }
+                    throw new Error(error.error?.message || 'Analysis failed');
+                }
+
+                const data = await response.json();
+                const responseText = data.content[0].text;
+                
+                try {
+                    parsedWorkout = JSON.parse(responseText);
+                } catch (e) {
+                    const jsonMatch = responseText.match(/\[[\s\S]*\]/);
+                    if (jsonMatch) {
+                        parsedWorkout = JSON.parse(jsonMatch[0]);
+                    } else {
+                        console.error('Raw response:', responseText);
+                        throw new Error('Could not parse AI response');
+                    }
+                }
+
+                if (!Array.isArray(parsedWorkout) || parsedWorkout.length === 0) {
+                    throw new Error('No exercises found in the text');
+                }
+
+                closeModal('import-loading-modal');
+                showImportReview();
+            } catch (error) {
+                closeModal('import-loading-modal');
+                console.error('Analysis error:', error);
+                showToast('❌ ' + error.message);
+            }
+        }
+
+        function showImportReview() {
+            const html = parsedWorkout.map((ex, idx) => {
+                const existing = findExistingExercise(ex.name);
+                const status = existing 
+                    ? `<span class="import-status import-status-existing">✅ Existing: ${existing.name}</span>`
+                    : `<span class="import-status import-status-new">🆕 New Exercise</span>`;
+
+                const sets = ex.sets || 4;
+                const minReps = ex.minReps || ex.maxReps || 10;
+                const maxReps = ex.maxReps || minReps;
+                const weight = ex.targetWeight || 0;
+                const notes = ex.notes || '';
+                const repsDisplay = minReps === maxReps ? minReps : `${minReps}-${maxReps}`;
+
+                return `
+                    <div class="import-exercise-item" data-index="${idx}">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; gap: 8px;">
+                            <div style="flex: 1;">
+                                <strong style="font-size: 15px; display: block; margin-bottom: 2px;">${ex.name || 'Unknown'}</strong>
+                                <span class="import-status import-status-existing" style="font-size: 12px;">${ex.order || idx + 1}</span>
+                            </div>
+                            ${status}
+                        </div>
+                        <div class="import-field">
+                            <label>Sets:</label>
+                            <input type="number" data-field="sets" value="${sets}" min="1" max="10">
+                        </div>
+                        <div class="import-field">
+                            <label>Reps:</label>
+                            <input type="text" data-field="reps" value="${repsDisplay}" placeholder="10 or 6-10">
+                        </div>
+                        <div class="import-field">
+                            <label>Weight:</label>
+                            <input type="number" data-field="weight" value="${weight}" min="0" step="0.5" placeholder="kg">
+                        </div>
+                        ${notes ? `<div style="font-size: 12px; color: rgba(255, 255, 255, 0.6); margin-top: 6px; padding: 6px; background: rgba(255, 255, 255, 0.04); border-radius: 6px;">📝 ${notes}</div>` : ''}
+                    </div>
+                `;
+            }).join('');
+
+            document.getElementById('import-review-list').innerHTML = html || '<p style="color: rgba(255, 255, 255, 0.5);">No exercises found. Try pasting a different workout plan.</p>';
+            openModal('import-review-modal');
+        }
+
+        function findExistingExercise(name) {
+            const lowerName = name.toLowerCase().trim();
+            for (const [id, ex] of Object.entries(exercises)) {
+                if (ex.name.toLowerCase().includes(lowerName) || lowerName.includes(ex.name.toLowerCase())) {
+                    return ex;
+                }
+            }
+            return null;
+        }
+
+        function saveImportedExercises() {
+            const items = document.querySelectorAll('[data-index]');
+            const newExercises = {};
+            let createdCount = 0;
+            let updatedCount = 0;
+
+            items.forEach(item => {
+                try {
+                    const idx = parseInt(item.dataset.index);
+                    const ex = parsedWorkout[idx];
+                    
+                    if (!ex || !ex.name) {
+                        console.warn('Skipping empty exercise at index', idx);
+                        return;
+                    }
+
+                    const sets = parseInt(item.querySelector('[data-field="sets"]').value) || 4;
+                    const repsStr = item.querySelector('[data-field="reps"]').value || '10';
+                    const weight = parseFloat(item.querySelector('[data-field="weight"]').value) || 0;
+
+                    const [minReps, maxReps] = repsStr.includes('-')
+                        ? repsStr.split('-').map(r => parseInt(r) || 10)
+                        : [parseInt(repsStr) || 10, parseInt(repsStr) || 10];
+
+                    const existing = findExistingExercise(ex.name);
+                    
+                    if (!existing) {
+                        const id = 'ex-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+                        newExercises[id] = {
+                            name: ex.name,
+                            muscleGroup: 'General',
+                            sets,
+                            minReps,
+                            maxReps,
+                            targetWeight: weight
+                        };
+                        createdCount++;
+                    } else {
+                        const id = Object.keys(exercises).find(k => exercises[k].name === existing.name);
+                        if (id) {
+                            newExercises[id] = {
+                                ...existing,
+                                sets,
+                                minReps,
+                                maxReps,
+                                targetWeight: weight
+                            };
+                            updatedCount++;
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error processing exercise at index', item.dataset.index, error);
+                }
+            });
+
+            if (Object.keys(newExercises).length === 0) {
+                showToast('⚠️ No exercises to save');
+                return;
+            }
+
+            exercises = { ...exercises, ...newExercises };
+            putData('/exercises', exercises);
+            
+            closeModal('import-review-modal');
+            renderAll();
+            
+            const msg = createdCount > 0 && updatedCount > 0
+                ? `✅ Imported: ${createdCount} new + ${updatedCount} updated`
+                : createdCount > 0
+                ? `✅ Created ${createdCount} new exercises`
+                : `✅ Updated ${updatedCount} exercises`;
+            
+            showToast(msg);
+            document.getElementById('import-text').value = '';
+            switchPage('dashboard');
+        }
+
+        // ============================================================================
+        // SETTINGS & API KEY
+        // ============================================================================
+
+        function saveAPIKey() {
+            const key = document.getElementById('api-key-input').value.trim();
+            if (!key) {
+                showToast('⚠️ Please enter an API key');
+                return;
+            }
+            localStorage.setItem('anthropic_api_key', key);
+            showToast('✅ API Key saved');
+            document.getElementById('api-key-input').value = key.substring(0, 10) + '...';
+        }
+
+        function loadAPIKey() {
+            const key = localStorage.getItem('anthropic_api_key');
+            if (key) {
+                document.getElementById('api-key-input').placeholder = key.substring(0, 10) + '... (saved)';
+                document.getElementById('api-key-input').style.color = '#22c55e';
+            }
+        }
+
+        setTimeout(loadAPIKey, 500);
         init();
     </script>
 </body>
