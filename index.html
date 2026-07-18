@@ -179,6 +179,7 @@
         .graph-container {
             background: rgba(0,0,0,0.2); border: 1px solid var(--card-border);
             border-radius: 16px; padding: 16px; margin-bottom: 20px; display: flex; justify-content: center;
+            overflow-x: auto;
         }
         .graph-line { stroke: var(--accent); stroke-width: 3; fill: none; stroke-linecap: round; }
         .graph-dot { fill: var(--accent-neon); stroke: #121215; stroke-width: 2; }
@@ -236,7 +237,7 @@
                         <div class="val" id="meta-pr">0 ק"ג</div>
                     </div>
                     <div class="metric-tile">
-                        <div>סטים שתועדו</div>
+                        <div>סך סטים שבוצעו</div>
                         <div class="val" id="meta-count">0</div>
                     </div>
                 </div>
@@ -250,11 +251,21 @@
             <div id="analytics-empty" class="empty-state">אנא בחר תרגיל מהרשימה לעיל לצפייה בגרף המגמה</div>
         </div>
 
-        <!-- VIEW 3: ADD NEW DATA -->
+        <!-- VIEW 3: ADD NEW DATA & FILE IMPORT -->
         <div id="view-add" class="tab-view">
-            <div class="view-title">📝 קליטת הודעת מאמן</div>
-            <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 14px;">הדבק את הודעת התרגילים שקיבלת מהמאמן ב-WhatsApp לפירסור אוטומטי.</p>
-            <textarea id="raw-coach-payload" placeholder="דוגמה:&#10;לחיצת חזה 10x4 (60)&#10;מתח + מקבילים 8x3" style="min-height: 160px;"></textarea>
+            <div class="view-title">📝 קליטת הודעות ואימונים</div>
+            
+            <!-- WhatsApp File Upload Option -->
+            <div style="background: rgba(48, 209, 88, 0.08); border: 1px dashed rgba(48, 209, 88, 0.3); border-radius: 20px; padding: 16px; margin-bottom: 20px;">
+                <h4 style="font-size: 14px; margin-bottom: 6px; color: var(--accent-neon);">📂 יבוא היסטוריית צ'אט (וואטסאפ)</h4>
+                <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px;">ייצא את הצ'אט עם המאמנת כקובץ טקסט (.txt ללא מדיה) וטען אותו כאן כדי לחלץ שנה שלמה של אימונים בבת אחת.</p>
+                <input type="file" id="whatsapp-file-input" accept=".txt" style="margin-bottom: 10px; font-size: 13px;">
+                <button class="btn btn-success" onclick="importWhatsAppHistoryFile()" style="padding:10px; font-size:14px;">🚀 חלץ וסנכרן היסטוריית אימונים</button>
+            </div>
+            
+            <div style="position: relative; text-align: center; margin-bottom: 16px;"><span style="background: #121215; padding: 0 10px; font-size:12px; color:var(--text-muted);">או הזן אימון בודד</span><hr style="border:0; border-top:1px solid rgba(255,255,255,0.08); position:absolute; top:50%; left:0; right:0; z-index:-1;"></div>
+
+            <textarea id="raw-coach-payload" placeholder="הדבק הודעת תרגילים בודדת מ-WhatsApp לפירסור..." style="min-height: 120px;"></textarea>
             <button class="btn btn-primary" onclick="processIncomingMessage()">🤖 ניתוח תרגילי אימון</button>
         </div>
 
@@ -308,7 +319,6 @@
         let stateWorkouts = [];
         let temporaryStagedWorkout = [];
 
-        // Single Page Tab Navigation Switching Engine
         function switchTab(tabId, buttonElement) {
             document.querySelectorAll('.tab-view').forEach(view => view.classList.remove('active'));
             document.querySelectorAll('.nav-tab').forEach(btn => btn.classList.remove('active'));
@@ -321,7 +331,6 @@
             document.getElementById('review-sheet').classList.toggle('active', show);
         }
 
-        // Inline Update Engine - Realtime Updates directly from Main View buttons
         async function modifyMetric(exerciseIndex, field, delta) {
             const currentActiveWorkout = stateWorkouts[stateWorkouts.length - 1];
             if (!currentActiveWorkout) return;
@@ -335,10 +344,10 @@
             if (field === 'weight') {
                 targetExercise.weight = Math.max(0, targetExercise.weight + delta);
             } else {
-                targetExercise.target = field === 'sets' ? targetExercise.sets = Math.max(1, targetExercise.sets + delta) : targetExercise.reps = Math.max(1, targetExercise.reps + delta);
+                if (field === 'sets') targetExercise.sets = Math.max(1, targetExercise.sets + delta);
+                if (field === 'reps') targetExercise.reps = Math.max(1, targetExercise.reps + delta);
             }
 
-            // Perform Silent Synced Save to Cloud Realtime DB
             await syncToCloud('/workouts', stateWorkouts);
             renderWeeklyWorkoutDashboard();
             rebuildChangesSummaryReport();
@@ -396,7 +405,93 @@
                 </div>`;
         }
 
-        // WhatsApp Parsing Intelligence Core
+        // WhatsApp File Mass Parsing Engine
+        function importWhatsAppHistoryFile() {
+            const fileInput = document.getElementById('whatsapp-file-input');
+            if (!fileInput.files || fileInput.files.length === 0) {
+                return displayNativeToast('⚠️ אנא בחר קובץ txt תחילה');
+            }
+
+            const file = fileInput.files[0];
+            const reader = new FileReader();
+
+            reader.onload = async function(e) {
+                const text = e.target.result;
+                const lines = text.split('\n');
+                
+                let parsedWorkoutsCount = 0;
+                let currentImportDate = null;
+                let currentImportExercises = [];
+
+                // Regex patterns to discover WhatsApp meta headers (e.g. "15.5.2025, 10:30 - Person:")
+                const whatsappHeaderRegex = /^\[?(\d{1,2})[\.\/](\d{1,2})[\.\/](\d{2,4})[,\s]/;
+
+                for (let i = 0; i < lines.length; i++) {
+                    const line = lines[i].trim();
+                    const dateMatch = line.match(whatsappHeaderRegex);
+
+                    if (dateMatch) {
+                        // If we already compiled exercises from a previous block, save it before starting a new date block
+                        if (currentImportExercises.length > 0 && currentImportDate) {
+                            stateWorkouts.push({
+                                id: 'wk-hist-' + Date.parse(currentImportDate) + '-' + Math.floor(Math.random()*1000),
+                                date: currentImportDate.toISOString(),
+                                exercises: currentImportExercises
+                            });
+                            parsedWorkoutsCount++;
+                        }
+
+                        // Construct valid JavaScript Date object from WhatsApp string tokens
+                        let day = parseInt(dateMatch[1]);
+                        let month = parseInt(dateMatch[2]) - 1;
+                        let year = parseInt(dateMatch[3]);
+                        if (year < 100) year += 2000; // Handle yy shorthand
+
+                        currentImportDate = new Date(year, month, day, 12, 0, 0);
+                        currentImportExercises = [];
+                    }
+
+                    // Look for structural exercise logs inside the actual message payload body
+                    if (line.match(/(\d+)[×x](\d+)/)) {
+                        if (line.includes('+')) {
+                            line.split('+').forEach(part => {
+                                const parsed = parseExerciseStringToken(part);
+                                if (parsed) { parsed.superset = true; currentImportExercises.push(parsed); }
+                            });
+                        } else {
+                            const parsed = parseExerciseStringToken(line);
+                            if (parsed) currentImportExercises.push(parsed);
+                        }
+                    }
+                }
+
+                // Push final remaining loop block if active
+                if (currentImportExercises.length > 0 && currentImportDate) {
+                    stateWorkouts.push({
+                        id: 'wk-hist-' + Date.parse(currentImportDate),
+                        date: currentImportDate.toISOString(),
+                        exercises: currentImportExercises
+                    });
+                    parsedWorkoutsCount++;
+                }
+
+                if (parsedWorkoutsCount > 0) {
+                    // Sort the history chronologically so analytics calculations operate correctly
+                    stateWorkouts.sort((a, b) => new Date(a.date) - new Date(b.date));
+                    
+                    await syncToCloud('/workouts', stateWorkouts);
+                    displayNativeToast(`🟢 סונכרנו ${parsedWorkoutsCount} אימונים מההיסטוריה!`);
+                    renderWeeklyWorkoutDashboard();
+                    rebuildChangesSummaryReport();
+                    fileInput.value = ''; // Clean input
+                } else {
+                    displayNativeToast('❌ לא אותרו מבני אימונים תקינים בקובץ');
+                }
+            };
+
+            reader.readAsText(file);
+        }
+
         function processIncomingMessage() {
             const rawText = document.getElementById('raw-coach-payload').value.trim();
             if (!rawText) return displayNativeToast('⚠️ אנא הזן טקסט כלשהו');
@@ -428,7 +523,7 @@
             const [, reps, sets] = match;
             const weightMatch = str.match(/\((\d+\.?\d*)\)?/);
             const weight = weightMatch ? parseFloat(weightMatch[1]) : 0;
-            let name = str.replace(/\d+[×x]\d+/g, '').replace(/\(\d+\.?\d*\)?/g, '').trim();
+            let name = str.replace(/\d+[×x]\d+/g, '').replace(/\(\d+\.?\d*\)?/g, '').replace(/^.*?-\s*/, '').trim(); 
             return name.length > 1 ? { name, sets: parseInt(sets), reps: parseInt(reps), weight, superset: false } : null;
         }
 
@@ -459,7 +554,6 @@
             displayNativeToast('✅ האימון החדש נשמר והופעל בהצלחה!');
         }
 
-        // Advanced Progress Graphing and Performance Analytics
         function populateAnalyticsDropdown() {
             const picker = document.getElementById('analytics-picker');
             picker.innerHTML = '<option value="">-- בחר תרגיל לניתוח --</option>';
@@ -493,29 +587,28 @@
                         totalSetsCount += ex.sets;
                         if(ex.weight > maxWeight) maxWeight = ex.weight;
                         const d = new Date(w.date);
-                        dataPoints.push({ weight: ex.weight, label: d.toLocaleDateString('he-IL', {day:'numeric', month:'short'}) });
+                        
+                        dataPoints.push({ weight: ex.weight, label: d.toLocaleDateString('he-IL', {day:'numeric', month:'short'}), timestamp: d.getTime() });
                         
                         logHtml += `
                             <div class="log-row">
                                 <span>📅 <strong>${d.toLocaleDateString('he-IL')}</strong></span>
-                                <span>${ex.weight} ק"ג (ביצוע מקורי)</span>
+                                <span>${ex.weight} ק"ג (${ex.reps} חזרות × ${ex.sets} סטים)</span>
                             </div>`;
                         
                         if(ex.history) {
                             ex.history.forEach(h => {
                                 if(h.weight > maxWeight) maxWeight = h.weight;
                                 const hd = new Date(h.date);
-                                dataPoints.push({ weight: h.weight, label: hd.toLocaleDateString('he-IL', {day:'numeric', month:'short'}) });
-                                logHtml += `
-                                    <div class="log-row" style="color:var(--accent-neon)">
-                                        <span>⚡ <sub>עדכון תוך כדי</sub></span>
-                                        <span><strong>${h.weight} ק"ג</strong> מ-${h.reps} חזרות</span>
-                                    </div>`;
+                                dataPoints.push({ weight: h.weight, label: hd.toLocaleDateString('he-IL', {day:'numeric', month:'short'}), timestamp: hd.getTime() });
                             });
                         }
                     }
                 });
             });
+
+            // Order data chronologically for graphing logic safety
+            dataPoints.sort((a,b) => a.timestamp - b.timestamp);
 
             document.getElementById('meta-pr').textContent = maxWeight + ' ק"ג';
             document.getElementById('meta-count').textContent = totalSetsCount;
@@ -524,19 +617,22 @@
             buildSVGVectorGraph(dataPoints);
         }
 
-        // Responsive Code-based Native SVG Engine (No heavy external charting libs needed)
         function buildSVGVectorGraph(points) {
             const container = document.getElementById('graph-wrapper');
             if (points.length < 2) {
-                container.innerHTML = '<div style="font-size:12px; color:var(--text-muted)">נדרשות לפחות 2 נקודות מידע להצגת גרף קו מגמה</div>';
+                container.innerHTML = '<div style="font-size:12px; color:var(--text-muted); padding: 10px 0;">נדרש מידע ממספר אימונים שונים כדי לחשב מגמת קו</div>';
                 return;
             }
 
-            const width = 360, height = 140, padding = 30;
-            const maxVal = Math.max(...points.map(p => p.weight)) * 1.1 || 10;
-            const minVal = Math.min(...points.map(p => p.weight)) * 0.9 || 0;
+            // Expand dynamic viewport grid calculation bounds for long histories
+            const stepWidth = Math.max(60, 300 / (points.length - 1));
+            const width = Math.max(360, points.length * stepWidth);
+            const height = 150, padding = 35;
             
-            let svgStr = `<svg width="100%" height="${height}" viewBox="0 0 ${width} ${height}">`;
+            const maxVal = Math.max(...points.map(p => p.weight)) * 1.1 || 10;
+            const minVal = Math.max(0, Math.min(...points.map(p => p.weight)) * 0.8);
+            
+            let svgStr = `<svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" style="display:block;">`;
             let pathCoords = [];
 
             points.forEach((p, idx) => {
@@ -549,18 +645,25 @@
             
             points.forEach((p, idx) => {
                 const [x, y] = pathCoords[idx].split(',');
-                svgStr += `<circle class="graph-dot" cx="${x}" cy="${y}" r="5" />`;
-                if(idx === 0 || idx === points.length - 1) {
-                    svgStr += `<text class="graph-text" x="${x}" y="${parseFloat(y) - 10}" text-anchor="middle">${p.weight}ק"ג</text>`;
+                // Draw dots conditionally for high density visibility optimization
+                if (points.length < 25 || idx === 0 || idx === points.length - 1 || points[idx].weight !== points[idx-1].weight) {
+                    svgStr += `<circle class="graph-dot" cx="${x}" cy="${y}" r="4" />`;
+                }
+                
+                // Text markers positioning rules
+                if(idx === 0 || idx === points.length - 1 || (idx % Math.ceil(points.length / 5) === 0)) {
+                    svgStr += `<text class="graph-text" x="${x}" y="${parseFloat(y) - 10}" text-anchor="middle">${p.weight} ק"ג</text>`;
                     svgStr += `<text class="graph-text" x="${x}" y="${height - 8}" text-anchor="middle">${p.label}</text>`;
                 }
             });
 
             svgStr += `</svg>`;
             container.innerHTML = svgStr;
+            
+            // Auto scroll to the end of chart timeline layout structure
+            setTimeout(() => { container.scrollLeft = width; }, 50);
         }
 
-        // Changes Reporting Engine logic
         function rebuildChangesSummaryReport() {
             if (stateWorkouts.length === 0) return toggleReportingButtons(false);
             const active = stateWorkouts[stateWorkouts.length - 1];
@@ -577,7 +680,7 @@
 
             if (list.length === 0) return toggleReportingButtons(false);
 
-            let txt = 'היי מאמן 🙋‍♂️\nהנה העדכונים והשינויים שלי מהשבוע:\n\n';
+            let txt = 'היי 🙋‍♂️\nהנה העדכונים והשינויים שלי מהשבוע:\n\n';
             list.forEach(ex => {
                 const wChange = ex.weight > ex.oldWeight ? `⬆️ ${ex.oldWeight}←${ex.weight}` : `${ex.weight}`;
                 txt += `💪 ${ex.name}\nמשקל: ${wChange} ק"ג | חזרות: ${ex.reps}\n\n`;
@@ -606,7 +709,6 @@
             if(report) navigator.clipboard.writeText(report).then(() => displayNativeToast('📋 הדוח הועתק ללוח בהצלחה'));
         }
 
-        // Firebase Sync Engines
         async function syncFromCloud(path) {
             try {
                 const r = await fetch(`${FIREBASE_ENDPOINT}${path}.json`);
@@ -635,6 +737,7 @@
         window.addEventListener('load', async () => {
             const data = await syncFromCloud('/workouts');
             if (data) stateWorkouts = Array.isArray(data) ? data : Object.values(data);
+            stateWorkouts.sort((a, b) => new Date(a.date) - new Date(b.date)); // Ensure correct sorting
             renderWeeklyWorkoutDashboard();
             rebuildChangesSummaryReport();
             const localK = localStorage.getItem('claude-key');
