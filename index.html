@@ -85,7 +85,7 @@
             background: var(--accent); color: #fff;
         }
 
-        /* Rest Timer Widget Style */
+        /* Rest Stopwatch Widget Style */
         .timer-card {
             background: var(--card-bg);
             border: 1px solid var(--card-border);
@@ -96,14 +96,7 @@
             display: flex;
             flex-direction: column;
             gap: 10px;
-            transition: background-color 0.3s ease;
         }
-        .timer-card.timer-finished {
-            background-color: rgba(48, 209, 88, 0.3);
-            animation: pulseBg 1s infinite alternate;
-        }
-        @keyframes pulseBg { from { background-color: rgba(48, 209, 88, 0.15); } to { background-color: rgba(48, 209, 88, 0.4); } }
-
         .timer-main-row {
             display: flex;
             justify-content: space-between;
@@ -135,18 +128,17 @@
         .timer-presets {
             display: flex;
             gap: 6px;
+            align-items: center;
         }
-        .preset-btn {
+        .preset-indicator {
             background: rgba(0, 0, 0, 0.03);
             border: 1px solid rgba(0, 0, 0, 0.04);
             color: var(--text-muted);
             padding: 4px 10px;
             border-radius: 8px;
             font-size: 11px;
-            font-weight: 700;
-            cursor: pointer;
+            font-weight: 600;
         }
-        .preset-btn:active { background: rgba(0, 0, 0, 0.08); color: var(--text-main); }
         
         /* Custom Workout Cards & Layout */
         .workout-card {
@@ -322,21 +314,21 @@
                 <button id="edit-mode-toggle" class="edit-toggle-btn" onclick="toggleEditMode()">✏️ ערוך משקלים</button>
             </div>
             
-            <!-- NEW: Built-in Quick Rest Timer Component Widget -->
+            <!-- Rest Stopwatch Component Widget -->
             <div class="timer-card" id="timer-widget">
                 <div class="timer-main-row">
-                    <div style="font-size: 12px; color: var(--text-muted); font-weight: 700;">⏱️ טיימר מנוחה בין סטים</div>
-                    <div class="timer-display" id="timer-clock">01:30</div>
+                    <div style="font-size: 12px; color: var(--text-muted); font-weight: 700;">⏱️ סטופר מנוחה (ספירה קדימה)</div>
+                    <div class="timer-display" id="stopwatch-clock">00:00</div>
                     <div class="timer-controls">
-                        <button class="timer-btn action-trigger" id="timer-toggle-btn" onclick="toggleTimer()">▶️</button>
-                        <button class="timer-btn" onclick="resetTimer()">🔄</button>
+                        <button class="timer-btn action-trigger" id="stopwatch-toggle-btn" onclick="toggleStopwatch()">▶️</button>
+                        <button class="timer-btn" onclick="resetStopwatch()">🔄</button>
                     </div>
                 </div>
                 <div class="timer-presets">
-                    <button class="preset-btn" onclick="setTimerPreset(60)">60 שנ׳</button>
-                    <button class="preset-btn" onclick="setTimerPreset(90)">90 שנ׳</button>
-                    <button class="preset-btn" onclick="setTimerPreset(120)">2 דק׳</button>
-                    <button class="preset-btn" onclick="setTimerPreset(180)">3 דק׳</button>
+                    <span style="font-size: 11px; color: var(--text-muted); font-weight: 700; margin-left: 4px;">יעדי מנוחה:</span>
+                    <div class="preset-indicator">60 שנ׳</div>
+                    <div class="preset-indicator">90 שנ׳</div>
+                    <div class="preset-indicator">2 דק׳</div>
                 </div>
             </div>
 
@@ -440,11 +432,10 @@
         let temporaryStagedWorkout = [];
         let isEditingModeActive = false;
 
-        // Timer State Variables
-        let timerInterval = null;
-        let timerDurationSeconds = 90; // Default preset 1:30
-        let timerTimeLeft = 90;
-        let isTimerRunning = false;
+        // Stopwatch State Variables
+        let stopwatchInterval = null;
+        let stopwatchSecondsElapsed = 0;
+        let isStopwatchRunning = false;
 
         function switchTab(tabId, buttonElement) {
             if (isEditingModeActive) toggleEditMode();
@@ -454,78 +445,43 @@
             buttonElement.classList.add('active');
         }
 
-        // Timer Logic Functions
-        function updateTimerDisplay() {
-            const minutes = Math.floor(timerTimeLeft / 60);
-            const seconds = timerTimeLeft % 60;
-            document.getElementById('timer-clock').textContent = 
+        // Stopwatch Logic Engine Functions
+        function updateStopwatchDisplay() {
+            const minutes = Math.floor(stopwatchSecondsElapsed / 60);
+            const seconds = stopwatchSecondsElapsed % 60;
+            document.getElementById('stopwatch-clock').textContent = 
                 `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
         }
 
-        function setTimerPreset(seconds) {
-            clearInterval(timerInterval);
-            isTimerRunning = false;
-            timerDurationSeconds = seconds;
-            timerTimeLeft = seconds;
-            document.getElementById('timer-widget').classList.remove('timer-finished');
-            document.getElementById('timer-toggle-btn').textContent = '▶️';
-            updateTimerDisplay();
-        }
-
-        function toggleTimer() {
-            const btn = document.getElementById('timer-toggle-btn');
-            document.getElementById('timer-widget').classList.remove('timer-finished');
+        function toggleStopwatch() {
+            const btn = document.getElementById('stopwatch-toggle-btn');
             
-            if (isTimerRunning) {
-                clearInterval(timerInterval);
+            if (isStopwatchRunning) {
+                clearInterval(stopwatchInterval);
                 btn.textContent = '▶️';
             } else {
                 btn.textContent = '⏸️';
-                timerInterval = setInterval(() => {
-                    if (timerTimeLeft > 0) {
-                        timerTimeLeft--;
-                        updateTimerDisplay();
-                    } else {
-                        clearInterval(timerInterval);
-                        isTimerRunning = false;
-                        btn.textContent = '▶️';
-                        document.getElementById('timer-widget').classList.add('timer-finished');
-                        triggerTimerAlertBeep();
-                    }
+                stopwatchInterval = setInterval(() => {
+                    stopwatchSecondsElapsed++;
+                    updateStopwatchDisplay();
                 }, 1000);
             }
-            isTimerRunning = !isTimerRunning;
+            isStopwatchRunning = !isStopwatchRunning;
         }
 
-        function resetTimer() {
-            clearInterval(timerInterval);
-            isTimerRunning = false;
-            timerTimeLeft = timerDurationSeconds;
-            document.getElementById('timer-widget').classList.remove('timer-finished');
-            document.getElementById('timer-toggle-btn').textContent = '▶️';
-            updateTimerDisplay();
-        }
-
-        // Web Audio Context Synthesizer for Device Independence Alerts
-        function triggerTimerAlertBeep() {
-            try {
-                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                const oscillator = audioCtx.createOscillator();
-                const gainNode = audioCtx.createGain();
-                
-                oscillator.type = 'sine';
-                oscillator.frequency.setValueAtTime(880, audioCtx.currentTime); // High pitched A note
-                gainNode.gain.setValueAtTime(0.15, audioCtx.currentTime);
-                
-                oscillator.connect(gainNode);
-                gainNode.connect(audioCtx.destination);
-                
-                oscillator.start();
-                // Three quick alert beeps
-                setTimeout(() => oscillator.stop(), 400);
-                displayNativeToast('💪 הזמן נגמר! חוזרים לסט הבא.');
-            } catch(e) {
-                displayNativeToast('💪 הזמן נגמר! חוזרים לסט הבא.');
+        function resetStopwatch() {
+            // מאפס את הזמן ל-00:00
+            stopwatchSecondsElapsed = 0;
+            updateStopwatchDisplay();
+            
+            // אם הסטופר לא רץ - מפעיל אותו אוטומטית לחיסכון בלחיצות
+            if (!isStopwatchRunning) {
+                isStopwatchRunning = true;
+                document.getElementById('stopwatch-toggle-btn').textContent = '⏸️';
+                stopwatchInterval = setInterval(() => {
+                    stopwatchSecondsElapsed++;
+                    updateStopwatchDisplay();
+                }, 1000);
             }
         }
 
@@ -966,7 +922,7 @@
             rebuildChangesSummaryReport();
             const localK = localStorage.getItem('claude-key');
             if(localK) document.getElementById('local-key-store').value = localK;
-            updateTimerDisplay(); // Render baseline display
+            updateStopwatchDisplay();
         });
     </script>
 </body>
