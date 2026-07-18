@@ -26,8 +26,6 @@
             background: #0F0F0F;
             color: #FFFFFF;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            overflow-x: hidden;
-            font-size: 16px;
         }
 
         .container {
@@ -39,7 +37,6 @@
 
         h1 { font-size: 32px; font-weight: 800; margin-bottom: 8px; }
         h2 { font-size: 26px; font-weight: 700; margin-bottom: 16px; }
-        h3 { font-size: 18px; font-weight: 700; }
 
         .page { display: none; }
         .page.active { display: block; }
@@ -51,17 +48,12 @@
             font-weight: 700;
             cursor: pointer;
             font-size: 15px;
-            transition: all 0.2s;
             width: 100%;
         }
 
         .btn-primary {
             background: linear-gradient(135deg, #007AFF 0%, #0051D5 100%);
             color: white;
-        }
-
-        .btn-primary:active {
-            transform: scale(0.98);
         }
 
         .btn-secondary {
@@ -85,7 +77,6 @@
             border-radius: 16px;
             padding: 20px;
             flex: 1;
-            min-width: 120px;
         }
 
         .metric-label {
@@ -93,13 +84,11 @@
             color: rgba(255, 255, 255, 0.7);
             margin-bottom: 6px;
             font-weight: 600;
-            text-transform: uppercase;
         }
 
         .metric-value {
             font-size: 28px;
             font-weight: 800;
-            color: #FFFFFF;
         }
 
         .grid {
@@ -119,7 +108,6 @@
             font-weight: 700;
             margin-bottom: 6px;
             color: #FFFFFF;
-            text-transform: uppercase;
         }
 
         .input-group input,
@@ -132,7 +120,6 @@
             border-radius: 10px;
             color: #FFFFFF;
             font-size: 16px;
-            font-weight: 500;
         }
 
         .input-group input:focus,
@@ -141,11 +128,6 @@
             border-color: #007AFF;
             outline: none;
             background: rgba(255, 255, 255, 0.12);
-        }
-
-        .input-group input::placeholder,
-        .input-group textarea::placeholder {
-            color: rgba(255, 255, 255, 0.4);
         }
 
         .exercise-item {
@@ -163,7 +145,6 @@
             font-size: 15px;
             font-weight: 700;
             margin-bottom: 4px;
-            color: #FFFFFF;
         }
 
         .exercise-info p {
@@ -177,13 +158,14 @@
             border-radius: 12px;
             font-size: 12px;
             font-weight: 700;
-            text-transform: uppercase;
         }
 
         .badge-chest { background: rgba(239, 68, 68, 0.25); color: #ff9999; }
         .badge-back { background: rgba(59, 130, 246, 0.25); color: #a7d8ff; }
         .badge-legs { background: rgba(168, 85, 247, 0.25); color: #dbbcff; }
         .badge-shoulders { background: rgba(234, 179, 8, 0.25); color: #ffd966; }
+        .badge-arms { background: rgba(249, 115, 22, 0.25); color: #ffb88a; }
+        .badge-core { background: rgba(34, 197, 94, 0.25); color: #86efac; }
 
         .navbar {
             position: fixed;
@@ -246,59 +228,12 @@
             margin-bottom: 16px;
         }
 
-        .modal-header h3 {
-            margin: 0;
-        }
-
         .modal-close {
             background: none;
             border: none;
             color: #FFFFFF;
             font-size: 24px;
             cursor: pointer;
-        }
-
-        .login-screen {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
-            padding: 20px;
-            text-align: center;
-        }
-
-        .login-screen h1 {
-            font-size: 40px;
-            margin-bottom: 8px;
-        }
-
-        .login-screen p {
-            color: rgba(255, 255, 255, 0.7);
-            margin-bottom: 32px;
-            font-size: 16px;
-        }
-
-        .google-signin {
-            background: white;
-            color: #1f2937;
-            font-weight: 700;
-            width: 100%;
-            max-width: 300px;
-        }
-
-        .spinner {
-            border: 3px solid rgba(255, 255, 255, 0.1);
-            border-top-color: #007AFF;
-            border-radius: 50%;
-            width: 30px;
-            height: 30px;
-            animation: spin 0.8s linear infinite;
-            margin: 20px auto;
-        }
-
-        @keyframes spin {
-            to { transform: rotate(360deg); }
         }
 
         .toast {
@@ -314,73 +249,57 @@
             z-index: 150;
         }
 
-        @media (min-width: 768px) {
-            .navbar {
-                position: static;
-                flex-direction: column;
-                width: 200px;
-                height: 100vh;
-                border-top: none;
-                border-right: 1px solid rgba(255, 255, 255, 0.1);
-                justify-content: flex-start;
-                padding: 20px 0;
-            }
+        .loading {
+            text-align: center;
+            padding: 40px 20px;
+        }
 
-            .nav-item {
-                display: flex;
-                align-items: center;
-                gap: 12px;
-                margin: 0 8px;
-                padding: 12px 16px;
-                border-radius: 8px;
-            }
+        .spinner {
+            border: 3px solid rgba(255, 255, 255, 0.1);
+            border-top-color: #007AFF;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 16px;
+        }
 
-            body {
-                display: flex;
-                flex-direction: row-reverse;
-            }
-
-            .app-content {
-                flex: 1;
-                overflow-y: auto;
-            }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
         }
     </style>
 </head>
 <body>
-    <!-- LOGIN -->
-    <div class="login-screen" id="loginScreen">
-        <h1>💪 FitPro</h1>
-        <p>Premium Workout Tracker</p>
-        <button class="btn btn-primary google-signin" onclick="signInWithGoogle()">
-            🔐 Sign in with Google
-        </button>
+    <!-- LOADING -->
+    <div id="loadingScreen" class="loading">
+        <div class="spinner"></div>
+        <p style="color: rgba(255, 255, 255, 0.7);">Loading FitPro...</p>
     </div>
 
     <!-- APP -->
-    <div class="app-content" id="appContent" style="display: none;">
+    <div id="appContent" style="display: none;">
         <div class="container">
             <!-- DASHBOARD -->
             <div id="dashboard" class="page active">
-                <h1>Dashboard</h1>
-                <p style="color: rgba(255, 255, 255, 0.7); margin-bottom: 20px;">Welcome back! 💪</p>
+                <h1>💪 FitPro</h1>
+                <p style="color: rgba(255, 255, 255, 0.7); margin-bottom: 20px;">Personal Workout Tracker</p>
 
                 <div class="grid">
                     <div class="metric">
-                        <div class="metric-label">Volume This Week</div>
-                        <div class="metric-value" id="volume">0</div>
+                        <div class="metric-label">This Week</div>
+                        <div class="metric-value" id="volume">0<span style="font-size: 14px;">kg</span></div>
                     </div>
                     <div class="metric">
                         <div class="metric-label">Workouts</div>
                         <div class="metric-value" id="workout-count">0</div>
                     </div>
                     <div class="metric">
-                        <div class="metric-label">Duration</div>
+                        <div class="metric-label">Avg Time</div>
                         <div class="metric-value" id="avg-duration">0<span style="font-size: 14px;">m</span></div>
                     </div>
                 </div>
 
-                <h2>Next Workout</h2>
+                <h2>Your Exercises</h2>
                 <div id="next-workout"></div>
 
                 <button class="btn btn-primary" onclick="openWorkoutModal()" style="margin-top: 20px;">
@@ -390,7 +309,7 @@
 
             <!-- EXERCISES -->
             <div id="exercises" class="page">
-                <h1>Exercises</h1>
+                <h1>🏋️ Exercises</h1>
                 <div id="exercises-list"></div>
                 <button class="btn btn-primary" onclick="openExerciseModal()" style="margin-top: 20px;">
                     ➕ Add Exercise
@@ -399,7 +318,7 @@
 
             <!-- ANALYTICS -->
             <div id="analytics" class="page">
-                <h1>Analytics</h1>
+                <h1>📈 Analytics</h1>
                 <div class="grid" style="margin-bottom: 20px;">
                     <div class="metric">
                         <div class="metric-label">Total Volume</div>
@@ -414,15 +333,23 @@
                         <div class="metric-value" id="analytics-consistency">0%</div>
                     </div>
                 </div>
+
+                <div class="card">
+                    <h3>💡 Insights</h3>
+                    <div id="insights" style="font-size: 14px; color: rgba(255, 255, 255, 0.7); line-height: 1.6;"></div>
+                </div>
             </div>
 
             <!-- SETTINGS -->
             <div id="settings" class="page">
-                <h1>Settings</h1>
+                <h1>⚙️ Settings</h1>
                 <div class="card">
-                    <h3>👤 User</h3>
-                    <p style="color: rgba(255, 255, 255, 0.7); font-size: 14px; margin: 8px 0;" id="user-email">Loading...</p>
-                    <button class="btn btn-secondary" onclick="signOut()">Sign Out</button>
+                    <h3>☁️ Firebase</h3>
+                    <p style="font-size: 13px; color: rgba(255, 255, 255, 0.7);">✅ Connected to Firestore<br>Your data syncs in real-time</p>
+                </div>
+                <div class="card">
+                    <h3>📥 Export</h3>
+                    <button class="btn btn-secondary" onclick="exportData()">💾 Download JSON</button>
                 </div>
             </div>
         </div>
@@ -453,44 +380,70 @@
                 <h3>Add Exercise</h3>
                 <button class="modal-close" onclick="closeModal('exercise-modal')">✕</button>
             </div>
-
             <div class="input-group">
                 <label>Exercise Name</label>
-                <input type="text" id="exercise-name" placeholder="e.g., Bench Press">
+                <input type="text" id="exercise-name" placeholder="Bench Press">
             </div>
             <div class="input-group">
                 <label>Muscle Group</label>
                 <select id="exercise-muscle">
-                    <option value="Chest">Chest</option>
-                    <option value="Back">Back</option>
-                    <option value="Legs">Legs</option>
-                    <option value="Shoulders">Shoulders</option>
+                    <option>Chest</option>
+                    <option>Back</option>
+                    <option>Legs</option>
+                    <option>Shoulders</option>
+                    <option>Arms</option>
+                    <option>Core</option>
                 </select>
             </div>
             <div class="input-group">
                 <label>Sets</label>
-                <input type="number" id="exercise-sets" placeholder="4" value="4">
+                <input type="number" id="exercise-sets" value="4">
             </div>
             <div class="input-group">
                 <label>Min Reps</label>
-                <input type="number" id="exercise-min-reps" placeholder="6" value="6">
+                <input type="number" id="exercise-min-reps" value="6">
             </div>
             <div class="input-group">
                 <label>Max Reps</label>
-                <input type="number" id="exercise-max-reps" placeholder="10" value="10">
+                <input type="number" id="exercise-max-reps" value="10">
             </div>
             <div class="input-group">
-                <label>Target Weight (kg)</label>
-                <input type="number" id="exercise-weight" placeholder="100" value="100">
+                <label>Weight (kg)</label>
+                <input type="number" id="exercise-weight" value="100">
             </div>
-
-            <button class="btn btn-primary" onclick="saveExercise()">Add Exercise</button>
+            <button class="btn btn-primary" onclick="saveExercise()">Add</button>
             <button class="btn btn-secondary" onclick="closeModal('exercise-modal')">Cancel</button>
         </div>
     </div>
 
+    <div class="modal" id="session-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Log Workout</h3>
+                <button class="modal-close" onclick="closeModal('session-modal')">✕</button>
+            </div>
+            <div class="input-group">
+                <label>Weight (kg)</label>
+                <input type="number" id="session-weight" placeholder="100">
+            </div>
+            <div class="input-group">
+                <label>Reps</label>
+                <input type="number" id="session-reps" placeholder="10">
+            </div>
+            <div class="input-group">
+                <label>Duration (min)</label>
+                <input type="number" id="session-duration" value="60">
+            </div>
+            <div class="input-group">
+                <label>Notes</label>
+                <textarea id="session-notes" placeholder="How did it go?"></textarea>
+            </div>
+            <button class="btn btn-primary" onclick="saveWorkout()">Save</button>
+            <button class="btn btn-secondary" onclick="closeModal('session-modal')">Cancel</button>
+        </div>
+    </div>
+
     <script>
-        // FIREBASE CONFIG
         const firebaseConfig = {
             apiKey: "AIzaSyCRyiWkSsI5RbFWi-7A_NsSnJW2OGBSJlU",
             authDomain: "gymo-2093a.firebaseapp.com",
@@ -500,86 +453,60 @@
             appId: "1:585256903236:web:2893e4904e299f53bbd211"
         };
 
-        // Initialize Firebase
         firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
         const db = firebase.firestore();
 
-        // STATE
-        const state = {
-            user: null,
-            exercises: [],
-            sessions: []
-        };
+        let userId = null;
+        let exercises = [];
+        let sessions = [];
+        let currentExerciseId = null;
 
-        // AUTH
-        auth.onAuthStateChanged(user => {
-            if (user) {
-                state.user = { id: user.uid, name: user.displayName, email: user.email };
-                document.getElementById('loginScreen').style.display = 'none';
-                document.getElementById('appContent').style.display = 'block';
-                document.getElementById('navbar').style.display = 'flex';
-                document.getElementById('user-email').textContent = user.email;
-                loadUserData();
-            } else {
-                document.getElementById('loginScreen').style.display = 'flex';
-                document.getElementById('appContent').style.display = 'none';
-                document.getElementById('navbar').style.display = 'none';
-            }
-        });
-
-        async function signInWithGoogle() {
-            const provider = new firebase.auth.GoogleAuthProvider();
+        async function init() {
             try {
-                await auth.signInWithPopup(provider);
+                const user = await auth.signInAnonymously();
+                userId = user.user.uid;
+                await loadData();
+                showApp();
             } catch (error) {
-                alert('Sign in error: ' + error.message);
+                alert('Error: ' + error.message);
             }
         }
 
-        function signOut() {
-            auth.signOut();
+        async function loadData() {
+            const exSnap = await db.collection('users').doc(userId).collection('exercises').get();
+            exercises = exSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+            const sesSnap = await db.collection('users').doc(userId).collection('sessions').get();
+            sessions = sesSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+            if (exercises.length === 0) await initDemo();
+            renderAll();
         }
 
-        // DATA
-        async function loadUserData() {
-            try {
-                const exSnap = await db.collection('users').doc(state.user.id).collection('exercises').get();
-                state.exercises = exSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-
-                const sesSnap = await db.collection('users').doc(state.user.id).collection('sessions').get();
-                state.sessions = sesSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-
-                if (state.exercises.length === 0) await initDemoData();
-                
-                renderDashboard();
-                renderExercises();
-                renderPrograms();
-            } catch (error) {
-                console.error('Load error:', error);
-            }
-        }
-
-        async function initDemoData() {
+        async function initDemo() {
             const demos = [
                 { name: 'Bench Press', muscleGroup: 'Chest', sets: 4, minReps: 6, maxReps: 10, targetWeight: 100 },
                 { name: 'Squats', muscleGroup: 'Legs', sets: 4, minReps: 8, maxReps: 12, targetWeight: 140 },
-                { name: 'Deadlifts', muscleGroup: 'Back', sets: 3, minReps: 3, maxReps: 6, targetWeight: 180 },
-                { name: 'Pull-ups', muscleGroup: 'Back', sets: 3, minReps: 6, maxReps: 12, targetWeight: 0 }
+                { name: 'Deadlifts', muscleGroup: 'Back', sets: 3, minReps: 3, maxReps: 6, targetWeight: 180 }
             ];
 
             for (const ex of demos) {
-                const docRef = await db.collection('users').doc(state.user.id).collection('exercises').add(ex);
-                state.exercises.push({ id: docRef.id, ...ex });
+                const doc = await db.collection('users').doc(userId).collection('exercises').add(ex);
+                exercises.push({ id: doc.id, ...ex });
             }
         }
 
-        // UI
+        function showApp() {
+            document.getElementById('loadingScreen').style.display = 'none';
+            document.getElementById('appContent').style.display = 'block';
+            document.getElementById('navbar').style.display = 'flex';
+        }
+
         function switchPage(page) {
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
             document.getElementById(page).classList.add('active');
-
-            document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
             event.target.classList.add('active');
         }
 
@@ -600,8 +527,11 @@
         }
 
         async function saveExercise() {
+            const name = document.getElementById('exercise-name').value;
+            if (!name) return;
+
             const ex = {
-                name: document.getElementById('exercise-name').value,
+                name,
                 muscleGroup: document.getElementById('exercise-muscle').value,
                 sets: parseInt(document.getElementById('exercise-sets').value),
                 minReps: parseInt(document.getElementById('exercise-min-reps').value),
@@ -609,27 +539,53 @@
                 targetWeight: parseInt(document.getElementById('exercise-weight').value)
             };
 
-            if (!ex.name) { alert('Enter exercise name'); return; }
+            const doc = await db.collection('users').doc(userId).collection('exercises').add(ex);
+            exercises.push({ id: doc.id, ...ex });
+            closeModal('exercise-modal');
+            renderAll();
+            showToast('✅ Added!');
+            document.getElementById('exercise-name').value = '';
+        }
 
-            try {
-                const docRef = await db.collection('users').doc(state.user.id).collection('exercises').add(ex);
-                state.exercises.push({ id: docRef.id, ...ex });
-                closeModal('exercise-modal');
-                renderExercises();
-                showToast('✅ Exercise added');
-                document.getElementById('exercise-name').value = '';
-            } catch (error) {
-                alert('Error: ' + error.message);
-            }
+        function startSession(exId) {
+            currentExerciseId = exId;
+            closeModal('workout-modal');
+            openModal('session-modal');
+        }
+
+        async function saveWorkout() {
+            if (!currentExerciseId) return;
+
+            const session = {
+                exerciseId: currentExerciseId,
+                weight: parseInt(document.getElementById('session-weight').value) || 0,
+                reps: parseInt(document.getElementById('session-reps').value) || 0,
+                duration: parseInt(document.getElementById('session-duration').value) || 60,
+                notes: document.getElementById('session-notes').value,
+                date: new Date()
+            };
+
+            const doc = await db.collection('users').doc(userId).collection('sessions').add(session);
+            sessions.push({ id: doc.id, ...session });
+            closeModal('session-modal');
+            renderAll();
+            showToast('✅ Saved!');
+        }
+
+        function renderAll() {
+            renderDashboard();
+            renderExercises();
+            renderPrograms();
+            renderAnalytics();
         }
 
         function renderDashboard() {
             const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-            const week = state.sessions.filter(s => new Date(s.date) > weekAgo);
+            const week = sessions.filter(s => new Date(s.date.toDate ? s.date.toDate() : s.date) > weekAgo);
 
             let volume = 0, duration = 0;
             week.forEach(s => {
-                volume += s.volume || 0;
+                volume += (s.weight * s.reps) || 0;
                 duration += s.duration || 0;
             });
 
@@ -637,7 +593,7 @@
             document.getElementById('workout-count').textContent = week.length;
             document.getElementById('avg-duration').textContent = week.length > 0 ? Math.round(duration / week.length) : 0;
 
-            const html = state.exercises.slice(0, 3).map(ex => `
+            const html = exercises.slice(0, 3).map(ex => `
                 <div class="exercise-item">
                     <div class="exercise-info">
                         <h3>${ex.name}</h3>
@@ -646,48 +602,59 @@
                     <span class="badge badge-${ex.muscleGroup.toLowerCase()}">${ex.muscleGroup}</span>
                 </div>
             `).join('');
-
             document.getElementById('next-workout').innerHTML = html;
         }
 
         function renderExercises() {
-            const html = state.exercises.map(ex => `
+            const html = exercises.map(ex => `
                 <div class="exercise-item">
                     <div class="exercise-info">
                         <h3>${ex.name}</h3>
-                        <p>${ex.sets} sets • ${ex.minReps}-${ex.maxReps} reps</p>
+                        <p>${ex.sets} sets • ${ex.minReps}-${ex.maxReps} reps • ${ex.targetWeight}kg</p>
                     </div>
                     <span class="badge badge-${ex.muscleGroup.toLowerCase()}">${ex.muscleGroup}</span>
                 </div>
             `).join('');
-
             document.getElementById('exercises-list').innerHTML = html;
         }
 
         function renderPrograms() {
-            const html = `
-                <button class="btn btn-secondary" onclick="startWorkout()">Upper Body</button>
-                <button class="btn btn-secondary" onclick="startWorkout()">Lower Body</button>
-                <button class="btn btn-secondary" onclick="startWorkout()">Full Body</button>
-            `;
+            const html = exercises.map(ex => `
+                <button class="btn btn-secondary" onclick="startSession('${ex.id}')" style="margin-bottom: 8px;">
+                    ${ex.name}
+                </button>
+            `).join('');
             document.getElementById('programs-list').innerHTML = html;
         }
 
-        async function startWorkout() {
-            closeModal('workout-modal');
-            const session = {
-                date: new Date(),
-                volume: Math.floor(Math.random() * 20000) + 5000,
-                duration: 60
-            };
-            try {
-                await db.collection('users').doc(state.user.id).collection('sessions').add(session);
-                state.sessions.push(session);
-                renderDashboard();
-                showToast('✅ Workout saved!');
-            } catch (error) {
-                alert('Error: ' + error.message);
-            }
+        function renderAnalytics() {
+            let totalVolume = 0;
+            sessions.forEach(s => {
+                totalVolume += (s.weight * s.reps) || 0;
+            });
+
+            document.getElementById('analytics-volume').textContent = totalVolume.toLocaleString();
+            document.getElementById('analytics-workouts').textContent = sessions.length;
+            document.getElementById('analytics-consistency').textContent = sessions.length > 0 ? Math.round((sessions.length / 30) * 100) : 0;
+
+            const insights = [
+                '💪 Keep crushing it!',
+                `📊 Total workouts: ${sessions.length}`,
+                `🔥 Total volume: ${totalVolume.toLocaleString()}kg`
+            ];
+
+            document.getElementById('insights').innerHTML = insights.map(i => `<p>• ${i}</p>`).join('');
+        }
+
+        function exportData() {
+            const data = { exercises, sessions, date: new Date().toISOString() };
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `fitpro-${Date.now()}.json`;
+            a.click();
+            showToast('✅ Downloaded!');
         }
 
         function showToast(msg) {
@@ -697,6 +664,8 @@
             document.body.appendChild(toast);
             setTimeout(() => toast.remove(), 2000);
         }
+
+        init();
     </script>
 </body>
 </html>
