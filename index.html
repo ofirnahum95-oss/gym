@@ -747,6 +747,14 @@
             margin: 0;
         }
 
+        #analytics-suggestions {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        }
+
+        #analytics-suggestions > div:last-child {
+            border-bottom: none !important;
+        }
+
         /* Safe area considerations */
         @supports (padding: max(0px)) {
             .container {
@@ -794,9 +802,14 @@
                 <!-- VIEW 2: PROGRESS ANALYTICS -->
                 <div id="view-analytics" class="tab-view">
                     <div class="view-title">📈 מדדי התקדמות</div>
-                    <select id="analytics-picker" onchange="runExerciseAnalytics(this.value)">
-                        <option value="">-- בחר תרגיל לניתוח --</option>
-                    </select>
+                    <input 
+                        type="text" 
+                        id="analytics-picker" 
+                        placeholder="חפש שם תרגיל..." 
+                        oninput="filterAnalyticsExercises(this.value)"
+                        onkeydown="handleAnalyticsKeydown(event)"
+                        style="background: #fff;">
+                    <div id="analytics-suggestions" style="display: none; background: white; border: 1px solid rgba(0,0,0,0.08); border-radius: 12px; max-height: 200px; overflow-y: auto; margin-bottom: 12px; z-index: 10; position: relative;"></div>
                     
                     <div id="analytics-panel" style="display: none;">
                         <div class="metrics-row">
@@ -886,7 +899,7 @@
     <!-- BOTTOM NAV -->
     <nav class="bottom-nav">
         <button class="nav-tab active" onclick="switchTab('view-workout', this)"><icon>🏋️‍♂️</icon>אימון</button>
-        <button class="nav-tab" onclick="switchTab('view-analytics', this); populateAnalyticsDropdown();"><icon>📈</icon>אנליזה</button>
+        <button class="nav-tab" onclick="switchTab('view-analytics', this)"><icon>📈</icon>אנליזה</button>
         <button class="nav-tab" onclick="switchTab('view-add', this)"><icon>➕</icon>הוספה</button>
         <button class="nav-tab" onclick="switchTab('view-settings', this)"><icon>⚙️</icon>הגדרות</button>
     </nav>
@@ -1285,30 +1298,134 @@
             displayNativeToast('✅ האימון נשמר בהצלחה!');
         }
 
-        function populateAnalyticsDropdown() {
-            const picker = document.getElementById('analytics-picker');
-            picker.innerHTML = '<option value="">-- בחר תרגיל --</option>';
-            let uniqueSet = new Set();
+        // ============ EXERCISE NAME NORMALIZATION ============
+        function normalizeExerciseName(name) {
+            // Convert to lowercase, remove extra spaces, split into words, sort, rejoin
+            return name
+                .toLowerCase()
+                .trim()
+                .split(/\s+/)
+                .sort()
+                .join(' ');
+        }
+
+        function getUniqueExercises() {
+            let exerciseMap = new Map(); // normalized name → original name
             
             stateWorkouts.forEach(w => {
-                w.exercises?.forEach(ex => uniqueSet.add(ex.name.trim()));
+                w.exercises?.forEach(ex => {
+                    const originalName = ex.name.trim();
+                    const normalized = normalizeExerciseName(originalName);
+                    
+                    // Keep track of normalized → display name
+                    if (!exerciseMap.has(normalized)) {
+                        exerciseMap.set(normalized, originalName);
+                    }
+                });
             });
             
-            if (uniqueSet.size === 0) return;
+            return exerciseMap;
+        }
+
+        let analyticsSelectedIndex = -1;
+
+        function handleAnalyticsKeydown(event) {
+            const suggestionBox = document.getElementById('analytics-suggestions');
+            const suggestions = suggestionBox.querySelectorAll('div');
             
-            uniqueSet.forEach(name => {
-                let opt = document.createElement('option');
-                opt.value = name; 
-                opt.textContent = name;
-                picker.appendChild(opt);
+            if (event.key === 'ArrowDown') {
+                event.preventDefault();
+                analyticsSelectedIndex = Math.min(analyticsSelectedIndex + 1, suggestions.length - 1);
+                updateAnalyticsSuggestionSelection(suggestions);
+            } else if (event.key === 'ArrowUp') {
+                event.preventDefault();
+                analyticsSelectedIndex = Math.max(analyticsSelectedIndex - 1, -1);
+                updateAnalyticsSuggestionSelection(suggestions);
+            } else if (event.key === 'Enter') {
+                event.preventDefault();
+                if (analyticsSelectedIndex >= 0 && analyticsSelectedIndex < suggestions.length) {
+                    suggestions[analyticsSelectedIndex].click();
+                }
+            } else if (event.key === 'Escape') {
+                suggestionBox.style.display = 'none';
+            }
+        }
+
+        function updateAnalyticsSuggestionSelection(suggestions) {
+            suggestions.forEach((s, i) => {
+                if (i === analyticsSelectedIndex) {
+                    s.style.background = 'rgba(0,82,204,0.1)';
+                    s.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                } else {
+                    s.style.background = 'transparent';
+                }
             });
         }
 
-        function runExerciseAnalytics(name) {
+        function handleAnalyticsSelect(index) {
+            const exerciseMap = getUniqueExercises();
+            const exercises = Array.from(exerciseMap.entries());
+            
+            if (index >= 0 && index < exercises.length) {
+                const [normalized, display] = exercises[index];
+                document.getElementById('analytics-picker').value = display;
+                document.getElementById('analytics-suggestions').style.display = 'none';
+                runExerciseAnalytics(normalized);
+            }
+        }
+
+        function filterAnalyticsExercises(searchQuery) {
+            const suggestionBox = document.getElementById('analytics-suggestions');
+            const exerciseMap = getUniqueExercises();
+            
+            analyticsSelectedIndex = -1; // Reset selection
+            
+            if (!searchQuery.trim()) {
+                suggestionBox.style.display = 'none';
+                return;
+            }
+            
+            const normalizedQuery = normalizeExerciseName(searchQuery);
+            const matches = [];
+            
+            let index = 0;
+            exerciseMap.forEach((displayName, normalizedName) => {
+                // Check if normalized name contains all words from query
+                const queryWords = normalizedQuery.split(/\s+/);
+                if (queryWords.every(word => normalizedName.includes(word))) {
+                    matches.push({ index: index, normalized: normalizedName, display: displayName });
+                }
+                index++;
+            });
+            
+            if (matches.length === 0) {
+                suggestionBox.style.display = 'none';
+                return;
+            }
+            
+            suggestionBox.innerHTML = matches.map(m => `
+                <div 
+                    style="padding: 12px 14px; border-bottom: 1px solid rgba(0,0,0,0.04); cursor: pointer; font-size: 14px; transition: background 0.15s;" 
+                    onmouseover="this.style.background='rgba(0,82,204,0.05)'"
+                    onmouseout="this.style.background='transparent'"
+                    onclick="handleAnalyticsSelect(${m.index})">
+                    ${m.display}
+                </div>
+            `).join('');
+            
+            suggestionBox.style.display = 'block';
+        }
+
+        function populateAnalyticsDropdown() {
+            // Legacy function - no longer needed
+            // Exercise suggestions are now handled dynamically by filterAnalyticsExercises
+        }
+
+        function runExerciseAnalytics(normalizedName) {
             const panel = document.getElementById('analytics-panel');
             const empty = document.getElementById('analytics-empty');
             
-            if (!name) { 
+            if (!normalizedName) { 
                 panel.style.display = 'none'; 
                 empty.style.display = 'block'; 
                 return; 
@@ -1324,7 +1441,8 @@
 
             stateWorkouts.forEach(w => {
                 w.exercises?.forEach(ex => {
-                    if (ex.name.trim() === name) {
+                    const exNormalized = normalizeExerciseName(ex.name.trim());
+                    if (exNormalized === normalizedName) {
                         totalSetsCount += ex.sets;
                         if (ex.weight > maxWeight) maxWeight = ex.weight;
                         
