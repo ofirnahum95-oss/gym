@@ -94,6 +94,8 @@
             display: flex;
             flex-direction: column;
             overflow: hidden;
+            width: 100vw;
+            height: 100vh;
             margin: 0;
             padding: 0;
         }
@@ -455,7 +457,7 @@
         /* Bottom Tab Navigation */
         .bottom-nav {
             position: fixed; 
-            bottom: 0; 
+            bottom: -1px; 
             left: 0; 
             right: 0;
             background: rgba(245, 247, 250, 0.95);
@@ -464,12 +466,14 @@
             -webkit-backdrop-filter: blur(20px);
             display: flex; 
             justify-content: space-around;
-            align-items: center;
-            padding: 8px 10px calc(6px + env(safe-area-inset-bottom));
+            align-items: flex-end;
+            padding: 10px 10px 0;
             z-index: 1000;
             box-shadow: 0 -4px 20px rgba(0,0,0,0.04);
             box-sizing: border-box;
-            width: 100%;
+            height: auto;
+            min-height: 70px;
+            width: 100vw;
             margin: 0;
         }
 
@@ -480,13 +484,15 @@
             display: flex; 
             flex-direction: column; 
             align-items: center;
-            gap: 4px; 
+            gap: 3px; 
             font-size: 11px; 
             font-weight: 700; 
             cursor: pointer; 
-            padding: 4px;
+            width: 60px;
+            padding: 6px 4px;
             transition: color 0.2s, transform 0.15s;
             -webkit-user-select: none;
+            min-height: 48px;
             justify-content: center;
             flex: 1;
         }
@@ -1063,14 +1069,20 @@
                 <!-- VIEW 2: PROGRESS ANALYTICS -->
                 <div id="view-analytics" class="tab-view">
                     <div class="view-title">📈 מדדי התקדמות</div>
-                    <input 
-                        type="text" 
-                        id="analytics-picker" 
-                        placeholder="חפש שם תרגיל..." 
-                        oninput="filterAnalyticsExercises(this.value)"
-                        onkeydown="handleAnalyticsKeydown(event)"
-                        style="background: #fff;">
-                    <div id="analytics-suggestions" style="display: none; background: white; border: 1px solid rgba(0,0,0,0.08); border-radius: 12px; max-height: 200px; overflow-y: auto; margin-bottom: 12px; z-index: 10; position: relative;"></div>
+                    <div style="display:flex; gap:8px; margin-bottom: 0;">
+                        <input 
+                            type="text" 
+                            id="analytics-picker" 
+                            placeholder="חפש שם תרגיל..." 
+                            oninput="filterAnalyticsExercises(this.value)"
+                            onkeydown="handleAnalyticsKeydown(event)"
+                            style="background: #fff; flex:1; margin-bottom:0;">
+                        <button class="btn btn-secondary" onclick="toggleMuscleGroupBrowser()" style="width:auto; padding:0 16px; margin:0; flex-shrink:0;" title="עיון לפי קבוצת שריר">📋</button>
+                    </div>
+                    <div id="analytics-suggestions" style="display: none; background: white; border: 1px solid rgba(0,0,0,0.08); border-radius: 12px; max-height: 200px; overflow-y: auto; margin-top: 8px; margin-bottom: 12px; z-index: 10; position: relative;"></div>
+                    <div id="muscle-group-browser" style="display: none; background: white; border: 1px solid rgba(0,0,0,0.08); border-radius: 12px; max-height: 280px; overflow-y: auto; margin-top: 8px; margin-bottom: 12px; z-index: 10; position: relative;">
+                        <div id="muscle-group-list"></div>
+                    </div>
                     
                     <div id="analytics-panel" style="display: none;">
                         <div class="metrics-row">
@@ -1184,6 +1196,7 @@
 
     <script>
         // ============ FIREBASE CONFIGURATION ============
+        // ⚠️ QA FIX #1: Use the correct Firebase endpoint from BabyBloom setup
         const FIREBASE_ENDPOINT = 'https://baby-88eb0-default-rtdb.firebaseio.com/fitpro';
         
         // ============ STATE MANAGEMENT ============
@@ -1238,6 +1251,7 @@
             stopwatchSecondsElapsed = 0;
             updateStopwatchDisplay();
             
+            // QA FIX #2: Don't auto-start on reset - let user control it
             if (isStopwatchRunning) {
                 clearInterval(stopwatchInterval);
                 document.getElementById('stopwatch-toggle-btn').textContent = '▶️';
@@ -1288,15 +1302,6 @@
             let numVal = parseFloat(value) || 0;
             if (numVal < 0) numVal = 0;
 
-            if (field === 'reps') numVal = Math.max(1, Math.floor(numVal));
-
-            if ((field === 'weight' && targetExercise.weight === numVal) || 
-                (field === 'reps' && targetExercise.reps === numVal)) {
-                const inputField = document.getElementById(`inp-${field === 'weight' ? 'w' : 'r'}-${exerciseIndex}`);
-                if (inputField) inputField.classList.remove('active');
-                return;
-            }
-
             const oldRecord = { 
                 date: new Date().toISOString(), 
                 sets: targetExercise.sets, 
@@ -1308,14 +1313,11 @@
             targetExercise.history.push(oldRecord);
 
             if (field === 'weight') targetExercise.weight = numVal;
-            if (field === 'reps') targetExercise.reps = numVal;
+            if (field === 'reps') targetExercise.reps = Math.max(1, Math.floor(numVal));
 
             await syncToCloud('/workouts', stateWorkouts);
             renderWeeklyWorkoutDashboard();
             rebuildChangesSummaryReport();
-            
-            const inputField = document.getElementById(`inp-${field === 'weight' ? 'w' : 'r'}-${exerciseIndex}`);
-            if (inputField) inputField.classList.remove('active');
         }
 
         async function modifyMetric(exerciseIndex, field, delta) {
@@ -1343,6 +1345,7 @@
             renderWeeklyWorkoutDashboard();
             rebuildChangesSummaryReport();
 
+            // Animate the update
             setTimeout(() => {
                 const elem = field === 'weight' ? 
                     document.querySelector(`#inp-w-${exerciseIndex} + .step-value`) :
@@ -1428,6 +1431,7 @@
                     let currentImportDate = null;
                     let currentImportExercises = [];
                     
+                    // QA FIX #3: More flexible date regex for WhatsApp exports
                     const whatsappHeaderRegex = /^\[?(\d{1,2})[\.\/](\d{1,2})[\.\/](\d{2,4})/;
 
                     for (let i = 0; i < lines.length; i++) {
@@ -1527,6 +1531,7 @@
         }
 
         function parseExerciseStringToken(str) {
+            // QA FIX #4: Better parsing with edge case handling
             const match = str.match(/(\d+)[×x](\d+)/);
             if (!match) return null;
             
@@ -1593,29 +1598,216 @@
 
         // ============ EXERCISE NAME NORMALIZATION ============
         function normalizeExerciseName(name) {
+            // Strip ALL whitespace and punctuation entirely so that
+            // "דד ליפט", "דדליפט" and "דד-ליפט" all collapse to the same string.
             return name
                 .toLowerCase()
                 .trim()
-                .split(/\s+/)
-                .sort()
-                .join(' ');
+                .replace(/["'׳״\-־,.׃:]+/g, '')
+                .replace(/\s+/g, '');
         }
 
-        function getUniqueExercises() {
-            let exerciseMap = new Map();
-            
+        // Levenshtein edit distance - used to catch typos/transpositions
+        // (e.g. "רומניאן" vs "רומינאן")
+        function levenshteinDistance(a, b) {
+            const m = a.length, n = b.length;
+            if (m === 0) return n;
+            if (n === 0) return m;
+            const dp = Array.from({ length: m + 1 }, () => new Array(n + 1).fill(0));
+            for (let i = 0; i <= m; i++) dp[i][0] = i;
+            for (let j = 0; j <= n; j++) dp[0][j] = j;
+            for (let i = 1; i <= m; i++) {
+                for (let j = 1; j <= n; j++) {
+                    const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+                    dp[i][j] = Math.min(
+                        dp[i - 1][j] + 1,
+                        dp[i][j - 1] + 1,
+                        dp[i - 1][j - 1] + cost
+                    );
+                }
+            }
+            return dp[m][n];
+        }
+
+        function isSimilarExerciseName(a, b) {
+            if (a === b) return true;
+            const maxLen = Math.max(a.length, b.length);
+            if (maxLen === 0) return true;
+            const dist = levenshteinDistance(a, b);
+            // Allow small typo tolerance relative to name length (roughly 1 typo per ~5-6 chars)
+            const threshold = Math.max(1, Math.floor(maxLen * 0.18));
+            return dist <= threshold;
+        }
+
+        // Union-Find clustering of normalized names that are similar enough
+        // to be considered the same exercise (spacing differences + minor typos)
+        function clusterExerciseNames(names) {
+            const parent = {};
+            function find(x) {
+                if (parent[x] === undefined) parent[x] = x;
+                if (parent[x] !== x) parent[x] = find(parent[x]);
+                return parent[x];
+            }
+            function union(x, y) {
+                const rx = find(x), ry = find(y);
+                if (rx !== ry) parent[rx] = ry;
+            }
+            names.forEach(n => { if (parent[n] === undefined) parent[n] = n; });
+            for (let i = 0; i < names.length; i++) {
+                for (let j = i + 1; j < names.length; j++) {
+                    if (isSimilarExerciseName(names[i], names[j])) {
+                        union(names[i], names[j]);
+                    }
+                }
+            }
+            const clusterOf = {};
+            names.forEach(n => { clusterOf[n] = find(n); });
+            return clusterOf;
+        }
+
+        function computeExerciseClusters() {
+            // rawMap: strictly-normalized name -> { display, count }
+            const rawMap = new Map();
             stateWorkouts.forEach(w => {
                 w.exercises?.forEach(ex => {
                     const originalName = ex.name.trim();
                     const normalized = normalizeExerciseName(originalName);
-                    
-                    if (!exerciseMap.has(normalized)) {
-                        exerciseMap.set(normalized, originalName);
+                    if (!normalized) return;
+                    if (!rawMap.has(normalized)) {
+                        rawMap.set(normalized, { display: originalName, count: 1 });
+                    } else {
+                        rawMap.get(normalized).count++;
                     }
                 });
             });
-            
-            return exerciseMap;
+
+            const normalizedNames = Array.from(rawMap.keys());
+            const clusterOf = clusterExerciseNames(normalizedNames);
+
+            // Pick the most frequently-used original spelling as the display name per cluster
+            const bestDisplay = new Map(); // root -> { display, count }
+            normalizedNames.forEach(n => {
+                const root = clusterOf[n];
+                const info = rawMap.get(n);
+                const current = bestDisplay.get(root);
+                if (!current || info.count > current.count) {
+                    bestDisplay.set(root, { display: info.display, count: info.count });
+                }
+            });
+
+            const exerciseMap = new Map(); // root -> display name
+            bestDisplay.forEach((v, root) => exerciseMap.set(root, v.display));
+
+            return { clusterOf, exerciseMap };
+        }
+
+        function getUniqueExercises() {
+            return computeExerciseClusters().exerciseMap;
+        }
+
+        // ============ MUSCLE GROUP CATEGORIZATION ============
+        const MUSCLE_GROUPS = {
+            chest:     { label: 'חזה',        emoji: '🏋️', keywords: ['חזה', 'פרפר', 'דיפס', 'לחיצת חזה', 'פוש אפ', 'פרפליי'] },
+            back:      { label: 'גב',         emoji: '🔙', keywords: ['גב', 'משיכה', 'חתירה', 'פולי', 'מתח', 'טי בר', 'טי-בר', 'רחבים'] },
+            legs:      { label: 'רגליים',      emoji: '🦵', keywords: ['רגל', 'רגליים', 'סקוואט', 'ירך', 'שוק', 'לאנג', 'דדליפט', 'דד ליפט', 'כפיפת ברך', 'פשיטת ברך', 'ישבן', 'עכוז'] },
+            shoulders: { label: 'כתפיים',      emoji: '🤸', keywords: ['כתף', 'כתפיים', 'הרחקה', 'ארנולד', 'לחיצת כתפיים'] },
+            arms:      { label: 'ידיים',       emoji: '💪', keywords: ['יד', 'ידיים', 'ביצפס', 'טריצפס', 'פטיש', 'כפיפת מרפק', 'פשיטת מרפק', 'סקוט'] },
+            core:      { label: 'בטן וליבה',   emoji: '🧘', keywords: ['בטן', 'ליבה', 'פלאנק', 'גחון', 'כפיפות בטן'] },
+            other:     { label: 'אחר',        emoji: '⚙️', keywords: [] }
+        };
+
+        function categorizeExercise(name) {
+            const lower = (name || '').toLowerCase();
+            for (const key of ['chest', 'back', 'legs', 'shoulders', 'arms', 'core']) {
+                const group = MUSCLE_GROUPS[key];
+                if (group.keywords.some(kw => lower.includes(kw))) {
+                    return key;
+                }
+            }
+            return 'other';
+        }
+
+        // ============ MUSCLE GROUP BROWSER (hierarchical dropdown) ============
+        let currentGroupExerciseList = []; // [[root, display], ...] for the currently open group
+
+        function toggleMuscleGroupBrowser() {
+            const browser = document.getElementById('muscle-group-browser');
+            const suggestions = document.getElementById('analytics-suggestions');
+            suggestions.style.display = 'none';
+
+            if (browser.style.display === 'none') {
+                renderMuscleGroupList();
+                browser.style.display = 'block';
+            } else {
+                browser.style.display = 'none';
+            }
+        }
+
+        function renderMuscleGroupList() {
+            const container = document.getElementById('muscle-group-list');
+            const exerciseMap = getUniqueExercises();
+
+            const groupCounts = {};
+            exerciseMap.forEach((display) => {
+                const g = categorizeExercise(display);
+                groupCounts[g] = (groupCounts[g] || 0) + 1;
+            });
+
+            const groupsToShow = Object.keys(MUSCLE_GROUPS).filter(k => groupCounts[k] > 0);
+
+            if (groupsToShow.length === 0) {
+                container.innerHTML = '<div style="padding:16px; text-align:center; color:var(--text-muted); font-size:13px;">אין תרגילים עדיין</div>';
+                return;
+            }
+
+            container.innerHTML = groupsToShow.map(key => {
+                const g = MUSCLE_GROUPS[key];
+                return `
+                    <div onclick="browseMuscleGroup('${key}')" 
+                         style="padding:14px; border-bottom:1px solid rgba(0,0,0,0.04); cursor:pointer; display:flex; justify-content:space-between; align-items:center; font-size:14px; font-weight:700; transition: background 0.15s;"
+                         onmouseover="this.style.background='rgba(0,82,204,0.05)'" onmouseout="this.style.background='transparent'">
+                        <span>${g.emoji} ${g.label}</span>
+                        <span style="color:var(--text-muted); font-weight:400; font-size:12px;">${groupCounts[key]} תרגילים ‹</span>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function browseMuscleGroup(groupKey) {
+            const container = document.getElementById('muscle-group-list');
+            const exerciseMap = getUniqueExercises();
+            const group = MUSCLE_GROUPS[groupKey];
+
+            currentGroupExerciseList = Array.from(exerciseMap.entries())
+                .filter(([root, display]) => categorizeExercise(display) === groupKey);
+
+            let html = `
+                <div onclick="renderMuscleGroupList()" style="padding:12px 14px; border-bottom:1px solid rgba(0,0,0,0.08); cursor:pointer; font-size:13px; color:var(--accent); font-weight:700;">
+                    › חזרה לקבוצות שריר
+                </div>
+                <div style="padding:10px 14px; font-size:12px; color:var(--text-muted); font-weight:700;">${group.emoji} ${group.label}</div>
+            `;
+
+            if (currentGroupExerciseList.length === 0) {
+                html += '<div style="padding:16px; text-align:center; color:var(--text-muted); font-size:13px;">אין תרגילים בקבוצה זו</div>';
+            } else {
+                html += currentGroupExerciseList.map(([root, display], i) => `
+                    <div onclick="selectMuscleGroupExercise(${i})" 
+                         style="padding:14px; border-bottom:1px solid rgba(0,0,0,0.04); cursor:pointer; font-size:14px; transition: background 0.15s;"
+                         onmouseover="this.style.background='rgba(0,82,204,0.05)'" onmouseout="this.style.background='transparent'">
+                        ${display}
+                    </div>
+                `).join('');
+            }
+
+            container.innerHTML = html;
+        }
+
+        function selectMuscleGroupExercise(index) {
+            const [root, display] = currentGroupExerciseList[index];
+            document.getElementById('analytics-picker').value = display;
+            document.getElementById('muscle-group-browser').style.display = 'none';
+            runExerciseAnalytics(root);
         }
 
         let analyticsSelectedIndex = -1;
@@ -1653,22 +1845,25 @@
             });
         }
 
-        function handleAnalyticsSelect(normalizedName) {
+        function handleAnalyticsSelect(index) {
             const exerciseMap = getUniqueExercises();
-            const displayName = exerciseMap.get(normalizedName);
+            const exercises = Array.from(exerciseMap.entries());
             
-            if (displayName) {
-                document.getElementById('analytics-picker').value = displayName;
+            if (index >= 0 && index < exercises.length) {
+                const [normalized, display] = exercises[index];
+                document.getElementById('analytics-picker').value = display;
                 document.getElementById('analytics-suggestions').style.display = 'none';
-                runExerciseAnalytics(normalizedName);
+                runExerciseAnalytics(normalized);
             }
         }
 
         function filterAnalyticsExercises(searchQuery) {
             const suggestionBox = document.getElementById('analytics-suggestions');
+            const groupBrowser = document.getElementById('muscle-group-browser');
+            groupBrowser.style.display = 'none';
             const exerciseMap = getUniqueExercises();
             
-            analyticsSelectedIndex = -1; 
+            analyticsSelectedIndex = -1; // Reset selection
             
             if (!searchQuery.trim()) {
                 suggestionBox.style.display = 'none';
@@ -1678,11 +1873,14 @@
             const normalizedQuery = normalizeExerciseName(searchQuery);
             const matches = [];
             
+            let index = 0;
             exerciseMap.forEach((displayName, normalizedName) => {
+                // Check if normalized name contains all words from query
                 const queryWords = normalizedQuery.split(/\s+/);
                 if (queryWords.every(word => normalizedName.includes(word))) {
-                    matches.push({ normalized: normalizedName, display: displayName });
+                    matches.push({ index: index, normalized: normalizedName, display: displayName });
                 }
+                index++;
             });
             
             if (matches.length === 0) {
@@ -1695,12 +1893,17 @@
                     style="padding: 12px 14px; border-bottom: 1px solid rgba(0,0,0,0.04); cursor: pointer; font-size: 14px; transition: background 0.15s;" 
                     onmouseover="this.style.background='rgba(0,82,204,0.05)'"
                     onmouseout="this.style.background='transparent'"
-                    onclick="handleAnalyticsSelect('${m.normalized.replace(/'/g, "\\'")}')">
+                    onclick="handleAnalyticsSelect(${m.index})">
                     ${m.display}
                 </div>
             `).join('');
             
             suggestionBox.style.display = 'block';
+        }
+
+        function populateAnalyticsDropdown() {
+            // Legacy function - no longer needed
+            // Exercise suggestions are now handled dynamically by filterAnalyticsExercises
         }
 
         function runExerciseAnalytics(normalizedName) {
@@ -1721,10 +1924,12 @@
             let totalSetsCount = 0;
             let logHtml = '';
 
+            const { clusterOf } = computeExerciseClusters();
+
             stateWorkouts.forEach(w => {
                 w.exercises?.forEach(ex => {
                     const exNormalized = normalizeExerciseName(ex.name.trim());
-                    if (exNormalized === normalizedName) {
+                    if (clusterOf[exNormalized] === normalizedName) {
                         totalSetsCount += ex.sets;
                         if (ex.weight > maxWeight) maxWeight = ex.weight;
                         
@@ -1743,11 +1948,10 @@
                         
                         if (ex.history) {
                             ex.history.forEach(h => {
-                                const currentWeight = parseFloat(h.weight) || 0;
-                                if (currentWeight > maxWeight) maxWeight = currentWeight;
+                                if (h.weight > maxWeight) maxWeight = h.weight;
                                 const hd = new Date(h.date);
                                 dataPoints.push({ 
-                                    weight: currentWeight, 
+                                    weight: h.weight, 
                                     label: hd.toLocaleDateString('he-IL', {day:'numeric', month:'short'}), 
                                     timestamp: hd.getTime() 
                                 });
@@ -1898,6 +2102,7 @@
                     displayNativeToast('⚠️ בעיה בסנכרון - בדוק חיבור');
                 }
                 
+                // QA FIX #5: Save to localStorage as backup
                 saveLocalBackup(data);
             } catch (e) { 
                 setSyncStatus(false);
@@ -2065,6 +2270,7 @@
         }
 
         function applyMicroInteractions() {
+            // Better button feedback
             document.querySelectorAll('.btn').forEach(btn => {
                 btn.addEventListener('mousedown', function() {
                     this.style.transform = 'scale(0.98)';
@@ -2074,6 +2280,7 @@
                 });
             });
 
+            // Card hover effects
             document.querySelectorAll('.card, .workout-card').forEach(card => {
                 card.addEventListener('mouseenter', function() {
                     this.style.cursor = 'pointer';
@@ -2082,25 +2289,31 @@
         }
 
         function initializeTheme() {
+            // Load dark mode preference
             if (localStorage.getItem('fitpro-darkMode') === 'true') {
                 document.body.classList.add('dark-mode');
             }
 
+            // Load color scheme preference
             const savedColor = localStorage.getItem('fitpro-color');
             if (savedColor) {
                 document.documentElement.setAttribute('data-color', savedColor);
             }
 
+            // Apply micro-interactions
             applyMicroInteractions();
         }
 
         // ============ INIT ============
         window.addEventListener('load', async () => {
+            // Initialize theme and visual enhancements
             initializeTheme();
             
+            // Try cloud sync first
             let data = await syncFromCloud('/workouts');
             let dataSource = 'Firebase Cloud ☁️';
             
+            // Fallback to local backup
             if (!data) {
                 data = loadLocalBackup();
                 dataSource = 'Local Storage 📱';
@@ -2112,7 +2325,6 @@
                 stateWorkouts.sort((a, b) => new Date(a.date) - new Date(b.date));
                 console.log(`✅ Loaded ${stateWorkouts.length} workouts from: ${dataSource}`);
             } else {
-                stateWorkouts = [];
                 console.log('📭 No data found (Firebase empty & no local backup)');
             }
             
@@ -2125,6 +2337,7 @@
             updateStopwatchDisplay();
         });
 
+        // Prevent accidental navigation
         window.addEventListener('beforeunload', (e) => {
             if (isSyncing) {
                 e.preventDefault();
