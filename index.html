@@ -2118,7 +2118,8 @@
                             weight: ex.weight, 
                             oldWeight: first.weight, 
                             reps: ex.reps, 
-                            oldReps: first.reps 
+                            oldReps: first.reps,
+                            sets: ex.sets || 3
                         });
                     }
                 }
@@ -2126,15 +2127,14 @@
 
             if (list.length === 0) return toggleReportingButtons(false);
 
-            let txt = 'היי 🙋‍♂️\nהנה העדכונים מהשבוע:\n\n';
+            // Format: - [תרגיל] [רפס עדכני]×[סטים] ([משקל עדכני])
+            let txt = 'היי✨ מצרף עדכונים\n\n';
             list.forEach(ex => {
-                const wChange = ex.weight > ex.oldWeight ? `⬆️ ${ex.oldWeight}←${ex.weight}` : `${ex.weight}`;
-                txt += `💪 ${ex.name}\n${wChange} ק"ג | ${ex.reps} חזרות\n\n`;
+                txt += `- ${ex.name} ${ex.reps}×${ex.sets} (${ex.weight})\n`;
             });
-            txt += 'ממשיכים בכל הכוח! 🔥';
 
             toggleReportingButtons(true);
-            document.getElementById('changes-view-box').innerHTML = `<div style="background: rgba(0,82,204,0.05); border-radius: 16px; padding: 14px; font-size: 13px; line-height: 1.6; white-space: pre-wrap; word-wrap: break-word; font-family: inherit; -webkit-user-select: text; user-select: text;">${txt.replace(/\n/g, '<br>')}</div>`;
+            document.getElementById('changes-view-box').innerHTML = `<div style="background: rgba(0,82,204,0.05); border-radius: 16px; padding: 14px; font-size: 13px; line-height: 1.8; white-space: pre-wrap; word-wrap: break-word; font-family: -apple-system, sans-serif; -webkit-user-select: text; user-select: text;">${txt.replace(/\n/g, '<br>')}</div>`;
             return txt;
         }
 
