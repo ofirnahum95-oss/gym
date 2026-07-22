@@ -11,7 +11,10 @@
     <meta name="format-detection" content="telephone=no, date=no, address=no, email=no">
     <meta name="color-scheme" content="light dark">
     <title>FitPro - ניטור אימונים</title>
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'><rect fill='%230052cc' width='180' height='180'/><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' font-size='90' fill='white'>💪</text></svg>">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'><defs><linearGradient id='grad' x1='0%' y1='0%' x2='100%' y2='100%'><stop offset='0%' style='stop-color:%230052cc'/><stop offset='100%' style='stop-color:%23003d99'/></linearGradient></defs><rect fill='url(%23grad)' width='180' height='180'/><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' font-size='72' font-weight='800' font-family='system-ui, -apple-system' fill='white' letter-spacing='-2'>FIT</text></svg>">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Outfit:wght@700;800;900&display=swap" rel="stylesheet">
     <style>
         :root {
             /* Light Mode (Default) */
@@ -99,6 +102,179 @@
             -webkit-font-smoothing: antialiased;
             -webkit-text-size-adjust: 100%;
             overflow: hidden;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+
+        /* iOS Momentum Scrolling */
+        .content-area {
+            -webkit-overflow-scrolling: touch;
+            overflow-scrolling: auto;
+        }
+
+        /* iOS-style Toast (bottom safe area) */
+        .toast {
+            position: fixed;
+            bottom: calc(70px + max(12px, env(safe-area-inset-bottom)));
+            left: 16px;
+            right: 16px;
+            background: rgba(0, 0, 0, 0.88);
+            color: white;
+            padding: 12px 16px;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 500;
+            text-align: center;
+            z-index: 5000;
+            animation: toast-pop-in 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), toast-pop-out 0.3s ease-in 2.1s forwards;
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            max-width: 320px;
+            margin: 0 auto;
+        }
+
+        @keyframes toast-pop-in {
+            from { opacity: 0; transform: translateY(20px) scale(0.9); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        @keyframes toast-pop-out {
+            from { opacity: 1; transform: translateY(0) scale(1); }
+            to { opacity: 0; transform: translateY(20px) scale(0.9); }
+        }
+
+        /* iOS Activity Indicator */
+        .activity-indicator {
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(0, 82, 204, 0.2);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        /* iOS Context Menu */
+        .long-press-menu {
+            position: fixed;
+            background: rgba(0, 0, 0, 0.92);
+            border-radius: 12px;
+            padding: 8px 0;
+            min-width: 200px;
+            z-index: 10000;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            display: none;
+            animation: context-appear 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+        }
+
+        .long-press-menu.show { display: block; }
+
+        .long-press-menu-item {
+            color: var(--accent);
+            padding: 12px 20px;
+            font-size: 14px;
+            border-bottom: 0.5px solid rgba(255, 255, 255, 0.1);
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+
+        .long-press-menu-item:last-child { border-bottom: none; }
+        .long-press-menu-item:active { background: rgba(255, 255, 255, 0.08); }
+        .long-press-menu-item.destructive { color: #ff3b30; }
+
+        @keyframes context-appear {
+            from { opacity: 0; transform: scale(0.85) translateY(-10px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+
+        /* iOS Empty State */
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 40px 20px;
+            text-align: center;
+            color: var(--text-muted);
+            min-height: 200px;
+        }
+
+        .empty-state-icon { font-size: 48px; margin-bottom: 12px; opacity: 0.6; }
+        .empty-state-title { font-size: 16px; font-weight: 600; color: var(--text-main); margin-bottom: 4px; }
+        .empty-state-subtitle { font-size: 13px; color: var(--text-muted); }
+
+        /* iOS Button Press Effect */
+        button, .btn {
+            transition: all 0.15s cubic-bezier(0.17, 0.67, 0.83, 0.67);
+        }
+
+        button:active, .btn:active {
+            transform: scale(0.97);
+            opacity: 0.8;
+        }
+
+        /* iOS Tab Badge */
+        .nav-tab-badge {
+            position: absolute;
+            top: -2px;
+            right: -4px;
+            background: #ff3b30;
+            color: white;
+            font-size: 10px;
+            font-weight: 700;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: badge-pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        @keyframes badge-pop {
+            0% { transform: scale(0); }
+            70% { transform: scale(1.15); }
+            100% { transform: scale(1); }
+        }
+
+        /* iOS Bottom Sheet */
+        .bottom-sheet {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            border-radius: 16px 16px 0 0;
+            padding: 16px;
+            max-height: 80vh;
+            overflow-y: auto;
+            z-index: 1001;
+            animation: sheet-slide-up 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .bottom-sheet.hidden { display: none; }
+        .bottom-sheet-handle { width: 36px; height: 4px; background: rgba(0, 0, 0, 0.2); border-radius: 2px; margin: 0 auto 16px; }
+
+        @keyframes sheet-slide-up {
+            from { transform: translateY(100%); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        /* iOS Skeleton Loading */
+        .skeleton-line {
+            background: linear-gradient(90deg, rgba(0,0,0,0.06) 0%, rgba(0,0,0,0.1) 50%, rgba(0,0,0,0.06) 100%);
+            background-size: 200% 100%;
+            animation: skeleton-shimmer 1.5s infinite;
+            border-radius: 6px;
+            height: 12px;
+            margin: 8px 0;
+        }
+
+        @keyframes skeleton-shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
         }
 
         .app-viewport {
@@ -158,10 +334,49 @@
         }
         
         header h1 {
-            font-size: 28px;
+            font-family: 'Outfit', 'Inter', system-ui, -apple-system, sans-serif;
+            font-size: 36px;
             font-weight: 900;
-            color: var(--text-main);
-            letter-spacing: -0.5px;
+            letter-spacing: -1.5px;
+            background: linear-gradient(135deg, #0052cc 0%, #003d99 50%, #002d66 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin: 0;
+            padding: 0;
+            line-height: 1;
+            word-spacing: -0.15em;
+            text-transform: uppercase;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            position: relative;
+        }
+
+        header h1::before {
+            content: '';
+            display: inline-block;
+            width: 8px;
+            height: 32px;
+            background: linear-gradient(135deg, #0052cc, #003d99);
+            border-radius: 4px;
+            animation: bar-pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes bar-pulse {
+            0%, 100% { opacity: 1; transform: scaleY(1); }
+            50% { opacity: 0.6; transform: scaleY(0.92); }
+        }
+
+        body.dark-mode header h1 {
+            background: linear-gradient(135deg, #3b82f6 0%, #0052cc 50%, #0040aa 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        body.dark-mode header h1::before {
+            background: linear-gradient(135deg, #3b82f6, #0052cc);
         }
 
         header .status-dot {
@@ -1093,7 +1308,7 @@
 <body>
 
     <div id="native-splash">
-        <div id="native-splash-icon">💪</div>
+        <div id="native-splash-icon" style="font-family: 'Outfit', system-ui; font-size: 72px; font-weight: 900; background: linear-gradient(135deg, white 0%, rgba(255,255,255,0.9)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; letter-spacing: -2px;">FIT</div>
     </div>
 
     <div class="app-viewport">
@@ -1103,7 +1318,7 @@
             <div class="container">
                 <!-- Persistent Top Header -->
                 <header>
-                    <h1>💪 FitPro</h1>
+                    <h1>FitPro</h1>
                     <div class="status-dot"></div>
                 </header>
 
@@ -1251,10 +1466,10 @@
 
     <!-- BOTTOM NAV -->
     <nav class="bottom-nav">
-        <button class="nav-tab active" onclick="switchTab('view-workout', this)"><icon>🏋️‍♂️</icon>אימון</button>
-        <button class="nav-tab" onclick="switchTab('view-analytics', this)"><icon>📈</icon>אנליזה</button>
-        <button class="nav-tab" onclick="switchTab('view-add', this)"><icon>➕</icon>הוספה</button>
-        <button class="nav-tab" onclick="switchTab('view-settings', this)"><icon>⚙️</icon>הגדרות</button>
+        <button class="nav-tab active" data-tab-id="view-workout" onclick="switchTab('view-workout', this)"><icon>🏋️‍♂️</icon>אימון</button>
+        <button class="nav-tab" data-tab-id="view-analytics" onclick="switchTab('view-analytics', this)"><icon>📈</icon>אנליזה</button>
+        <button class="nav-tab" data-tab-id="view-add" onclick="switchTab('view-add', this)"><icon>➕</icon>הוספה</button>
+        <button class="nav-tab" data-tab-id="view-settings" onclick="switchTab('view-settings', this)"><icon>⚙️</icon>הגדרות</button>
     </nav>
 
     <script>
@@ -1283,6 +1498,131 @@
             if (navigator.vibrate) {
                 try { navigator.vibrate(pattern); } catch (e) { /* ignore */ }
             }
+        }
+
+        // ============ iOS SWIPE GESTURES ============
+        let swipeStartX = 0;
+        let swipeStartY = 0;
+        let swipeStartTime = 0;
+
+        function initSwipeGestures() {
+            const contentArea = document.querySelector('.content-area');
+            
+            contentArea.addEventListener('touchstart', (e) => {
+                swipeStartX = e.touches[0].clientX;
+                swipeStartY = e.touches[0].clientY;
+                swipeStartTime = Date.now();
+            }, false);
+
+            contentArea.addEventListener('touchend', (e) => {
+                if (!swipeStartX) return;
+                
+                const swipeEndX = e.changedTouches[0].clientX;
+                const swipeEndY = e.changedTouches[0].clientY;
+                const swipeDuration = Date.now() - swipeStartTime;
+                
+                const deltaX = swipeEndX - swipeStartX;
+                const deltaY = swipeEndY - swipeStartY;
+                const minSwipeDistance = 40;
+                const maxSwipeDuration = 500;
+
+                // Only consider horizontal swipes (not scrolls)
+                if (Math.abs(deltaY) > Math.abs(deltaX)) {
+                    swipeStartX = 0;
+                    return;
+                }
+
+                // Detect left/right swipes
+                if (Math.abs(deltaX) > minSwipeDistance && swipeDuration < maxSwipeDuration) {
+                    const tabs = document.querySelectorAll('.nav-tab');
+                    const currentActiveTab = document.querySelector('.nav-tab.active');
+                    const currentIndex = Array.from(tabs).indexOf(currentActiveTab);
+
+                    if (deltaX > 0 && currentIndex > 0) {
+                        // Swiped right - go to previous tab
+                        switchTab(tabs[currentIndex - 1].getAttribute('data-tab-id'), tabs[currentIndex - 1]);
+                    } else if (deltaX < 0 && currentIndex < tabs.length - 1) {
+                        // Swiped left - go to next tab
+                        switchTab(tabs[currentIndex + 1].getAttribute('data-tab-id'), tabs[currentIndex + 1]);
+                    }
+                }
+                swipeStartX = 0;
+            }, false);
+        }
+
+        // ============ iOS PULL-TO-REFRESH ============
+        function initPullToRefresh() {
+            const contentArea = document.querySelector('.content-area');
+            let pullStartY = 0;
+
+            contentArea.addEventListener('touchstart', (e) => {
+                if (contentArea.scrollTop === 0) {
+                    pullStartY = e.touches[0].clientY;
+                }
+            });
+
+            contentArea.addEventListener('touchmove', (e) => {
+                if (contentArea.scrollTop === 0 && pullStartY) {
+                    const pullDistance = e.touches[0].clientY - pullStartY;
+                    if (pullDistance > 0 && pullDistance < 100) {
+                        // Show pull-to-refresh indicator
+                        const indicator = document.querySelector('.pull-to-refresh');
+                        if (indicator) {
+                            indicator.style.top = (-60 + pullDistance) + 'px';
+                            indicator.classList.toggle('show', pullDistance > 50);
+                        }
+                    }
+                }
+            });
+
+            contentArea.addEventListener('touchend', (e) => {
+                if (pullStartY && contentArea.scrollTop === 0) {
+                    const pullDistance = e.changedTouches[0].clientY - pullStartY;
+                    if (pullDistance > 60) {
+                        // Trigger sync
+                        triggerHaptic(10);
+                        retryPendingSyncIfNeeded();
+                        displayNativeToast('🔄 מרענן נתונים...');
+                    }
+                }
+                pullStartY = 0;
+            });
+        }
+
+        // ============ iOS KEYBOARD HANDLING ============
+        function initKeyboardHandling() {
+            const inputs = document.querySelectorAll('input, textarea');
+            inputs.forEach(input => {
+                input.addEventListener('focus', () => {
+                    // Scroll input into view
+                    setTimeout(() => input.scrollIntoView({ behavior: 'smooth', block: 'center' }), 100);
+                });
+            });
+        }
+
+        // ============ iOS LONG PRESS CONTEXT MENU ============
+        function initLongPressMenu() {
+            let longPressTimer;
+            
+            document.addEventListener('touchstart', (e) => {
+                const card = e.target.closest('.card, .workout-card, .exercise-item');
+                if (!card) return;
+                
+                longPressTimer = setTimeout(() => {
+                    triggerHaptic([20, 10, 20]);
+                    showContextMenu(e.touches[0].clientX, e.touches[0].clientY, card);
+                }, 500);
+            });
+
+            document.addEventListener('touchend', () => {
+                clearTimeout(longPressTimer);
+            });
+        }
+
+        function showContextMenu(x, y, element) {
+            // Implementation: Create floating menu at x,y
+            // Options depend on element type (exercise, workout, etc.)
+            // For now, this is a placeholder
         }
 
         // ============ CORE FUNCTIONS ============
@@ -2457,14 +2797,23 @@
 
                 const gradient = ctx.createLinearGradient(0, 0, 180, 180);
                 gradient.addColorStop(0, '#0052cc');
-                gradient.addColorStop(1, '#0040aa');
+                gradient.addColorStop(0.5, '#003d99');
+                gradient.addColorStop(1, '#002d66');
                 ctx.fillStyle = gradient;
                 ctx.fillRect(0, 0, 180, 180);
 
-                ctx.font = '96px -apple-system, sans-serif';
+                // Draw text "FIT"
+                ctx.font = 'bold 84px system-ui, -apple-system';
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'middle';
-                ctx.fillText('💪', 90, 96);
+                ctx.fillStyle = '#ffffff';
+                ctx.letterSpacing = '-2px';
+                ctx.fillText('FIT', 90, 100);
+
+                // Draw accent bar
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+                ctx.fillRect(50, 140, 80, 6);
+                ctx.fillRect(50, 146, 50, 4);
 
                 const iconDataUrl = canvas.toDataURL('image/png');
 
@@ -2537,6 +2886,14 @@
 
             // If a previous save never made it to the cloud, try again now that we're online
             retryPendingSyncIfNeeded();
+
+            // Initialize iOS-style interactions
+            setTimeout(() => {
+                initSwipeGestures();
+                initPullToRefresh();
+                initKeyboardHandling();
+                initLongPressMenu();
+            }, 100);
         });
 
         // Failsafe: never let the splash get stuck on screen, no matter what happens above
