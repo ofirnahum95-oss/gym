@@ -610,6 +610,67 @@
             -webkit-user-select: none;
             letter-spacing: -0.3px;
         }
+
+        /* Exercise Header Row (checkmark + title) */
+        .exercise-header-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+
+        .exercise-header-row h3 {
+            margin-bottom: 0;
+            flex: 1;
+        }
+
+        /* Complete Toggle Checkbox */
+        .complete-toggle {
+            width: 30px;
+            height: 30px;
+            min-width: 30px;
+            border-radius: 50%;
+            border: 2px solid rgba(0, 0, 0, 0.15);
+            background: transparent;
+            color: white;
+            font-size: 16px;
+            font-weight: 900;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+            flex-shrink: 0;
+            padding: 0;
+            line-height: 1;
+        }
+
+        .complete-toggle.checked {
+            background: var(--accent-neon);
+            border-color: var(--accent-neon);
+            animation: check-pop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .complete-toggle:active {
+            transform: scale(0.9);
+        }
+
+        @keyframes check-pop {
+            0% { transform: scale(0.7); }
+            60% { transform: scale(1.15); }
+            100% { transform: scale(1); }
+        }
+
+        /* Completed Exercise Card - dimmed with strikethrough */
+        .workout-card.exercise-done {
+            opacity: 0.55;
+        }
+
+        .workout-card.exercise-done h3 {
+            text-decoration: line-through;
+            text-decoration-color: var(--accent-neon);
+            text-decoration-thickness: 2px;
+        }
         
         .card-selectors {
             display: grid;
@@ -681,12 +742,16 @@
             width: 100%; 
             display: inline-block;
             -webkit-user-select: none;
-            cursor: default;
+            cursor: pointer;
             flex: 1;
+            border-radius: 8px;
+            transition: background 0.15s;
+        }
+        .step-value:active {
+            background: rgba(0, 82, 204, 0.08);
         }
         .is-editing .step-value { 
             width: auto; 
-            cursor: pointer;
         }
         .step-value.weight { 
             color: var(--accent); 
@@ -716,10 +781,11 @@
             border-color: var(--accent);
             box-shadow: 0 0 0 3px rgba(0, 82, 204, 0.1);
         }
-        .is-editing .inline-edit-input.active { 
+        /* Show the typing input whenever it's active - available even outside edit mode */
+        .inline-edit-input.active { 
             display: inline-block; 
         }
-        .is-editing .inline-edit-input.active + .step-value { 
+        .inline-edit-input.active + .step-value { 
             display: none; 
         }
 
@@ -1483,8 +1549,9 @@
         let isEditingModeActive = false;
 
         // Stopwatch state
+        let stopwatchStartTimestamp = 0;  // Real time when started (Date.now())
+        let stopwatchPausedAt = 0;        // Total seconds elapsed when paused
         let stopwatchInterval = null;
-        let stopwatchSecondsElapsed = 0;
         let isStopwatchRunning = false;
         
         // Sync state
@@ -1638,10 +1705,18 @@
             buttonElement.classList.add('active');
         }
 
-        // Stopwatch Functions
+        // Stopwatch Functions - Background Safe (uses real timestamps, not intervals)
         function updateStopwatchDisplay() {
-            const minutes = Math.floor(stopwatchSecondsElapsed / 60);
-            const seconds = stopwatchSecondsElapsed % 60;
+            let elapsed;
+            if (isStopwatchRunning) {
+                // Calculate REAL elapsed time from Date.now() minus start
+                elapsed = stopwatchPausedAt + Math.floor((Date.now() - stopwatchStartTimestamp) / 1000);
+            } else {
+                elapsed = stopwatchPausedAt;
+            }
+            
+            const minutes = Math.floor(elapsed / 60);
+            const seconds = elapsed % 60;
             const display = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
             document.getElementById('stopwatch-clock').textContent = display;
         }
@@ -1650,29 +1725,41 @@
             const btn = document.getElementById('stopwatch-toggle-btn');
             
             if (isStopwatchRunning) {
+                // Stop - save elapsed time
                 clearInterval(stopwatchInterval);
                 btn.textContent = '▶️';
+                stopwatchPausedAt += Math.floor((Date.now() - stopwatchStartTimestamp) / 1000);
+                triggerHaptic(8);
             } else {
+                // Start - record current timestamp
                 btn.textContent = '⏸️';
-                stopwatchInterval = setInterval(() => {
-                    stopwatchSecondsElapsed++;
-                    updateStopwatchDisplay();
-                }, 1000);
+                stopwatchStartTimestamp = Date.now();
+                // Update every 100ms for smooth display (but time comes from Date.now(), not counter)
+                stopwatchInterval = setInterval(updateStopwatchDisplay, 100);
+                triggerHaptic(8);
             }
             isStopwatchRunning = !isStopwatchRunning;
+            updateStopwatchDisplay();
         }
 
         function resetStopwatch() {
-            stopwatchSecondsElapsed = 0;
+            clearInterval(stopwatchInterval);
+            stopwatchPausedAt = 0;
+            stopwatchStartTimestamp = 0;
+            isStopwatchRunning = false;
+            document.getElementById('stopwatch-toggle-btn').textContent = '▶️';
             updateStopwatchDisplay();
-            
-            // QA FIX #2: Don't auto-start on reset - let user control it
-            if (isStopwatchRunning) {
-                clearInterval(stopwatchInterval);
-                document.getElementById('stopwatch-toggle-btn').textContent = '▶️';
-                isStopwatchRunning = false;
-            }
         }
+
+        // Page Visibility API - continue timer even when app is in background
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden && isStopwatchRunning) {
+                // App just came to foreground and timer is running
+                // Reset the timestamp to NOW so timer continues accurately
+                stopwatchStartTimestamp = Date.now();
+                updateStopwatchDisplay();
+            }
+        });
 
         function toggleEditMode() {
             isEditingModeActive = !isEditingModeActive;
@@ -1703,7 +1790,8 @@
         }
 
         function enableManualInput(elementId) {
-            if (!isEditingModeActive) return;
+            // Direct typing is always allowed - it's a deliberate action.
+            // (The +/- steppers stay locked behind edit mode to prevent accidental taps.)
             const inputField = document.getElementById(elementId);
             inputField.classList.add('active');
             inputField.focus();
@@ -1711,18 +1799,19 @@
         }
 
         async function saveManualInputValue(exerciseIndex, field, value) {
-            if (!isEditingModeActive) {
-                // Edit mode is off - revert any stray input and refuse the change
-                renderWeeklyWorkoutDashboard();
-                return;
-            }
-
             const currentActiveWorkout = stateWorkouts[stateWorkouts.length - 1];
             if (!currentActiveWorkout) return;
 
             const targetExercise = currentActiveWorkout.exercises[exerciseIndex];
             let numVal = parseFloat(value) || 0;
             if (numVal < 0) numVal = 0;
+
+            // No actual change? Just re-render to clear the input state.
+            const newVal = field === 'weight' ? numVal : Math.max(1, Math.floor(numVal));
+            if (targetExercise[field] === newVal) {
+                renderWeeklyWorkoutDashboard();
+                return;
+            }
 
             const oldRecord = { 
                 date: new Date().toISOString(), 
@@ -1740,6 +1829,30 @@
             await syncToCloud('/workouts', stateWorkouts);
             renderWeeklyWorkoutDashboard();
             rebuildChangesSummaryReport();
+        }
+
+        // ============ MARK EXERCISE COMPLETE ============
+        async function toggleExerciseComplete(exerciseIndex) {
+            const currentActiveWorkout = stateWorkouts[stateWorkouts.length - 1];
+            if (!currentActiveWorkout) return;
+
+            const targetExercise = currentActiveWorkout.exercises[exerciseIndex];
+            targetExercise.completed = !targetExercise.completed;
+
+            triggerHaptic(targetExercise.completed ? [10, 20, 10] : 8);
+
+            await syncToCloud('/workouts', stateWorkouts);
+            renderWeeklyWorkoutDashboard();
+
+            // Show progress toast when all exercises are done
+            const total = currentActiveWorkout.exercises.length;
+            const done = currentActiveWorkout.exercises.filter(e => e.completed).length;
+            if (done === total && total > 0) {
+                triggerHaptic([15, 30, 15, 30, 15]);
+                displayNativeToast('🎉 סיימת את כל התרגילים! כל הכבוד');
+            } else if (targetExercise.completed) {
+                displayNativeToast(`✅ ${done}/${total} תרגילים הושלמו`);
+            }
         }
 
         async function modifyMetric(exerciseIndex, field, delta) {
@@ -1822,9 +1935,15 @@
         }
 
         function generateInlineExerciseRow(ex, index) {
+            const isDone = ex.completed === true;
             return `
-                <div class="workout-card" style="margin-bottom:0; background: rgba(255,255,255,0.45); box-shadow:none; border:none;">
-                    <h3>${ex.name}</h3>
+                <div class="workout-card ${isDone ? 'exercise-done' : ''}" data-ex-index="${index}" style="margin-bottom:0; background: rgba(255,255,255,0.45); box-shadow:none; border:none;">
+                    <div class="exercise-header-row">
+                        <button class="complete-toggle ${isDone ? 'checked' : ''}" onclick="toggleExerciseComplete(${index})" aria-label="סמן כהושלם">
+                            ${isDone ? '✓' : ''}
+                        </button>
+                        <h3>${ex.name}</h3>
+                    </div>
                     <div class="card-selectors">
                         <div class="inline-stepper ${isEditingModeActive ? 'is-editing' : ''}">
                             <span class="stepper-label">משקל</span>
