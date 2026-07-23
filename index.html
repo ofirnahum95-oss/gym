@@ -337,6 +337,31 @@
             flex-shrink: 0;
         }
 
+        .clear-marks-btn {
+            background: none;
+            border: none;
+            color: var(--ink-faint);
+            font-family: inherit;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            padding: 4px 2px;
+            flex-shrink: 0;
+            text-decoration: underline;
+            text-underline-offset: 3px;
+            text-decoration-color: var(--rule);
+            position: relative;
+            transition: color 0.15s ease;
+        }
+
+        .clear-marks-btn::after {
+            content: '';
+            position: absolute;
+            inset: -10px -6px;
+        }
+
+        .clear-marks-btn:active { color: var(--ink); }
+
         /* ---------- Rest timer strip ---------- */
 
         .timer-card {
@@ -610,7 +635,13 @@
 
         .step-value:active { background: var(--accent-wash); }
 
-        .is-editing .step-value { width: auto; }
+        /* Read-only until edit mode is on */
+        .step-value { cursor: default; }
+        .is-editing .step-value { width: auto; cursor: pointer; }
+
+        /* The typing field may only surface inside an active edit session */
+        .is-editing .inline-edit-input.active { display: inline-block; }
+        .is-editing .inline-edit-input.active + .step-value { display: none; }
 
         /* Colour encodes ownership:
            accent = the number you change · ink = the plan your trainer set */
@@ -637,9 +668,6 @@
             outline: none;
             box-shadow: 0 0 0 3px var(--accent-wash);
         }
-
-        .inline-edit-input.active { display: inline-block; }
-        .inline-edit-input.active + .step-value { display: none; }
 
         /* Steppers — locked unless edit mode is on */
         .ctrl-btn {
@@ -1369,6 +1397,7 @@
                     <div class="workout-progress" id="workout-progress" style="display:none;">
                         <div class="workout-progress-bar"><span id="workout-progress-fill"></span></div>
                         <div class="workout-progress-text" id="workout-progress-text">0/0</div>
+                        <button class="clear-marks-btn" id="clear-marks-btn" onclick="clearAllCompletions()" style="display:none;">נקה סימונים</button>
                     </div>
                     
                     <!-- Rest Stopwatch -->
@@ -1843,8 +1872,12 @@
         }
 
         function enableManualInput(elementId) {
-            // Direct typing is always allowed - it's a deliberate action.
-            // (The +/- steppers stay locked behind edit mode to prevent accidental taps.)
+            // Values are read-only until edit mode is explicitly turned on.
+            if (!isEditingModeActive) {
+                displayNativeToast('🔒 לחץ על ✏️ ערוך כדי לשנות נתונים');
+                triggerHaptic(6);
+                return;
+            }
             const inputField = document.getElementById(elementId);
             inputField.classList.add('active');
             inputField.focus();
@@ -1852,6 +1885,12 @@
         }
 
         async function saveManualInputValue(exerciseIndex, field, value) {
+            // Safety net: refuse the write no matter how this was triggered
+            if (!isEditingModeActive) {
+                renderWeeklyWorkoutDashboard();
+                return;
+            }
+
             const currentActiveWorkout = stateWorkouts[stateWorkouts.length - 1];
             if (!currentActiveWorkout) return;
 
@@ -2017,6 +2056,28 @@
             wrap.style.display = 'flex';
             fill.style.width = Math.round((done / total) * 100) + '%';
             text.textContent = `${done}/${total}`;
+
+            // Offer the reset only once there's something to reset
+            const clearBtn = document.getElementById('clear-marks-btn');
+            if (clearBtn) clearBtn.style.display = done > 0 ? 'block' : 'none';
+        }
+
+        // Wipe every completion tick — for starting the same programme again
+        async function clearAllCompletions() {
+            const active = stateWorkouts[stateWorkouts.length - 1];
+            if (!active || !active.exercises) return;
+
+            const done = active.exercises.filter(e => e.completed).length;
+            if (done === 0) return;
+
+            if (!confirm(`לנקות ${done} סימוני תרגילים? הנתונים עצמם לא ישתנו.`)) return;
+
+            active.exercises.forEach(ex => { ex.completed = false; });
+            triggerHaptic([10, 30, 10]);
+
+            await syncToCloud('/workouts', stateWorkouts);
+            renderWeeklyWorkoutDashboard();
+            displayNativeToast('↺ הסימונים נוקו');
         }
 
         function generateInlineExerciseRow(ex, index) {
