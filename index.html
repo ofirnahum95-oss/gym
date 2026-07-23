@@ -58,8 +58,7 @@
             --safe-top: env(safe-area-inset-top);
             --safe-bottom: env(safe-area-inset-bottom);
 
-            --nav-h: 54px;
-        }
+                }
 
         body.dark-mode {
             --surface-0: #0f1216;
@@ -150,7 +149,7 @@
             margin: 0 auto;
             width: 100%;
             padding: 0 14px;
-            padding-bottom: calc(var(--nav-h) + 24px + max(6px, var(--safe-bottom)));
+            padding-bottom: calc(28px + max(6px, var(--safe-bottom)));
         }
 
         /* ---------- Launch splash ---------- */
@@ -904,91 +903,202 @@
             to   { opacity: 1; transform: translateY(0); }
         }
 
-        /* ---------- Bottom nav ---------- */
+        /* ---------- Navigation drawer ---------- */
 
-        .bottom-nav {
-            position: fixed;
-            bottom: -1px;
-            left: 0;
-            right: 0;
-            width: 100vw;
-            background: color-mix(in srgb, var(--surface-0) 88%, transparent);
-            border-top: 1px solid var(--rule);
-            backdrop-filter: saturate(180%) blur(22px);
-            -webkit-backdrop-filter: saturate(180%) blur(22px);
-            display: flex;
-            justify-content: space-around;
-            align-items: center;
-            padding: 4px 6px;
-            padding-bottom: max(4px, var(--safe-bottom));
-            min-height: var(--nav-h);
-            z-index: 1000;
-            box-sizing: border-box;
-        }
-
-        .nav-tab {
-            background: none;
-            border: none;
-            color: var(--ink-faint);
+        .menu-trigger {
+            width: 34px;
+            height: 34px;
+            border: 1px solid var(--rule);
+            background: var(--surface-1);
+            border-radius: var(--r-md);
+            box-shadow: var(--shadow-1);
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            gap: 1px;
-            font-family: inherit;
+            gap: 3.5px;
+            cursor: pointer;
+            padding: 0;
+            flex-shrink: 0;
+            transition: transform 0.15s ease, border-color 0.18s ease;
+            position: relative;
+        }
+
+        .menu-trigger::after {
+            content: '';
+            position: absolute;
+            inset: -6px;
+        }
+
+        .menu-trigger span {
+            display: block;
+            width: 14px;
+            height: 1.8px;
+            border-radius: 2px;
+            background: var(--ink);
+            transition: transform 0.28s cubic-bezier(0.5, 0, 0.2, 1), opacity 0.18s ease;
+        }
+
+        .menu-trigger:active { transform: scale(0.92); }
+
+        /* Morph to an X while the drawer is open */
+        body.drawer-open .menu-trigger span:nth-child(1) { transform: translateY(5.3px) rotate(45deg); }
+        body.drawer-open .menu-trigger span:nth-child(2) { opacity: 0; transform: scaleX(0.3); }
+        body.drawer-open .menu-trigger span:nth-child(3) { transform: translateY(-5.3px) rotate(-45deg); }
+
+        .nav-scrim {
+            position: fixed;
+            inset: 0;
+            background: rgba(10, 13, 17, 0.5);
+            backdrop-filter: blur(3px);
+            -webkit-backdrop-filter: blur(3px);
+            z-index: 1400;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.26s ease, visibility 0.26s ease;
+        }
+
+        body.drawer-open .nav-scrim {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .nav-drawer {
+            position: fixed;
+            top: 0;
+            bottom: 0;
+            inset-inline-start: 0;
+            width: 264px;
+            max-width: 82vw;
+            background: var(--surface-1);
+            border-inline-end: 1px solid var(--rule);
+            box-shadow: var(--shadow-3);
+            z-index: 1500;
+            padding: calc(14px + var(--safe-top)) 12px calc(14px + var(--safe-bottom));
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            transform: translateX(-102%);
+            transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+            overflow-y: auto;
+        }
+
+        /* RTL: the drawer lives on the right, so it slides in from the right */
+        [dir="rtl"] .nav-drawer { transform: translateX(102%); }
+
+        body.drawer-open .nav-drawer,
+        [dir="rtl"] body.drawer-open .nav-drawer { transform: translateX(0); }
+
+        .nav-drawer-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 2px 8px 12px;
+            margin-bottom: 6px;
+            border-bottom: 1px solid var(--rule-soft);
+        }
+
+        .nav-drawer-title {
+            font-family: 'Roboto Mono', monospace;
             font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.22em;
+            text-transform: uppercase;
+            color: var(--ink-faint);
+        }
+
+        .drawer-close {
+            width: 30px;
+            height: 30px;
+            border: none;
+            background: var(--surface-2);
+            color: var(--ink-soft);
+            border-radius: 50%;
+            font-size: 19px;
+            line-height: 1;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.15s ease;
+        }
+
+        .drawer-close:active { transform: scale(0.9); }
+
+        /* Drawer rows — same class the tab bar used, so switchTab and
+           the swipe gesture keep working untouched */
+        .nav-tab {
+            background: none;
+            border: none;
+            color: var(--ink-soft);
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            justify-content: flex-start;
+            gap: 12px;
+            font-family: inherit;
+            font-size: 15px;
             font-weight: 600;
             cursor: pointer;
-            padding: 3px 4px;
-            min-height: 44px;
-            flex: 1;
-            transition: color 0.18s ease;
+            padding: 0 14px;
+            min-height: 50px;
+            width: 100%;
+            border-radius: var(--r-md);
+            text-align: start;
+            transition: color 0.18s ease, background 0.18s ease;
             -webkit-user-select: none;
             position: relative;
         }
 
         .nav-tab icon {
-            font-size: 17px;
-            line-height: 1.25;
+            font-size: 19px;
+            line-height: 1;
             display: block;
+            flex-shrink: 0;
             transition: transform 0.24s cubic-bezier(0.34, 1.5, 0.64, 1);
         }
 
-        .nav-tab.active { color: var(--accent); }
-        .nav-tab.active icon { transform: translateY(-1px) scale(1.06); }
+        .nav-tab:active { background: var(--surface-2); }
 
-        /* Active tab marker — echoes the rail */
+        .nav-tab.active {
+            color: var(--accent);
+            background: var(--accent-wash);
+        }
+
+        .nav-tab.active icon { transform: scale(1.08); }
+
+        /* Active marker — echoes the workout rail */
         .nav-tab::before {
             content: '';
             position: absolute;
-            top: 0;
-            inset-inline-start: 50%;
-            transform: translateX(50%) scaleX(0);
-            width: 20px;
-            height: 2px;
-            border-radius: 0 0 2px 2px;
+            inset-inline-start: 0;
+            top: 50%;
+            transform: translateY(-50%) scaleY(0);
+            width: 3px;
+            height: 22px;
+            border-radius: 0 3px 3px 0;
             background: var(--accent);
             transition: transform 0.24s cubic-bezier(0.34, 1.5, 0.64, 1);
         }
 
-        .nav-tab.active::before { transform: translateX(50%) scaleX(1); }
+        [dir="rtl"] .nav-tab::before { border-radius: 3px 0 0 3px; }
+
+        .nav-tab.active::before { transform: translateY(-50%) scaleY(1); }
 
         .nav-tab-badge {
-            position: absolute;
-            top: 0;
-            inset-inline-end: 14px;
+            margin-inline-start: auto;
             background: var(--alert);
             color: #fff;
             font-family: 'Roboto Mono', monospace;
-            font-size: 9px;
+            font-size: 10px;
             font-weight: 700;
-            min-width: 16px;
-            height: 16px;
+            min-width: 18px;
+            height: 18px;
             border-radius: 100px;
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 0 4px;
+            padding: 0 5px;
         }
 
         /* ---------- Review sheet ---------- */
@@ -1059,7 +1169,7 @@
 
         .toast {
             position: fixed;
-            bottom: calc(var(--nav-h) + 14px + max(6px, var(--safe-bottom)));
+            bottom: calc(18px + max(6px, var(--safe-bottom)));
             left: 14px;
             right: 14px;
             max-width: 340px;
@@ -1240,7 +1350,12 @@
             <div class="container">
                 <!-- Persistent Top Header -->
                 <header>
-                    <h1>FitPro</h1>
+                    <div class="masthead-lead">
+                        <button class="menu-trigger" onclick="toggleNavDrawer()" aria-label="פתח תפריט">
+                            <span></span><span></span><span></span>
+                        </button>
+                        <h1>FitPro</h1>
+                    </div>
                     <div class="status-dot"></div>
                 </header>
 
@@ -1391,13 +1506,18 @@
         </div>
     </div>
 
-    <!-- BOTTOM NAV -->
-    <nav class="bottom-nav">
+    <!-- NAVIGATION DRAWER -->
+    <div class="nav-scrim" id="nav-scrim" onclick="closeNavDrawer()"></div>
+    <aside class="nav-drawer" id="nav-drawer">
+        <div class="nav-drawer-head">
+            <span class="nav-drawer-title">ניווט</span>
+            <button class="drawer-close" onclick="closeNavDrawer()" aria-label="סגור תפריט">×</button>
+        </div>
         <button class="nav-tab active" data-tab-id="view-workout" onclick="switchTab('view-workout', this)"><icon>🏋️‍♂️</icon>אימון</button>
         <button class="nav-tab" data-tab-id="view-analytics" onclick="switchTab('view-analytics', this)"><icon>📈</icon>אנליזה</button>
         <button class="nav-tab" data-tab-id="view-add" onclick="switchTab('view-add', this)"><icon>➕</icon>הוספה</button>
         <button class="nav-tab" data-tab-id="view-settings" onclick="switchTab('view-settings', this)"><icon>⚙️</icon>הגדרות</button>
-    </nav>
+    </aside>
 
     <script>
         // ============ FIREBASE CONFIGURATION ============
@@ -1555,51 +1675,90 @@
 
         // ============ CORE FUNCTIONS ============
 
+        // ============ NAVIGATION DRAWER ============
+
+        function toggleNavDrawer() {
+            document.body.classList.contains('drawer-open') ? closeNavDrawer() : openNavDrawer();
+        }
+
+        function openNavDrawer() {
+            document.body.classList.add('drawer-open');
+            triggerHaptic(8);
+        }
+
+        function closeNavDrawer() {
+            document.body.classList.remove('drawer-open');
+        }
+
         function switchTab(tabId, buttonElement) {
             if (isEditingModeActive) toggleEditMode();
 
             triggerHaptic(8);
+            closeNavDrawer();
 
             document.querySelectorAll('.tab-view').forEach(v => v.classList.remove('active'));
             document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
             document.getElementById(tabId).classList.add('active');
             buttonElement.classList.add('active');
+
+            // Jump back to the top so the new view starts at its title
+            const scroller = document.querySelector('.content-area');
+            if (scroller) scroller.scrollTop = 0;
         }
 
         // Stopwatch Functions - Background Safe (uses real timestamps, not intervals)
-        function updateStopwatchDisplay() {
-            let elapsed;
+        // The elapsed time is derived from the wall clock, never from a counter.
+        // Date.now() keeps advancing while the app is backgrounded, so this
+        // formula is inherently background-safe — nothing needs to "catch up".
+        function getStopwatchElapsed() {
             if (isStopwatchRunning) {
-                // Calculate REAL elapsed time from Date.now() minus start
-                elapsed = stopwatchPausedAt + Math.floor((Date.now() - stopwatchStartTimestamp) / 1000);
-            } else {
-                elapsed = stopwatchPausedAt;
+                return stopwatchPausedAt + Math.floor((Date.now() - stopwatchStartTimestamp) / 1000);
             }
-            
+            return stopwatchPausedAt;
+        }
+
+        function updateStopwatchDisplay() {
+            const elapsed = getStopwatchElapsed();
             const minutes = Math.floor(elapsed / 60);
             const seconds = elapsed % 60;
             const display = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
             document.getElementById('stopwatch-clock').textContent = display;
         }
 
+        // Persist so the timer survives iOS discarding the page in the background
+        function saveStopwatchState() {
+            try {
+                localStorage.setItem('fitpro-stopwatch', JSON.stringify({
+                    running: isStopwatchRunning,
+                    startTimestamp: stopwatchStartTimestamp,
+                    pausedAt: stopwatchPausedAt
+                }));
+            } catch (e) { /* storage full or unavailable - timer still works in-session */ }
+        }
+
+        function startStopwatchTicker() {
+            clearInterval(stopwatchInterval);
+            // Only drives the display; the value itself comes from the wall clock
+            stopwatchInterval = setInterval(updateStopwatchDisplay, 250);
+        }
+
         function toggleStopwatch() {
             const btn = document.getElementById('stopwatch-toggle-btn');
-            
+
             if (isStopwatchRunning) {
-                // Stop - save elapsed time
                 clearInterval(stopwatchInterval);
                 btn.textContent = '▶️';
-                stopwatchPausedAt += Math.floor((Date.now() - stopwatchStartTimestamp) / 1000);
-                triggerHaptic(8);
+                stopwatchPausedAt = getStopwatchElapsed();
+                isStopwatchRunning = false;
             } else {
-                // Start - record current timestamp
                 btn.textContent = '⏸️';
                 stopwatchStartTimestamp = Date.now();
-                // Update every 100ms for smooth display (but time comes from Date.now(), not counter)
-                stopwatchInterval = setInterval(updateStopwatchDisplay, 100);
-                triggerHaptic(8);
+                isStopwatchRunning = true;
+                startStopwatchTicker();
             }
-            isStopwatchRunning = !isStopwatchRunning;
+
+            triggerHaptic(8);
+            saveStopwatchState();
             updateStopwatchDisplay();
         }
 
@@ -1609,18 +1768,51 @@
             stopwatchStartTimestamp = 0;
             isStopwatchRunning = false;
             document.getElementById('stopwatch-toggle-btn').textContent = '▶️';
+            try { localStorage.removeItem('fitpro-stopwatch'); } catch (e) {}
             updateStopwatchDisplay();
         }
 
-        // Page Visibility API - continue timer even when app is in background
+        // Rebuild the timer after a reload or an iOS page discard
+        function restoreStopwatch() {
+            const btn = document.getElementById('stopwatch-toggle-btn');
+            let saved = null;
+            try { saved = JSON.parse(localStorage.getItem('fitpro-stopwatch')); } catch (e) {}
+
+            if (saved && saved.running && saved.startTimestamp) {
+                isStopwatchRunning = true;
+                stopwatchStartTimestamp = saved.startTimestamp;
+                stopwatchPausedAt = saved.pausedAt || 0;
+                if (btn) btn.textContent = '⏸️';
+                startStopwatchTicker();
+            } else if (saved) {
+                isStopwatchRunning = false;
+                stopwatchPausedAt = saved.pausedAt || 0;
+                stopwatchStartTimestamp = 0;
+                if (btn) btn.textContent = '▶️';
+            }
+
+            updateStopwatchDisplay();
+        }
+
+        // Coming back to the foreground: just redraw and make sure the ticker is
+        // alive. Deliberately do NOT touch stopwatchStartTimestamp — rewriting it
+        // here would discard every second that passed while the app was away.
+        function resyncStopwatch() {
+            if (isStopwatchRunning) startStopwatchTicker();
+            updateStopwatchDisplay();
+        }
+
         document.addEventListener('visibilitychange', () => {
-            if (!document.hidden && isStopwatchRunning) {
-                // App just came to foreground and timer is running
-                // Reset the timestamp to NOW so timer continues accurately
-                stopwatchStartTimestamp = Date.now();
-                updateStopwatchDisplay();
+            if (document.hidden) {
+                saveStopwatchState();
+            } else {
+                resyncStopwatch();
             }
         });
+
+        // Fires when iOS restores the page from the back/forward cache
+        window.addEventListener('pageshow', resyncStopwatch);
+        window.addEventListener('pagehide', saveStopwatchState);
 
         function toggleEditMode() {
             isEditingModeActive = !isEditingModeActive;
@@ -2888,7 +3080,8 @@
             const localK = localStorage.getItem('claude-key');
             if (localK) document.getElementById('local-key-store').value = localK;
             
-            updateStopwatchDisplay();
+            // Resume a rest timer that was running before the app was closed
+            restoreStopwatch();
 
             // Hide the launch splash now that real content is ready
             const splash = document.getElementById('native-splash');
@@ -2926,6 +3119,13 @@
         window.addEventListener('online', () => {
             console.log('🌐 Connection restored, checking for pending sync...');
             retryPendingSyncIfNeeded();
+        });
+
+        // Escape closes the navigation drawer
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && document.body.classList.contains('drawer-open')) {
+                closeNavDrawer();
+            }
         });
     </script>
 </body>
