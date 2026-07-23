@@ -2229,12 +2229,23 @@
             toggleReviewSheet(true);
         }
 
+        // A set count is virtually always lower than a rep count, so "3x10" and
+        // "10x3" both describe 3 sets of 10. Trainers write it either way round —
+        // the smaller number is taken as the sets, the larger as the reps.
+        function normalizeSetsAndReps(a, b) {
+            const x = parseInt(a, 10);
+            const y = parseInt(b, 10);
+            if (!Number.isFinite(x) || !Number.isFinite(y) || x < 1 || y < 1) return null;
+            return { sets: Math.min(x, y), reps: Math.max(x, y) };
+        }
+
         function parseExerciseStringToken(str) {
-            // QA FIX #4: Better parsing with edge case handling
             const match = str.match(/(\d+)[×x](\d+)/);
             if (!match) return null;
-            
-            const [, reps, sets] = match;
+
+            const counts = normalizeSetsAndReps(match[1], match[2]);
+            if (!counts) return null;
+
             const weightMatch = str.match(/\((\d+\.?\d*)\)?/);
             const weight = weightMatch ? parseFloat(weightMatch[1]) : 0;
             
@@ -2246,8 +2257,8 @@
             
             return name.length > 1 ? { 
                 name, 
-                sets: parseInt(sets), 
-                reps: parseInt(reps), 
+                sets: counts.sets, 
+                reps: counts.reps, 
                 weight, 
                 superset: false,
                 history: []
