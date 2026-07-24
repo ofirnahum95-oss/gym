@@ -945,7 +945,108 @@
             to   { opacity: 1; transform: translateY(0); }
         }
 
+        /* ---------- Auth gate ---------- */
+
+        #auth-gate {
+            position: fixed;
+            inset: 0;
+            z-index: 9000;
+            background: var(--surface-0);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            padding-top: calc(24px + var(--safe-top));
+            padding-bottom: calc(24px + var(--safe-bottom));
+            overflow-y: auto;
+        }
+
+        #auth-gate.hidden { display: none; }
+
+        /* Chrome stays out of the way until there's a session */
+        body.signed-out .menu-trigger,
+        body.signed-out .sync-status { display: none; }
+
+        .auth-panel {
+            width: 100%;
+            max-width: 330px;
+        }
+
+        .auth-brand {
+            font-family: 'Roboto Mono', monospace;
+            font-size: 13px;
+            font-weight: 700;
+            letter-spacing: 0.34em;
+            text-transform: uppercase;
+            color: var(--ink);
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            margin-bottom: 10px;
+        }
+
+        .auth-brand::before {
+            content: '';
+            width: 3px;
+            height: 15px;
+            background: var(--accent);
+            border-radius: 2px;
+        }
+
+        .auth-lede {
+            font-size: 13.5px;
+            color: var(--ink-soft);
+            line-height: 1.5;
+            margin-bottom: 22px;
+        }
+
+        #auth-message {
+            display: none;
+            font-size: 12.5px;
+            font-weight: 500;
+            line-height: 1.45;
+            margin-bottom: 12px;
+            padding: 9px 11px;
+            border-radius: var(--r-sm);
+            background: var(--surface-2);
+        }
+
+        .auth-foot {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            margin-top: 16px;
+            font-size: 12.5px;
+            color: var(--ink-soft);
+        }
+
+        .auth-link {
+            background: none;
+            border: none;
+            color: var(--accent);
+            font-family: inherit;
+            font-size: 12.5px;
+            font-weight: 600;
+            cursor: pointer;
+            padding: 6px 4px;
+        }
+
+        .auth-link.subtle {
+            display: block;
+            margin: 4px auto 0;
+            color: var(--ink-faint);
+            font-weight: 500;
+        }
+
         /* ---------- Navigation drawer ---------- */
+
+        .masthead-lead {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-width: 0;
+        }
 
         .menu-trigger {
             width: 34px;
@@ -1528,9 +1629,9 @@
                     <hr style="border: 0; border-top: 1px solid var(--rule-soft); margin-bottom: 20px;">
 
                     <div style="margin-bottom: 20px;">
-                        <h4 style="margin-bottom: 10px;">🩺 אבחון חיבור</h4>
-                        <button class="btn btn-secondary" onclick="runFirebaseDiagnostic()" style="margin-bottom: 10px;">בדוק חיבור ל-Firebase</button>
-                        <div id="diag-output"></div>
+                        <h4 style="margin-bottom: 8px;">👤 חשבון</h4>
+                        <div id="account-email" style="font-size:12px; color:var(--ink-soft); margin-bottom:10px; font-family:'Roboto Mono',monospace; word-break:break-all;"></div>
+                        <button class="btn btn-secondary" onclick="confirmSignOut()">התנתק</button>
                     </div>
 
                     <hr style="border: 0; border-top: 1px solid var(--rule-soft); margin-bottom: 20px;">
@@ -1557,6 +1658,28 @@
         </div>
     </div>
 
+    <div id="auth-gate" class="hidden">
+        <div class="auth-panel">
+            <div class="auth-brand">FitPro</div>
+            <p class="auth-lede">התחבר כדי לסנכרן את האימונים שלך בין מכשירים</p>
+
+            <input type="email" id="auth-email" placeholder="אימייל" autocomplete="email"
+                   inputmode="email" onkeydown="handleAuthKeydown(event)">
+            <input type="password" id="auth-password" placeholder="סיסמה" autocomplete="current-password"
+                   onkeydown="handleAuthKeydown(event)">
+
+            <div id="auth-message"></div>
+
+            <button class="btn btn-primary" id="auth-submit" onclick="submitAuth()">התחבר</button>
+
+            <div class="auth-foot">
+                <span id="auth-mode-hint">אין לך חשבון עדיין?</span>
+                <button class="auth-link" id="auth-mode-toggle" onclick="toggleAuthMode()">הרשמה</button>
+            </div>
+            <button class="auth-link subtle" onclick="requestPasswordReset()">שכחתי סיסמה</button>
+        </div>
+    </div>
+
     <!-- NAVIGATION DRAWER -->
     <div class="nav-scrim" id="nav-scrim" onclick="closeNavDrawer()"></div>
     <aside class="nav-drawer" id="nav-drawer">
@@ -1573,7 +1696,231 @@
     <script>
         // ============ FIREBASE CONFIGURATION ============
         // ⚠️ QA FIX #1: Use the correct Firebase endpoint from BabyBloom setup
-        const FIREBASE_ENDPOINT = 'https://gymo-2093a-default-rtdb.firebaseio.com/fitpro';
+        // ============ AUTHENTICATION ============
+        // Firebase Auth over its REST API — no external SDK, so the app stays a
+        // single self-contained file with nothing to load at runtime.
+        //
+        // The API key is a public identifier, not a secret. All actual protection
+        // comes from the database rules, which scope every record to its owner.
+        const FIREBASE_API_KEY = 'AIzaSyCRyiWkSsI5RbFWi-7A_NsSnJW2OGBSJlU';
+        const FIREBASE_DB_ROOT = 'https://gymo-2093a-default-rtdb.firebaseio.com';
+
+        const IDENTITY_API = 'https://identitytoolkit.googleapis.com/v1/accounts';
+        const TOKEN_API = 'https://securetoken.googleapis.com/v1/token';
+
+        let authState = { uid: null, email: null, idToken: null, refreshToken: null, expiresAt: 0 };
+
+        function isConfigured() {
+            return FIREBASE_API_KEY && !FIREBASE_API_KEY.startsWith('PASTE_');
+        }
+
+        function persistAuth() {
+            try {
+                localStorage.setItem('fitpro-auth', JSON.stringify({
+                    uid: authState.uid,
+                    email: authState.email,
+                    refreshToken: authState.refreshToken
+                }));
+            } catch (e) { /* private browsing */ }
+        }
+
+        function adoptAuthResponse(data) {
+            authState.uid = data.localId || data.user_id || authState.uid;
+            authState.email = data.email || authState.email;
+            authState.idToken = data.idToken || data.id_token;
+            authState.refreshToken = data.refreshToken || data.refresh_token;
+            // Refresh a minute early so a request never races the expiry
+            const ttl = parseInt(data.expiresIn || data.expires_in || '3600', 10);
+            authState.expiresAt = Date.now() + (ttl - 60) * 1000;
+            persistAuth();
+        }
+
+        // Firebase returns machine-readable codes; translate the ones a user can act on
+        function describeAuthError(code) {
+            const map = {
+                EMAIL_NOT_FOUND: 'לא נמצא חשבון עם האימייל הזה',
+                INVALID_PASSWORD: 'סיסמה שגויה',
+                INVALID_LOGIN_CREDENTIALS: 'אימייל או סיסמה שגויים',
+                EMAIL_EXISTS: 'כבר קיים חשבון עם האימייל הזה',
+                WEAK_PASSWORD: 'הסיסמה צריכה להכיל לפחות 6 תווים',
+                INVALID_EMAIL: 'כתובת האימייל אינה תקינה',
+                MISSING_PASSWORD: 'נא להזין סיסמה',
+                USER_DISABLED: 'החשבון הזה הושבת',
+                OPERATION_NOT_ALLOWED: 'התחברות עם אימייל לא מופעלת ב-Firebase Console',
+                TOO_MANY_ATTEMPTS_TRY_LATER: 'יותר מדי ניסיונות. נסה שוב בעוד כמה דקות'
+            };
+            for (const key in map) {
+                if (code && code.startsWith(key)) return map[key];
+            }
+            return code || 'שגיאה לא ידועה';
+        }
+
+        async function callIdentityApi(action, body) {
+            const r = await fetch(`${IDENTITY_API}:${action}?key=${FIREBASE_API_KEY}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
+            });
+            const data = await r.json();
+            if (!r.ok) throw new Error(describeAuthError(data.error && data.error.message));
+            return data;
+        }
+
+        async function signIn(email, password) {
+            const data = await callIdentityApi('signInWithPassword', { email, password, returnSecureToken: true });
+            adoptAuthResponse(data);
+            return data;
+        }
+
+        async function signUp(email, password) {
+            const data = await callIdentityApi('signUp', { email, password, returnSecureToken: true });
+            adoptAuthResponse(data);
+            return data;
+        }
+
+        async function sendPasswordReset(email) {
+            return callIdentityApi('sendOobCode', { requestType: 'PASSWORD_RESET', email });
+        }
+
+        // ID tokens live an hour; trade the long-lived refresh token for a new one
+        async function refreshIdToken() {
+            if (!authState.refreshToken) return null;
+            const r = await fetch(`${TOKEN_API}?key=${FIREBASE_API_KEY}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: `grant_type=refresh_token&refresh_token=${encodeURIComponent(authState.refreshToken)}`
+            });
+            const data = await r.json();
+            if (!r.ok) {
+                // The refresh token was revoked or the account was removed
+                console.warn('Refresh rejected:', data);
+                signOut();
+                return null;
+            }
+            adoptAuthResponse(data);
+            return authState.idToken;
+        }
+
+        async function getValidIdToken() {
+            if (!authState.refreshToken) return null;
+            if (authState.idToken && Date.now() < authState.expiresAt) return authState.idToken;
+            return refreshIdToken();
+        }
+
+        function signOut() {
+            authState = { uid: null, email: null, idToken: null, refreshToken: null, expiresAt: 0 };
+            try { localStorage.removeItem('fitpro-auth'); } catch (e) {}
+            stateWorkouts = [];
+            activeWorkoutId = null;
+            showAuthGate();
+        }
+
+        async function confirmSignOut() {
+            if (!confirm('להתנתק? הנתונים נשארים בענן ויחזרו בהתחברות הבאה.')) return;
+            signOut();
+            displayNativeToast('👋 התנתקת');
+        }
+
+        // Restore a previous session without making the user type again
+        async function restoreSession() {
+            let saved = null;
+            try { saved = JSON.parse(localStorage.getItem('fitpro-auth')); } catch (e) {}
+            if (!saved || !saved.refreshToken) return false;
+
+            authState.uid = saved.uid;
+            authState.email = saved.email;
+            authState.refreshToken = saved.refreshToken;
+
+            const token = await refreshIdToken();
+            return !!token;
+        }
+
+        // ============ AUTH GATE UI ============
+
+        function showAuthGate() {
+            const gate = document.getElementById('auth-gate');
+            if (gate) gate.classList.remove('hidden');
+            document.body.classList.add('signed-out');
+        }
+
+        function hideAuthGate() {
+            const gate = document.getElementById('auth-gate');
+            if (gate) gate.classList.add('hidden');
+            document.body.classList.remove('signed-out');
+        }
+
+        let authModeIsSignUp = false;
+
+        function toggleAuthMode() {
+            authModeIsSignUp = !authModeIsSignUp;
+            document.getElementById('auth-submit').textContent = authModeIsSignUp ? 'צור חשבון' : 'התחבר';
+            document.getElementById('auth-mode-hint').textContent = authModeIsSignUp ? 'כבר יש לך חשבון?' : 'אין לך חשבון עדיין?';
+            document.getElementById('auth-mode-toggle').textContent = authModeIsSignUp ? 'התחברות' : 'הרשמה';
+            setAuthMessage('');
+        }
+
+        function setAuthMessage(text, tone) {
+            const el = document.getElementById('auth-message');
+            el.textContent = text || '';
+            el.style.color = tone === 'ok' ? 'var(--done)' : 'var(--alert)';
+            el.style.display = text ? 'block' : 'none';
+        }
+
+        async function submitAuth() {
+            const email = document.getElementById('auth-email').value.trim();
+            const password = document.getElementById('auth-password').value;
+            const btn = document.getElementById('auth-submit');
+
+            if (!isConfigured()) {
+                setAuthMessage('חסר מפתח API — עדכן את FIREBASE_API_KEY בקוד');
+                return;
+            }
+            if (!email || !password) {
+                setAuthMessage('נא למלא אימייל וסיסמה');
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = 'רגע...';
+            setAuthMessage('');
+
+            try {
+                if (authModeIsSignUp) {
+                    await signUp(email, password);
+                } else {
+                    await signIn(email, password);
+                }
+                document.getElementById('auth-password').value = '';
+                hideAuthGate();
+                triggerHaptic(12);
+                await bootWorkoutData();
+            } catch (e) {
+                setAuthMessage(e.message);
+                triggerHaptic([20, 40, 20]);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = authModeIsSignUp ? 'צור חשבון' : 'התחבר';
+            }
+        }
+
+        async function requestPasswordReset() {
+            const email = document.getElementById('auth-email').value.trim();
+            if (!email) {
+                setAuthMessage('הזן קודם את כתובת האימייל');
+                return;
+            }
+            try {
+                await sendPasswordReset(email);
+                setAuthMessage('נשלח אימייל לאיפוס הסיסמה', 'ok');
+            } catch (e) {
+                setAuthMessage(e.message);
+            }
+        }
+
+        function handleAuthKeydown(e) {
+            if (e.key === 'Enter') submitAuth();
+        }
+
         
         // ============ STATE MANAGEMENT ============
         let stateWorkouts = [];
@@ -1751,6 +2098,11 @@
             document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
             document.getElementById(tabId).classList.add('active');
             buttonElement.classList.add('active');
+
+            if (tabId === 'view-settings') {
+                const box = document.getElementById('account-email');
+                if (box) box.textContent = authState.email || '';
+            }
 
             // Jump back to the top so the new view starts at its title
             const scroller = document.querySelector('.content-area');
@@ -2921,14 +3273,37 @@
         }
 
         // ============ CLOUD SYNC ============
+        // Every record lives under the signed-in user's own subtree, and every
+        // request carries a short-lived ID token. The rules reject anything else.
+        async function authedUrl(path) {
+            if (!authState.uid) return null;
+            const token = await getValidIdToken();
+            if (!token) return null;
+            return `${FIREBASE_DB_ROOT}/fitpro/${authState.uid}${path}.json?auth=${token}`;
+        }
+
         async function syncFromCloud(path) {
             try {
+                const url = await authedUrl(path);
+                if (!url) return null;
+
                 setSyncStatus(true);
-                const r = await fetch(`${FIREBASE_ENDPOINT}${path}.json`, {
+                const r = await fetch(url, {
                     method: 'GET',
                     headers: { 'Content-Type': 'application/json' }
                 });
                 setSyncStatus(false);
+
+                if (r.status === 401 || r.status === 403) {
+                    // Token went stale mid-flight — refresh once and try again
+                    const fresh = await refreshIdToken();
+                    if (!fresh) return null;
+                    const retryUrl = await authedUrl(path);
+                    if (!retryUrl) return null;
+                    const r2 = await fetch(retryUrl);
+                    return r2.ok ? await r2.json() : null;
+                }
+
                 return r.ok ? await r.json() : null;
             } catch (e) { 
                 setSyncStatus(false);
@@ -2938,9 +3313,18 @@
         }
         
         async function syncToCloud(path, data, isRetry = false) {
+            if (!authState.uid) return false;
+
             try {
+                const url = await authedUrl(path);
+                if (!url) {
+                    saveLocalBackup(data);
+                    markPendingSync(path);
+                    return false;
+                }
+
                 setSyncStatus(true);
-                const response = await fetch(`${FIREBASE_ENDPOINT}${path}.json`, {
+                const response = await fetch(url, {
                     method: 'PUT', 
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(data)
@@ -2951,6 +3335,11 @@
                 saveLocalBackup(data);
 
                 if (!response.ok) {
+                    // An expired token is recoverable — refresh and retry once
+                    if ((response.status === 401 || response.status === 403) && !isRetry) {
+                        const fresh = await refreshIdToken();
+                        if (fresh) return syncToCloud(path, data, true);
+                    }
                     console.error('Firebase rejected write:', response.status, await response.text().catch(() => ''));
                     markPendingSync(path);
                     displayNativeToast(`⚠️ נשמר מקומית - הענן דחה את השמירה (${response.status})`);
@@ -2991,7 +3380,7 @@
 
             try {
                 const { path } = JSON.parse(pending);
-                const backup = localStorage.getItem('fitpro-backup');
+                const backup = localStorage.getItem(backupKey());
                 if (!backup) return;
 
                 const { workouts } = JSON.parse(backup);
@@ -3016,9 +3405,14 @@
             }
         }
 
+        // Backups are namespaced per account so two users on one device stay separate
+        function backupKey() {
+            return authState.uid ? `fitpro-backup-${authState.uid}` : 'fitpro-backup';
+        }
+
         function saveLocalBackup(data) {
             try {
-                localStorage.setItem('fitpro-backup', JSON.stringify({
+                localStorage.setItem(backupKey(), JSON.stringify({
                     timestamp: new Date().toISOString(),
                     workouts: data
                 }));
@@ -3029,7 +3423,7 @@
 
         function loadLocalBackup() {
             try {
-                const backup = localStorage.getItem('fitpro-backup');
+                const backup = localStorage.getItem(backupKey());
                 if (backup) {
                     const parsed = JSON.parse(backup);
                     return parsed.workouts;
@@ -3076,94 +3470,10 @@
             }
         }
 
-        // ============ FIREBASE DIAGNOSTIC ============
-        // Performs a real write and read against the database and reports exactly
-        // what came back, so a sync failure can be identified instead of guessed at.
-        async function runFirebaseDiagnostic() {
-            const out = document.getElementById('diag-output');
-            const line = (label, detail, tone) => {
-                const colour = tone === 'ok' ? 'var(--done)' : tone === 'bad' ? 'var(--alert)' : 'var(--ink-soft)';
-                return `<div style="padding:8px 10px; border-inline-start:3px solid ${colour};
-                        background:var(--surface-sunk); border-radius:var(--r-sm); margin-bottom:6px;
-                        font-size:12px; line-height:1.5;">
-                        <strong style="color:${colour};">${label}</strong><br>
-                        <span style="font-family:'Roboto Mono',monospace; font-size:11px; word-break:break-all;">${detail}</span>
-                        </div>`;
-            };
-
-            out.innerHTML = line('בודק...', 'שולח בקשות ל-Firebase', 'info');
-
-            let html = '';
-            html += line('כתובת', FIREBASE_ENDPOINT, 'info');
-
-            // --- WRITE ---
-            let writeOk = false, writeStatus = null, writeBody = '';
-            try {
-                const r = await fetch(`${FIREBASE_ENDPOINT}/_diagnostic.json`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ at: new Date().toISOString() })
-                });
-                writeStatus = r.status;
-                writeOk = r.ok;
-                writeBody = await r.text().catch(() => '');
-            } catch (e) {
-                writeBody = e.message;
-            }
-
-            if (writeOk) {
-                html += line('✅ כתיבה', `HTTP ${writeStatus} — הצליחה`, 'ok');
-            } else if (writeStatus) {
-                html += line(`❌ כתיבה נדחתה`, `HTTP ${writeStatus} — ${writeBody.slice(0, 200)}`, 'bad');
-            } else {
-                html += line('❌ כתיבה נכשלה', `הבקשה לא יצאה כלל — ${writeBody}`, 'bad');
-            }
-
-            // --- READ ---
-            let readOk = false, readStatus = null, readBody = '';
-            try {
-                const r = await fetch(`${FIREBASE_ENDPOINT}/workouts.json?shallow=true`);
-                readStatus = r.status;
-                readOk = r.ok;
-                readBody = await r.text().catch(() => '');
-            } catch (e) {
-                readBody = e.message;
-            }
-
-            if (readOk) {
-                const empty = readBody === 'null' || readBody === '';
-                html += line('✅ קריאה', `HTTP ${readStatus} — ${empty ? 'הצליחה, אך אין נתונים בענן' : 'הצליחה, יש נתונים'}`, empty ? 'info' : 'ok');
-            } else if (readStatus) {
-                html += line('❌ קריאה נדחתה', `HTTP ${readStatus} — ${readBody.slice(0, 200)}`, 'bad');
-            } else {
-                html += line('❌ קריאה נכשלה', `הבקשה לא יצאה כלל — ${readBody}`, 'bad');
-            }
-
-            // --- INTERPRETATION ---
-            let verdict, tone = 'bad';
-            if (writeOk && readOk) {
-                verdict = 'החיבור תקין. אם נתונים עדיין לא מתעדכנים, הבעיה אינה ב-Firebase.';
-                tone = 'ok';
-                // clean up after ourselves
-                fetch(`${FIREBASE_ENDPOINT}/_diagnostic.json`, { method: 'DELETE' }).catch(() => {});
-            } else if (writeStatus === 401 || writeStatus === 403 || readStatus === 401 || readStatus === 403) {
-                verdict = 'החוקים ב-Firebase חוסמים את הגישה. בדוק ב-Console → Realtime Database → Rules שהחוקים אכן נשמרו (פסיק עודף לפני } פוסל את כל הקובץ).';
-            } else if (writeStatus === 404 || readStatus === 404) {
-                verdict = 'הכתובת לא נמצאה — ייתכן שמזהה הפרויקט או האזור שגויים.';
-            } else if (!writeStatus && !readStatus) {
-                verdict = 'הבקשות נחסמו לפני שיצאו לרשת. זה קורה בתצוגה המקדימה של Claude, שחוסמת בקשות חיצוניות. בדוק מהגרסה הפרוסה ב-Vercel או מהטלפון.';
-            } else {
-                verdict = 'שגיאה לא מזוהה — ראה את קודי הסטטוס למעלה.';
-            }
-
-            html += line('אבחנה', verdict, tone);
-            out.innerHTML = html;
-        }
-
         function clearLocalStorageOnly() {
             if (confirm('⚠️ זה ימחק רק את ה-backup המקומי. בטוח?')) {
                 triggerHaptic([10, 40, 10, 40]);
-                localStorage.removeItem('fitpro-backup');
+                localStorage.removeItem(backupKey());
                 displayNativeToast('🗑️ Backup מקומי נמחק - refresh כדי לראות שינוי');
             }
         }
@@ -3173,7 +3483,7 @@
                 triggerHaptic([10, 40, 10, 40]);
                 stateWorkouts = [];
                 temporaryStagedWorkout = [];
-                localStorage.removeItem('fitpro-backup');
+                localStorage.removeItem(backupKey());
                 syncToCloud('/workouts', []);
                 renderWeeklyWorkoutDashboard();
                 displayNativeToast('🗑️ כל הנתונים נמחקו');
@@ -3345,17 +3655,13 @@
         }
 
         // ============ INIT ============
-        window.addEventListener('load', async () => {
-            // Initialize theme and visual enhancements
-            initializeTheme();
-            generateNativeAppAssets();
-            
-            // Try cloud sync first
+
+        // Loads this user's records. Runs after a session exists — never before.
+        async function bootWorkoutData() {
             let data = await syncFromCloud('/workouts');
             let dataSource = 'Firebase Cloud ☁️';
             let seededFromLocal = false;
             
-            // Fallback to local backup
             if (!data) {
                 data = loadLocalBackup();
                 dataSource = 'Local Storage 📱';
@@ -3369,15 +3675,13 @@
                 stateWorkouts = Array.isArray(data) ? data : Object.values(data);
                 stateWorkouts.sort((a, b) => new Date(a.date) - new Date(b.date));
 
-                // Bring older records up to the current shape, then persist only
-                // if that actually changed something.
                 const migrated = migrateWorkoutData(stateWorkouts);
                 if (migrated) {
                     console.log('📦 Migrated existing records to the plan/actual model');
                 }
 
                 // The cloud came back empty but this device still holds records —
-                // push them up so switching database never loses history.
+                // push them up so nothing is lost on first sign-in.
                 if (seededFromLocal && stateWorkouts.length > 0) {
                     console.log('☁️ Cloud was empty — seeding it from the local backup');
                     const ok = await syncToCloud('/workouts', stateWorkouts);
@@ -3388,11 +3692,30 @@
 
                 console.log(`✅ Loaded ${stateWorkouts.length} workouts from: ${dataSource}`);
             } else {
-                console.log('📭 No data found (Firebase empty & no local backup)');
+                stateWorkouts = [];
+                console.log('📭 No data found for this account');
             }
             
             renderWeeklyWorkoutDashboard();
             rebuildChangesSummaryReport();
+            retryPendingSyncIfNeeded();
+        }
+
+        window.addEventListener('load', async () => {
+            initializeTheme();
+            generateNativeAppAssets();
+
+            // Restore a previous session; otherwise show the sign-in screen
+            const hasSession = await restoreSession();
+            if (hasSession) {
+                hideAuthGate();
+                await bootWorkoutData();
+            } else {
+                showAuthGate();
+                if (!isConfigured()) {
+                    setAuthMessage('חסר מפתח API — עדכן את FIREBASE_API_KEY בקוד');
+                }
+            }
             
             const localK = localStorage.getItem('claude-key');
             if (localK) document.getElementById('local-key-store').value = localK;
@@ -3405,9 +3728,6 @@
             if (splash) {
                 setTimeout(() => splash.classList.add('hidden'), 200);
             }
-
-            // If a previous save never made it to the cloud, try again now that we're online
-            retryPendingSyncIfNeeded();
 
             // Initialize iOS-style interactions
             setTimeout(() => {
