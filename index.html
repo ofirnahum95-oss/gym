@@ -605,6 +605,20 @@
             margin-bottom: 3px;
         }
 
+        /* Shown only when what you lifted differs from what was prescribed */
+        .plan-delta {
+            font-style: normal;
+            font-family: 'Roboto Mono', monospace;
+            font-size: 9px;
+            font-weight: 600;
+            color: var(--accent);
+            opacity: 0.75;
+            letter-spacing: 0;
+            text-transform: none;
+            margin-inline-start: 4px;
+            font-variant-numeric: tabular-nums;
+        }
+
         .step-value {
             font-family: 'Roboto Mono', monospace;
             font-weight: 700;
@@ -1511,7 +1525,15 @@
                         <button class="btn btn-secondary" onclick="commitKey()">💾 שמור</button>
                     </div>
 
-                    <hr style="border: 0; border-top: 1px solid rgba(0,0,0,0.08); margin-bottom: 20px;">
+                    <hr style="border: 0; border-top: 1px solid var(--rule-soft); margin-bottom: 20px;">
+
+                    <div style="margin-bottom: 20px;">
+                        <h4 style="margin-bottom: 10px;">🩺 אבחון חיבור</h4>
+                        <button class="btn btn-secondary" onclick="runFirebaseDiagnostic()" style="margin-bottom: 10px;">בדוק חיבור ל-Firebase</button>
+                        <div id="diag-output"></div>
+                    </div>
+
+                    <hr style="border: 0; border-top: 1px solid var(--rule-soft); margin-bottom: 20px;">
 
                     <div>
                         <button class="btn btn-secondary" onclick="exportDataAsJSON()" style="margin-bottom: 10px;">📥 ייצא נתונים</button>
@@ -1862,6 +1884,95 @@
             }
         }
 
+        // ============ WORKOUT MODEL ============
+        // Two things used to be conflated: the prescription the trainer sent, and
+        // what actually got lifted. `plan` freezes the former so logging can never
+        // overwrite it, and completion ticks are stamped with the day they were made.
+
+        let activeWorkoutId = null;
+
+        function todayKey() {
+            const d = new Date();
+            return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        }
+
+        // The session you are currently logging into. Explicit id first; otherwise
+        // the newest workout that isn't dated in the future — a bad date inside an
+        // imported file must not silently hijack which session gets edited.
+        function getActiveWorkout() {
+            if (!stateWorkouts.length) return null;
+
+            if (activeWorkoutId) {
+                const pinned = stateWorkouts.find(w => w.id === activeWorkoutId);
+                if (pinned) return pinned;
+            }
+
+            const horizon = Date.now() + 86400000; // one day of timezone slack
+            let best = null, bestTime = -Infinity;
+            for (const w of stateWorkouts) {
+                const t = new Date(w.date).getTime();
+                if (!Number.isFinite(t) || t > horizon) continue;
+                if (t > bestTime) { best = w; bestTime = t; }
+            }
+            return best || stateWorkouts[stateWorkouts.length - 1];
+        }
+
+        // What the trainer asked for, for one exercise
+        function planOf(ex) {
+            return ex.plan || { sets: ex.sets, reps: ex.reps, weight: ex.weight };
+        }
+
+        function deviatesFromPlan(ex) {
+            const p = planOf(ex);
+            return p.weight !== ex.weight || p.reps !== ex.reps || p.sets !== ex.sets;
+        }
+
+        // A tick only counts for the day it was made, so last week's session
+        // doesn't greet you with a board full of ticks.
+        function isCompletedToday(ex) {
+            if (!ex.completed) return false;
+            if (!ex.completedOn) return true; // pre-migration data: honour it once
+            return ex.completedOn === todayKey();
+        }
+
+        // Backfill older records so existing Firebase data keeps working.
+        // Returns true when something changed and should be written back.
+        function migrateWorkoutData(workouts) {
+            let changed = false;
+            const today = todayKey();
+
+            workouts.forEach(w => {
+                if (!w.id) {
+                    const t = Date.parse(w.date);
+                    w.id = 'wk-' + (Number.isFinite(t) ? t : Date.now());
+                    changed = true;
+                }
+
+                (w.exercises || []).forEach(ex => {
+                    if (!ex.plan) {
+                        // The oldest history entry is the closest surviving record of
+                        // the original prescription; otherwise current values are it.
+                        const origin = (ex.history && ex.history.length) ? ex.history[0] : ex;
+                        ex.plan = {
+                            sets: origin.sets ?? ex.sets,
+                            reps: origin.reps ?? ex.reps,
+                            weight: origin.weight ?? ex.weight
+                        };
+                        changed = true;
+                    }
+
+                    // Stale ticks from a previous day get retired on load
+                    if (ex.completed && ex.completedOn && ex.completedOn !== today) {
+                        ex.completed = false;
+                        delete ex.completedOn;
+                        changed = true;
+                    }
+                });
+            });
+
+            return changed;
+        }
+
         function toggleReviewSheet(show) {
             document.getElementById('review-sheet').classList.toggle('active', show);
             if (show) {
@@ -1891,7 +2002,7 @@
                 return;
             }
 
-            const currentActiveWorkout = stateWorkouts[stateWorkouts.length - 1];
+            const currentActiveWorkout = getActiveWorkout();
             if (!currentActiveWorkout) return;
 
             const targetExercise = currentActiveWorkout.exercises[exerciseIndex];
@@ -1925,24 +2036,30 @@
 
         // ============ MARK EXERCISE COMPLETE ============
         async function toggleExerciseComplete(exerciseIndex) {
-            const currentActiveWorkout = stateWorkouts[stateWorkouts.length - 1];
+            const currentActiveWorkout = getActiveWorkout();
             if (!currentActiveWorkout) return;
 
             const targetExercise = currentActiveWorkout.exercises[exerciseIndex];
-            targetExercise.completed = !targetExercise.completed;
+            const nowTicked = !isCompletedToday(targetExercise);
 
-            triggerHaptic(targetExercise.completed ? [10, 20, 10] : 8);
+            targetExercise.completed = nowTicked;
+            if (nowTicked) {
+                targetExercise.completedOn = todayKey();
+            } else {
+                delete targetExercise.completedOn;
+            }
+
+            triggerHaptic(nowTicked ? [10, 20, 10] : 8);
 
             await syncToCloud('/workouts', stateWorkouts);
             renderWeeklyWorkoutDashboard();
 
-            // Show progress toast when all exercises are done
             const total = currentActiveWorkout.exercises.length;
-            const done = currentActiveWorkout.exercises.filter(e => e.completed).length;
+            const done = currentActiveWorkout.exercises.filter(isCompletedToday).length;
             if (done === total && total > 0) {
                 triggerHaptic([15, 30, 15, 30, 15]);
                 displayNativeToast('🎉 סיימת את כל התרגילים! כל הכבוד');
-            } else if (targetExercise.completed) {
+            } else if (nowTicked) {
                 displayNativeToast(`✅ ${done}/${total} תרגילים הושלמו`);
             }
         }
@@ -1956,7 +2073,7 @@
             }
             triggerHaptic(6);
 
-            const currentActiveWorkout = stateWorkouts[stateWorkouts.length - 1];
+            const currentActiveWorkout = getActiveWorkout();
             if (!currentActiveWorkout) return;
 
             const targetExercise = currentActiveWorkout.exercises[exerciseIndex];
@@ -2001,7 +2118,7 @@
                 return;
             }
 
-            const active = stateWorkouts[stateWorkouts.length - 1];
+            const active = getActiveWorkout();
             let htmlBuffer = '';
             let cursor = 0;
 
@@ -2045,14 +2162,14 @@
                 return;
             }
 
-            const active = stateWorkouts[stateWorkouts.length - 1];
+            const active = getActiveWorkout();
             const total = active.exercises ? active.exercises.length : 0;
             if (total === 0) {
                 wrap.style.display = 'none';
                 return;
             }
 
-            const done = active.exercises.filter(e => e.completed).length;
+            const done = active.exercises.filter(isCompletedToday).length;
             wrap.style.display = 'flex';
             fill.style.width = Math.round((done / total) * 100) + '%';
             text.textContent = `${done}/${total}`;
@@ -2064,15 +2181,15 @@
 
         // Wipe every completion tick — for starting the same programme again
         async function clearAllCompletions() {
-            const active = stateWorkouts[stateWorkouts.length - 1];
+            const active = getActiveWorkout();
             if (!active || !active.exercises) return;
 
-            const done = active.exercises.filter(e => e.completed).length;
+            const done = active.exercises.filter(isCompletedToday).length;
             if (done === 0) return;
 
             if (!confirm(`לנקות ${done} סימוני תרגילים? הנתונים עצמם לא ישתנו.`)) return;
 
-            active.exercises.forEach(ex => { ex.completed = false; });
+            active.exercises.forEach(ex => { ex.completed = false; delete ex.completedOn; });
             triggerHaptic([10, 30, 10]);
 
             await syncToCloud('/workouts', stateWorkouts);
@@ -2081,7 +2198,16 @@
         }
 
         function generateInlineExerciseRow(ex, index) {
-            const isDone = ex.completed === true;
+            const isDone = isCompletedToday(ex);
+            const p = planOf(ex);
+
+            // Only surface the prescription when you've actually deviated from it,
+            // so an untouched card stays quiet.
+            const weightHint = p.weight !== ex.weight
+                ? `<em class="plan-delta">תוכנית ${p.weight}</em>` : '';
+            const repsHint = (p.reps !== ex.reps || p.sets !== ex.sets)
+                ? `<em class="plan-delta">תוכנית ${p.reps}×${p.sets}</em>` : '';
+
             return `
                 <div class="workout-card ${isDone ? 'exercise-done' : ''}" data-ex-index="${index}" data-num="${index + 1}">
                     <div class="exercise-header-row">
@@ -2092,14 +2218,14 @@
                     </div>
                     <div class="card-selectors">
                         <div class="inline-stepper ${isEditingModeActive ? 'is-editing' : ''}">
-                            <span class="stepper-label">משקל</span>
+                            <span class="stepper-label">משקל ${weightHint}</span>
                             <button class="ctrl-btn" onclick="modifyMetric(${index}, 'weight', -0.5)">−</button>
                             <input type="number" step="0.5" id="inp-w-${index}" class="inline-edit-input" value="${ex.weight}" inputmode="decimal" onblur="saveManualInputValue(${index}, 'weight', this.value)">
                             <span class="step-value weight" onclick="enableManualInput('inp-w-${index}')">${ex.weight} <small>ק"ג</small></span>
                             <button class="ctrl-btn" onclick="modifyMetric(${index}, 'weight', 0.5)">+</button>
                         </div>
                         <div class="inline-stepper ${isEditingModeActive ? 'is-editing' : ''}">
-                            <span class="stepper-label">חזרות × סטים</span>
+                            <span class="stepper-label">חזרות × סטים ${repsHint}</span>
                             <button class="ctrl-btn" onclick="modifyMetric(${index}, 'reps', -1)">−</button>
                             <input type="number" id="inp-r-${index}" class="inline-edit-input" value="${ex.reps}" inputmode="numeric" onblur="saveManualInputValue(${index}, 'reps', this.value)">
                             <span class="step-value reps" onclick="enableManualInput('inp-r-${index}')">${ex.reps}×${ex.sets}</span>
@@ -2260,6 +2386,8 @@
                 sets: counts.sets, 
                 reps: counts.reps, 
                 weight, 
+                // Frozen snapshot of the prescription — logging never overwrites this
+                plan: { sets: counts.sets, reps: counts.reps, weight },
                 superset: false,
                 history: []
             } : null;
@@ -2291,11 +2419,24 @@
         }
 
         async function commitParsedWorkout() {
+            const newId = 'wk-' + Date.now();
+
+            // Anything corrected in the review sheet IS the prescription, so the
+            // plan snapshot is taken from the confirmed values.
+            temporaryStagedWorkout.forEach(ex => {
+                ex.plan = { sets: ex.sets, reps: ex.reps, weight: ex.weight };
+                ex.completed = false;
+                delete ex.completedOn;
+            });
+
             stateWorkouts.push({ 
-                id: 'wk-' + Date.now(), 
+                id: newId, 
                 date: new Date().toISOString(), 
                 exercises: temporaryStagedWorkout 
             });
+
+            // Pin it explicitly rather than inferring it from array order
+            activeWorkoutId = newId;
             
             const synced = await syncToCloud('/workouts', stateWorkouts);
             toggleReviewSheet(false);
@@ -2722,35 +2863,33 @@
 
         function rebuildChangesSummaryReport() {
             if (stateWorkouts.length === 0) return toggleReportingButtons(false);
-            const active = stateWorkouts[stateWorkouts.length - 1];
+            const active = getActiveWorkout();
+            if (!active) return toggleReportingButtons(false);
             let list = [];
 
+            // Report what differs from the prescription, not from whatever the
+            // first keystroke happened to be.
             active.exercises?.forEach(ex => {
-                if (ex.history && ex.history.length > 0) {
-                    const first = ex.history[0];
-                    if (first.weight !== ex.weight || first.reps !== ex.reps) {
-                        list.push({ 
-                            name: ex.name, 
-                            weight: ex.weight, 
-                            oldWeight: first.weight, 
-                            reps: ex.reps, 
-                            oldReps: first.reps,
-                            sets: ex.sets || 3
-                        });
-                    }
+                if (deviatesFromPlan(ex)) {
+                    list.push({
+                        name: ex.name,
+                        weight: ex.weight,
+                        reps: ex.reps,
+                        sets: ex.sets || 3
+                    });
                 }
             });
 
             if (list.length === 0) return toggleReportingButtons(false);
 
-            // Format: - [תרגיל] [רפס עדכני]×[סטים] ([משקל עדכני])
+            // Format: - [תרגיל] [חזרות]×[סטים] ([משקל])
             let txt = 'היי✨ מצרף עדכונים\n\n';
             list.forEach(ex => {
                 txt += `- ${ex.name} ${ex.reps}×${ex.sets} (${ex.weight})\n`;
             });
 
             toggleReportingButtons(true);
-            document.getElementById('changes-view-box').innerHTML = `<div style="background: rgba(0,82,204,0.05); border-radius: 16px; padding: 14px; font-size: 13px; line-height: 1.8; white-space: pre-wrap; word-wrap: break-word; font-family: -apple-system, sans-serif; -webkit-user-select: text; user-select: text;">${txt.replace(/\n/g, '<br>')}</div>`;
+            document.getElementById('changes-view-box').innerHTML = `<div style="background: var(--accent-wash); border-radius: var(--r-md); padding: 14px; font-size: 13px; line-height: 1.8; white-space: pre-wrap; word-wrap: break-word; -webkit-user-select: text; user-select: text;">${txt.replace(/\n/g, '<br>')}</div>`;
             return txt;
         }
 
@@ -2935,6 +3074,90 @@
             } catch (e) {
                 displayNativeToast('❌ שגיאה בייצוא');
             }
+        }
+
+        // ============ FIREBASE DIAGNOSTIC ============
+        // Performs a real write and read against the database and reports exactly
+        // what came back, so a sync failure can be identified instead of guessed at.
+        async function runFirebaseDiagnostic() {
+            const out = document.getElementById('diag-output');
+            const line = (label, detail, tone) => {
+                const colour = tone === 'ok' ? 'var(--done)' : tone === 'bad' ? 'var(--alert)' : 'var(--ink-soft)';
+                return `<div style="padding:8px 10px; border-inline-start:3px solid ${colour};
+                        background:var(--surface-sunk); border-radius:var(--r-sm); margin-bottom:6px;
+                        font-size:12px; line-height:1.5;">
+                        <strong style="color:${colour};">${label}</strong><br>
+                        <span style="font-family:'Roboto Mono',monospace; font-size:11px; word-break:break-all;">${detail}</span>
+                        </div>`;
+            };
+
+            out.innerHTML = line('בודק...', 'שולח בקשות ל-Firebase', 'info');
+
+            let html = '';
+            html += line('כתובת', FIREBASE_ENDPOINT, 'info');
+
+            // --- WRITE ---
+            let writeOk = false, writeStatus = null, writeBody = '';
+            try {
+                const r = await fetch(`${FIREBASE_ENDPOINT}/_diagnostic.json`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ at: new Date().toISOString() })
+                });
+                writeStatus = r.status;
+                writeOk = r.ok;
+                writeBody = await r.text().catch(() => '');
+            } catch (e) {
+                writeBody = e.message;
+            }
+
+            if (writeOk) {
+                html += line('✅ כתיבה', `HTTP ${writeStatus} — הצליחה`, 'ok');
+            } else if (writeStatus) {
+                html += line(`❌ כתיבה נדחתה`, `HTTP ${writeStatus} — ${writeBody.slice(0, 200)}`, 'bad');
+            } else {
+                html += line('❌ כתיבה נכשלה', `הבקשה לא יצאה כלל — ${writeBody}`, 'bad');
+            }
+
+            // --- READ ---
+            let readOk = false, readStatus = null, readBody = '';
+            try {
+                const r = await fetch(`${FIREBASE_ENDPOINT}/workouts.json?shallow=true`);
+                readStatus = r.status;
+                readOk = r.ok;
+                readBody = await r.text().catch(() => '');
+            } catch (e) {
+                readBody = e.message;
+            }
+
+            if (readOk) {
+                const empty = readBody === 'null' || readBody === '';
+                html += line('✅ קריאה', `HTTP ${readStatus} — ${empty ? 'הצליחה, אך אין נתונים בענן' : 'הצליחה, יש נתונים'}`, empty ? 'info' : 'ok');
+            } else if (readStatus) {
+                html += line('❌ קריאה נדחתה', `HTTP ${readStatus} — ${readBody.slice(0, 200)}`, 'bad');
+            } else {
+                html += line('❌ קריאה נכשלה', `הבקשה לא יצאה כלל — ${readBody}`, 'bad');
+            }
+
+            // --- INTERPRETATION ---
+            let verdict, tone = 'bad';
+            if (writeOk && readOk) {
+                verdict = 'החיבור תקין. אם נתונים עדיין לא מתעדכנים, הבעיה אינה ב-Firebase.';
+                tone = 'ok';
+                // clean up after ourselves
+                fetch(`${FIREBASE_ENDPOINT}/_diagnostic.json`, { method: 'DELETE' }).catch(() => {});
+            } else if (writeStatus === 401 || writeStatus === 403 || readStatus === 401 || readStatus === 403) {
+                verdict = 'החוקים ב-Firebase חוסמים את הגישה. בדוק ב-Console → Realtime Database → Rules שהחוקים אכן נשמרו (פסיק עודף לפני } פוסל את כל הקובץ).';
+            } else if (writeStatus === 404 || readStatus === 404) {
+                verdict = 'הכתובת לא נמצאה — ייתכן שמזהה הפרויקט או האזור שגויים.';
+            } else if (!writeStatus && !readStatus) {
+                verdict = 'הבקשות נחסמו לפני שיצאו לרשת. זה קורה בתצוגה המקדימה של Claude, שחוסמת בקשות חיצוניות. בדוק מהגרסה הפרוסה ב-Vercel או מהטלפון.';
+            } else {
+                verdict = 'שגיאה לא מזוהה — ראה את קודי הסטטוס למעלה.';
+            }
+
+            html += line('אבחנה', verdict, tone);
+            out.innerHTML = html;
         }
 
         function clearLocalStorageOnly() {
@@ -3141,6 +3364,14 @@
             if (data) {
                 stateWorkouts = Array.isArray(data) ? data : Object.values(data);
                 stateWorkouts.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+                // Bring older records up to the current shape, then persist only
+                // if that actually changed something.
+                if (migrateWorkoutData(stateWorkouts)) {
+                    console.log('📦 Migrated existing records to the plan/actual model');
+                    syncToCloud('/workouts', stateWorkouts);
+                }
+
                 console.log(`✅ Loaded ${stateWorkouts.length} workouts from: ${dataSource}`);
             } else {
                 console.log('📭 No data found (Firebase empty & no local backup)');
