@@ -1573,7 +1573,7 @@
     <script>
         // ============ FIREBASE CONFIGURATION ============
         // ⚠️ QA FIX #1: Use the correct Firebase endpoint from BabyBloom setup
-        const FIREBASE_ENDPOINT = 'https://baby-88eb0-default-rtdb.firebaseio.com/fitpro';
+        const FIREBASE_ENDPOINT = 'https://gymo-2093a-default-rtdb.firebaseio.com/fitpro';
         
         // ============ STATE MANAGEMENT ============
         let stateWorkouts = [];
@@ -3353,12 +3353,16 @@
             // Try cloud sync first
             let data = await syncFromCloud('/workouts');
             let dataSource = 'Firebase Cloud ☁️';
+            let seededFromLocal = false;
             
             // Fallback to local backup
             if (!data) {
                 data = loadLocalBackup();
                 dataSource = 'Local Storage 📱';
-                if (data) displayNativeToast('📱 טוען מגיבוי מקומי...');
+                if (data) {
+                    seededFromLocal = true;
+                    displayNativeToast('📱 טוען מגיבוי מקומי...');
+                }
             }
             
             if (data) {
@@ -3367,8 +3371,18 @@
 
                 // Bring older records up to the current shape, then persist only
                 // if that actually changed something.
-                if (migrateWorkoutData(stateWorkouts)) {
+                const migrated = migrateWorkoutData(stateWorkouts);
+                if (migrated) {
                     console.log('📦 Migrated existing records to the plan/actual model');
+                }
+
+                // The cloud came back empty but this device still holds records —
+                // push them up so switching database never loses history.
+                if (seededFromLocal && stateWorkouts.length > 0) {
+                    console.log('☁️ Cloud was empty — seeding it from the local backup');
+                    const ok = await syncToCloud('/workouts', stateWorkouts);
+                    if (ok) displayNativeToast(`☁️ ${stateWorkouts.length} אימונים הועלו לענן`);
+                } else if (migrated) {
                     syncToCloud('/workouts', stateWorkouts);
                 }
 
