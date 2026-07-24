@@ -3656,17 +3656,56 @@
 
         // ============ INIT ============
 
+        // One-time rescue for records written before sign-in existed. Everything
+        // used to live at /fitpro/workouts; it now belongs under the owner's uid.
+        async function adoptLegacyCloudData() {
+            if (!authState.uid) return null;
+            const token = await getValidIdToken();
+            if (!token) return null;
+
+            try {
+                const r = await fetch(`${FIREBASE_DB_ROOT}/fitpro/workouts.json?auth=${token}`);
+                if (!r.ok) {
+                    if (r.status === 401 || r.status === 403) {
+                        console.log('ℹ️ Legacy path is closed by the rules — nothing to adopt');
+                    }
+                    return null;
+                }
+                const legacy = await r.json();
+                if (!legacy) return null;
+
+                const list = Array.isArray(legacy) ? legacy : Object.values(legacy);
+                if (!list.length) return null;
+
+                console.log(`📥 Adopting ${list.length} workouts from the pre-auth path`);
+                return list;
+            } catch (e) {
+                console.warn('Legacy adoption failed:', e);
+                return null;
+            }
+        }
+
         // Loads this user's records. Runs after a session exists — never before.
         async function bootWorkoutData() {
             let data = await syncFromCloud('/workouts');
             let dataSource = 'Firebase Cloud ☁️';
-            let seededFromLocal = false;
-            
+            let needsUpload = false;
+
+            // Nothing under this account yet — look for records from before auth
+            if (!data) {
+                data = await adoptLegacyCloudData();
+                if (data) {
+                    dataSource = 'Legacy cloud path 📥';
+                    needsUpload = true;
+                }
+            }
+
+            // Still nothing — fall back to whatever this device holds
             if (!data) {
                 data = loadLocalBackup();
                 dataSource = 'Local Storage 📱';
                 if (data) {
-                    seededFromLocal = true;
+                    needsUpload = true;
                     displayNativeToast('📱 טוען מגיבוי מקומי...');
                 }
             }
@@ -3680,12 +3719,12 @@
                     console.log('📦 Migrated existing records to the plan/actual model');
                 }
 
-                // The cloud came back empty but this device still holds records —
-                // push them up so nothing is lost on first sign-in.
-                if (seededFromLocal && stateWorkouts.length > 0) {
-                    console.log('☁️ Cloud was empty — seeding it from the local backup');
+                // Records came from somewhere other than this account's subtree —
+                // write them into it so the account owns them from now on.
+                if (needsUpload && stateWorkouts.length > 0) {
+                    console.log('☁️ Writing records into this account\'s subtree');
                     const ok = await syncToCloud('/workouts', stateWorkouts);
-                    if (ok) displayNativeToast(`☁️ ${stateWorkouts.length} אימונים הועלו לענן`);
+                    if (ok) displayNativeToast(`☁️ ${stateWorkouts.length} אימונים שויכו לחשבון שלך`);
                 } else if (migrated) {
                     syncToCloud('/workouts', stateWorkouts);
                 }
