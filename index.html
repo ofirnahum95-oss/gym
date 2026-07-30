@@ -443,13 +443,10 @@
         .timer-main-row {
             display: flex;
             align-items: center;
-            gap: var(--s2);
-        }
-
-        .timer-label {
-            font-size: var(--t-md);
-            line-height: 1;
-            flex-shrink: 0;
+            /* Play sits at one end, reset at the other, with the clock between
+               them. Separation comes from the layout rather than a gap value,
+               so a stray tap can't land on reset while reaching for pause. */
+            gap: var(--s4);
         }
 
         .timer-display {
@@ -461,19 +458,12 @@
             font-feature-settings: "tnum";
             letter-spacing: -0.03em;
             line-height: 1;
-            min-width: 62px;
+            min-width: 74px;
             text-align: center;
+            flex: 1;
         }
 
         .timer-card.running .timer-display { color: var(--accent); }
-
-        .timer-controls {
-            display: flex;
-            /* Pause sits next to reset — one is routine, the other wipes the
-               clock. They need real clearance, not a hairline. */
-            gap: var(--s3);
-            flex-shrink: 0;
-        }
 
         .timer-btn {
             width: 40px;
@@ -488,10 +478,9 @@
             justify-content: center;
             transition: transform 0.15s ease, background 0.15s ease;
             position: relative;
+            flex-shrink: 0;
         }
 
-        /* 44px target, and 8px of clear air between the two so a stray tap
-           can't land on reset when you meant pause */
         .timer-btn::after { content: ''; position: absolute; inset: -2px; }
         .timer-btn:active { transform: scale(0.9); }
 
@@ -499,6 +488,9 @@
             background: var(--accent);
             color: var(--accent-ink);
         }
+
+        /* Reset stays quiet — it undoes, it shouldn't invite */
+        .timer-btn.timer-reset { opacity: 0.7; }
 
         /* ============ The rail ============ */
 
@@ -1855,12 +1847,9 @@
          reachable at exercise 8 exactly as it is at exercise 1 -->
     <div class="timer-card" id="timer-widget">
         <div class="timer-main-row">
-            <div class="timer-label">⏱️</div>
+            <button class="timer-btn action-trigger" id="stopwatch-toggle-btn" onclick="toggleStopwatch()">▶️</button>
             <div class="timer-display" id="stopwatch-clock">00:00</div>
-            <div class="timer-controls">
-                <button class="timer-btn action-trigger" id="stopwatch-toggle-btn" onclick="toggleStopwatch()">▶️</button>
-                <button class="timer-btn" onclick="resetStopwatch()">🔄</button>
-            </div>
+            <button class="timer-btn timer-reset" onclick="resetStopwatch()">🔄</button>
         </div>
     </div>
 
