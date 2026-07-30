@@ -945,6 +945,90 @@
             to   { opacity: 1; transform: translateY(0); }
         }
 
+        /* ---------- Session log ---------- */
+
+        .finish-workout-btn {
+            margin-bottom: 14px;
+        }
+
+        .session-card {
+            background: var(--surface-1);
+            border: 1px solid var(--rule);
+            border-radius: var(--r-lg);
+            padding: 13px 15px;
+            margin-bottom: 8px;
+            box-shadow: var(--shadow-1);
+        }
+
+        .session-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            gap: 8px;
+            margin-bottom: 2px;
+        }
+
+        .session-date {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--ink);
+        }
+
+        .session-meta {
+            font-size: 10.5px;
+            color: var(--ink-faint);
+            white-space: nowrap;
+        }
+
+        .session-volume {
+            font-family: 'Roboto Mono', monospace;
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--accent);
+            letter-spacing: -0.03em;
+            font-variant-numeric: tabular-nums;
+            line-height: 1.2;
+            margin-bottom: 8px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--rule-soft);
+        }
+
+        .session-volume small {
+            font-family: 'Rubik', sans-serif;
+            font-size: 10px;
+            font-weight: 500;
+            color: var(--ink-faint);
+            letter-spacing: 0;
+        }
+
+        .session-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            gap: 10px;
+            padding: 3px 0;
+            font-size: 12.5px;
+        }
+
+        .session-ex {
+            color: var(--ink-soft);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .session-fig {
+            font-family: 'Roboto Mono', monospace;
+            font-weight: 600;
+            color: var(--ink);
+            font-variant-numeric: tabular-nums;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        /* Beat the prescribed weight */
+        .session-fig.beat { color: var(--done); }
+
         /* ---------- Auth gate ---------- */
 
         #auth-gate {
@@ -1512,8 +1596,11 @@
                     <div class="workout-progress" id="workout-progress" style="display:none;">
                         <div class="workout-progress-bar"><span id="workout-progress-fill"></span></div>
                         <div class="workout-progress-text" id="workout-progress-text">0/0</div>
-                        <button class="clear-marks-btn" id="clear-marks-btn" onclick="clearAllCompletions()" style="display:none;">נקה סימונים</button>
+                        <button class="clear-marks-btn" id="clear-marks-btn" onclick="clearAllCompletions()" style="display:none;">נקה</button>
                     </div>
+
+                    <button class="btn btn-success finish-workout-btn" id="finish-workout-btn"
+                            onclick="finishWorkout()" style="display:none;">🏁 סיים ושמור אימון</button>
                     
                     <!-- Rest Stopwatch -->
                     <div class="timer-card" id="timer-widget">
@@ -1587,6 +1674,22 @@
                 </div>
 
                 <!-- VIEW 4: SETTINGS & CHANGES -->
+                <!-- VIEW: SESSION LOG -->
+                <div id="view-history" class="tab-view">
+                    <div class="view-title">📖 יומן אימונים</div>
+                    <div id="history-summary" class="metrics-row" style="display:none;">
+                        <div class="metric-tile">
+                            <div>אימונים החודש</div>
+                            <div class="val" id="hist-count">0</div>
+                        </div>
+                        <div class="metric-tile">
+                            <div>נפח החודש</div>
+                            <div class="val" id="hist-volume">0</div>
+                        </div>
+                    </div>
+                    <div id="session-history"></div>
+                </div>
+
                 <div id="view-settings" class="tab-view">
                     <div class="view-title">📊 דוח שינויים</div>
                     
@@ -1690,6 +1793,7 @@
         <button class="nav-tab active" data-tab-id="view-workout" onclick="switchTab('view-workout', this)"><icon>🏋️‍♂️</icon>אימון</button>
         <button class="nav-tab" data-tab-id="view-analytics" onclick="switchTab('view-analytics', this)"><icon>📈</icon>אנליזה</button>
         <button class="nav-tab" data-tab-id="view-add" onclick="switchTab('view-add', this)"><icon>➕</icon>הוספה</button>
+        <button class="nav-tab" data-tab-id="view-history" onclick="switchTab('view-history', this)"><icon>📖</icon>יומן</button>
         <button class="nav-tab" data-tab-id="view-settings" onclick="switchTab('view-settings', this)"><icon>⚙️</icon>הגדרות</button>
     </aside>
 
@@ -1811,6 +1915,7 @@
             authState = { uid: null, email: null, idToken: null, refreshToken: null, expiresAt: 0 };
             try { localStorage.removeItem('fitpro-auth'); } catch (e) {}
             stateWorkouts = [];
+            sessionLog = [];
             activeWorkoutId = null;
             showAuthGate();
         }
@@ -2102,6 +2207,11 @@
             if (tabId === 'view-settings') {
                 const box = document.getElementById('account-email');
                 if (box) box.textContent = authState.email || '';
+            }
+
+            if (tabId === 'view-history') {
+                renderSessionHistory();
+                renderHistorySummary();
             }
 
             // Jump back to the top so the new view starts at its title
@@ -2529,9 +2639,167 @@
             // Offer the reset only once there's something to reset
             const clearBtn = document.getElementById('clear-marks-btn');
             if (clearBtn) clearBtn.style.display = done > 0 ? 'block' : 'none';
+
+            // Finishing only makes sense with at least one exercise ticked
+            const finishBtn = document.getElementById('finish-workout-btn');
+            if (finishBtn) finishBtn.style.display = done > 0 ? 'flex' : 'none';
         }
 
         // Wipe every completion tick — for starting the same programme again
+        // ============ SESSION LOG ============
+        // The programme (stateWorkouts) says what to do; a session records what was
+        // actually done, once, on a date. Sessions are append-only — editing the
+        // programme afterwards never rewrites history.
+
+        let sessionLog = [];
+
+        function makeSessionFromWorkout(workout, durationSec) {
+            const performed = workout.exercises.filter(isCompletedToday);
+            if (performed.length === 0) return null;
+
+            return {
+                id: 'sess-' + Date.now(),
+                date: new Date().toISOString(),
+                workoutId: workout.id || null,
+                durationSec: durationSec || 0,
+                entries: performed.map(ex => {
+                    const p = planOf(ex);
+                    return {
+                        name: ex.name,
+                        weight: ex.weight,
+                        reps: ex.reps,
+                        sets: ex.sets,
+                        // Keep the prescription alongside, so "planned vs done"
+                        // stays answerable years later
+                        planWeight: p.weight,
+                        planReps: p.reps,
+                        planSets: p.sets
+                    };
+                })
+            };
+        }
+
+        function sessionVolume(session) {
+            return session.entries.reduce((sum, e) =>
+                sum + (e.weight || 0) * (e.reps || 0) * (e.sets || 0), 0);
+        }
+
+        // Finish the workout: snapshot what was done, then clear the board
+        async function finishWorkout() {
+            const active = getActiveWorkout();
+            if (!active || !active.exercises) return;
+
+            const done = active.exercises.filter(isCompletedToday).length;
+            const total = active.exercises.length;
+
+            if (done === 0) {
+                displayNativeToast('סמן לפחות תרגיל אחד לפני סיום');
+                return;
+            }
+
+            const partial = done < total;
+            const question = partial
+                ? `לסיים את האימון? ${done} מתוך ${total} תרגילים סומנו.`
+                : `לסיים ולשמור את האימון? (${done} תרגילים)`;
+            if (!confirm(question)) return;
+
+            const session = makeSessionFromWorkout(active, getStopwatchElapsed());
+            if (!session) return;
+
+            sessionLog.push(session);
+
+            // The board resets for next time; the record is already safe
+            active.exercises.forEach(ex => {
+                ex.completed = false;
+                delete ex.completedOn;
+            });
+
+            triggerHaptic([15, 30, 15, 30, 15]);
+
+            await syncToCloud('/sessions', sessionLog);
+            await syncToCloud('/workouts', stateWorkouts);
+
+            renderWeeklyWorkoutDashboard();
+            renderSessionHistory();
+
+            const vol = Math.round(sessionVolume(session));
+            displayNativeToast(`🏁 האימון נשמר · ${done} תרגילים · ${vol.toLocaleString()} ק"ג נפח`);
+        }
+
+        function formatSessionDate(iso) {
+            const d = new Date(iso);
+            const days = ['ראשון','שני','שלישי','רביעי','חמישי','שישי','שבת'];
+            return `יום ${days[d.getDay()]}, ${d.getDate()}.${d.getMonth() + 1}.${d.getFullYear()}`;
+        }
+
+        function formatDuration(sec) {
+            if (!sec) return '';
+            const m = Math.round(sec / 60);
+            if (m < 60) return `${m} דק׳`;
+            return `${Math.floor(m / 60)}:${String(m % 60).padStart(2, '0')} שע׳`;
+        }
+
+        function renderSessionHistory() {
+            const zone = document.getElementById('session-history');
+            if (!zone) return;
+
+            if (sessionLog.length === 0) {
+                zone.innerHTML = `<div class="empty-state">
+                    <div class="empty-state-icon">📖</div>
+                    <div class="empty-state-title">היומן ריק</div>
+                    <div class="empty-state-subtitle">סמן תרגילים ולחץ "סיים אימון" כדי לרשום אימון</div>
+                </div>`;
+                return;
+            }
+
+            // Newest first — the most recent session is what you want to see
+            const ordered = [...sessionLog].sort((a, b) => new Date(b.date) - new Date(a.date));
+
+            zone.innerHTML = ordered.map(s => {
+                const vol = Math.round(sessionVolume(s));
+                const dur = formatDuration(s.durationSec);
+                const rows = s.entries.map(e => {
+                    const beat = e.planWeight != null && e.weight > e.planWeight;
+                    return `<div class="session-row">
+                        <span class="session-ex">${e.name}</span>
+                        <span class="session-fig${beat ? ' beat' : ''}">${e.reps}×${e.sets} · ${e.weight}</span>
+                    </div>`;
+                }).join('');
+
+                return `<div class="session-card">
+                    <div class="session-head">
+                        <span class="session-date">${formatSessionDate(s.date)}</span>
+                        <span class="session-meta">${s.entries.length} תרגילים${dur ? ' · ' + dur : ''}</span>
+                    </div>
+                    <div class="session-volume">${vol.toLocaleString()} <small>ק"ג נפח</small></div>
+                    ${rows}
+                </div>`;
+            }).join('');
+        }
+
+        function renderHistorySummary() {
+            const wrap = document.getElementById('history-summary');
+            if (!wrap) return;
+
+            if (sessionLog.length === 0) {
+                wrap.style.display = 'none';
+                return;
+            }
+
+            const now = new Date();
+            const thisMonth = sessionLog.filter(s => {
+                const d = new Date(s.date);
+                return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+            });
+
+            const volume = thisMonth.reduce((sum, s) => sum + sessionVolume(s), 0);
+
+            wrap.style.display = 'grid';
+            document.getElementById('hist-count').textContent = thisMonth.length;
+            document.getElementById('hist-volume').textContent =
+                volume >= 1000 ? Math.round(volume / 1000) + 'k' : Math.round(volume);
+        }
+
         async function clearAllCompletions() {
             const active = getActiveWorkout();
             if (!active || !active.exercises) return;
@@ -2871,17 +3139,26 @@
         function computeExerciseClusters() {
             // rawMap: strictly-normalized name -> { display, count }
             const rawMap = new Map();
+
+            const note = (rawName) => {
+                const originalName = (rawName || '').trim();
+                const normalized = normalizeExerciseName(originalName);
+                if (!normalized) return;
+                if (!rawMap.has(normalized)) {
+                    rawMap.set(normalized, { display: originalName, count: 1 });
+                } else {
+                    rawMap.get(normalized).count++;
+                }
+            };
+
             stateWorkouts.forEach(w => {
-                w.exercises?.forEach(ex => {
-                    const originalName = ex.name.trim();
-                    const normalized = normalizeExerciseName(originalName);
-                    if (!normalized) return;
-                    if (!rawMap.has(normalized)) {
-                        rawMap.set(normalized, { display: originalName, count: 1 });
-                    } else {
-                        rawMap.get(normalized).count++;
-                    }
-                });
+                w.exercises?.forEach(ex => note(ex.name));
+            });
+
+            // Also index what was actually performed, so an exercise dropped from
+            // the current programme stays searchable in its own history.
+            sessionLog.forEach(s => {
+                s.entries?.forEach(e => note(e.name));
             });
 
             const normalizedNames = Array.from(rawMap.keys());
@@ -3109,6 +3386,50 @@
             // Exercise suggestions are now handled dynamically by filterAnalyticsExercises
         }
 
+        // Collects one data point per day for an exercise, merging two sources:
+        // imported programmes (the best record of the past) and session logs
+        // (what was actually lifted). A session always wins for its own date.
+        //
+        // Deliberately ignores ex.history — those entries are edit timestamps,
+        // not workout dates, and plotting them mixes "when I typed" with
+        // "when I trained".
+        function gatherExerciseHistory(normalizedName) {
+            const { clusterOf } = computeExerciseClusters();
+            const matches = (name) => clusterOf[normalizeExerciseName((name || '').trim())] === normalizedName;
+
+            const dayKey = (iso) => {
+                const d = new Date(iso);
+                return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+            };
+
+            const byDay = new Map();
+
+            stateWorkouts.forEach(w => {
+                const t = new Date(w.date).getTime();
+                if (!Number.isFinite(t)) return;
+                w.exercises?.forEach(ex => {
+                    if (!matches(ex.name)) return;
+                    const k = dayKey(w.date);
+                    if (!byDay.has(k)) {
+                        byDay.set(k, { timestamp: t, weight: ex.weight, reps: ex.reps, sets: ex.sets, performed: false });
+                    }
+                });
+            });
+
+            sessionLog.forEach(s => {
+                const t = new Date(s.date).getTime();
+                if (!Number.isFinite(t)) return;
+                s.entries?.forEach(e => {
+                    if (!matches(e.name)) return;
+                    byDay.set(dayKey(s.date), {
+                        timestamp: t, weight: e.weight, reps: e.reps, sets: e.sets, performed: true
+                    });
+                });
+            });
+
+            return Array.from(byDay.values()).sort((a, b) => a.timestamp - b.timestamp);
+        }
+
         function runExerciseAnalytics(normalizedName) {
             const panel = document.getElementById('analytics-panel');
             const empty = document.getElementById('analytics-empty');
@@ -3122,52 +3443,39 @@
             panel.style.display = 'block'; 
             empty.style.display = 'none';
 
-            let dataPoints = [];
+            const records = gatherExerciseHistory(normalizedName);
+
             let maxWeight = 0;
             let totalSetsCount = 0;
+            const dataPoints = [];
             let logHtml = '';
 
-            const { clusterOf } = computeExerciseClusters();
+            records.forEach(r => {
+                totalSetsCount += r.sets || 0;
+                if (r.weight > maxWeight) maxWeight = r.weight;
 
-            stateWorkouts.forEach(w => {
-                w.exercises?.forEach(ex => {
-                    const exNormalized = normalizeExerciseName(ex.name.trim());
-                    if (clusterOf[exNormalized] === normalizedName) {
-                        totalSetsCount += ex.sets;
-                        if (ex.weight > maxWeight) maxWeight = ex.weight;
-                        
-                        const d = new Date(w.date);
-                        dataPoints.push({ 
-                            weight: ex.weight, 
-                            label: d.toLocaleDateString('he-IL', {day:'numeric', month:'short'}), 
-                            timestamp: d.getTime() 
-                        });
-                        
-                        logHtml += `
-                            <div class="log-row">
-                                <span>📅 <strong>${d.toLocaleDateString('he-IL')}</strong></span>
-                                <span>${ex.weight} ק"ג | ${ex.reps}×${ex.sets}</span>
-                            </div>`;
-                        
-                        if (ex.history) {
-                            ex.history.forEach(h => {
-                                if (h.weight > maxWeight) maxWeight = h.weight;
-                                const hd = new Date(h.date);
-                                dataPoints.push({ 
-                                    weight: h.weight, 
-                                    label: hd.toLocaleDateString('he-IL', {day:'numeric', month:'short'}), 
-                                    timestamp: hd.getTime() 
-                                });
-                            });
-                        }
-                    }
+                const d = new Date(r.timestamp);
+                dataPoints.push({
+                    weight: r.weight,
+                    label: d.toLocaleDateString('he-IL', { day: 'numeric', month: 'short' }),
+                    timestamp: r.timestamp
                 });
             });
 
-            dataPoints.sort((a, b) => a.timestamp - b.timestamp);
+            // Newest first in the log — most recent session is what you look for
+            [...records].reverse().forEach(r => {
+                const d = new Date(r.timestamp);
+                logHtml += `
+                    <div class="log-row">
+                        <span>${r.performed ? '✅' : '📋'} <strong>${d.toLocaleDateString('he-IL')}</strong></span>
+                        <span>${r.weight} ק"ג | ${r.reps}×${r.sets}</span>
+                    </div>`;
+            });
+
             document.getElementById('meta-pr').textContent = maxWeight + ' ק"ג';
             document.getElementById('meta-count').textContent = totalSetsCount;
-            document.getElementById('analytics-logs').innerHTML = logHtml || '<div class="empty-state">אין היסטוריה</div>';
+            document.getElementById('analytics-logs').innerHTML = logHtml ||
+                '<div class="empty-state"><div class="empty-state-subtitle">אין היסטוריה לתרגיל הזה</div></div>';
             buildSVGVectorGraph(dataPoints);
         }
 
@@ -3737,6 +4045,13 @@
             
             renderWeeklyWorkoutDashboard();
             rebuildChangesSummaryReport();
+
+            // The session log lives in its own node, independent of the programme
+            const loggedSessions = await syncFromCloud('/sessions');
+            sessionLog = Array.isArray(loggedSessions) ? loggedSessions
+                       : loggedSessions ? Object.values(loggedSessions) : [];
+            renderSessionHistory();
+
             retryPendingSyncIfNeeded();
         }
 
