@@ -2423,6 +2423,7 @@
 
         document.addEventListener('visibilitychange', () => {
             if (document.hidden) {
+                flushPendingWrites();
                 saveStopwatchState();
             } else {
                 resyncStopwatch();
@@ -2431,7 +2432,7 @@
 
         // Fires when iOS restores the page from the back/forward cache
         window.addEventListener('pageshow', resyncStopwatch);
-        window.addEventListener('pagehide', saveStopwatchState);
+        window.addEventListener('pagehide', () => { flushPendingWrites(); saveStopwatchState(); });
 
         function toggleEditMode() {
             isEditingModeActive = !isEditingModeActive;
@@ -2597,12 +2598,37 @@
             if (field === 'weight') targetExercise.weight = numVal;
             if (field === 'reps') targetExercise.reps = Math.max(1, Math.floor(numVal));
 
-            await syncToCloud('/workouts', stateWorkouts);
             renderWeeklyWorkoutDashboard();
             rebuildChangesSummaryReport();
+            queueSync('/workouts', () => stateWorkouts);
         }
 
         // ============ MARK EXERCISE COMPLETE ============
+        // Fire-and-forget writes can race: two rapid taps put two requests in
+        // flight, and if they land out of order the older snapshot wins. Each
+        // write carries the whole array, so coalescing rapid changes into one
+        // request is both safer and cheaper.
+        const pendingWrites = new Map();
+
+        function queueSync(path, getData, delay = 400) {
+            const existing = pendingWrites.get(path);
+            if (existing) clearTimeout(existing);
+            pendingWrites.set(path, setTimeout(() => {
+                pendingWrites.delete(path);
+                syncToCloud(path, getData());
+            }, delay));
+        }
+
+        // Anything queued should still go out if the app is being backgrounded
+        function flushPendingWrites() {
+            pendingWrites.forEach((timer, path) => {
+                clearTimeout(timer);
+                if (path === '/workouts') syncToCloud(path, stateWorkouts);
+                else if (path === '/sessions') syncToCloud(path, sessionLog);
+            });
+            pendingWrites.clear();
+        }
+
         async function toggleExerciseComplete(exerciseIndex) {
             const currentActiveWorkout = getActiveWorkout();
             if (!currentActiveWorkout) return;
@@ -2626,8 +2652,11 @@
                 if (!isStopwatchRunning) toggleStopwatch();
             }
 
-            await syncToCloud('/workouts', stateWorkouts);
+            // Draw first, sync after. The state is already correct in memory, so
+            // waiting on a network round-trip before showing the tick just makes
+            // the app feel broken on gym wifi.
             renderWeeklyWorkoutDashboard();
+            queueSync('/workouts', () => stateWorkouts);
 
             const total = currentActiveWorkout.exercises.length;
             const done = currentActiveWorkout.exercises.filter(isCompletedToday).length;
@@ -2668,9 +2697,9 @@
                 targetExercise.reps = Math.max(1, targetExercise.reps + delta);
             }
 
-            await syncToCloud('/workouts', stateWorkouts);
             renderWeeklyWorkoutDashboard();
             rebuildChangesSummaryReport();
+            queueSync('/workouts', () => stateWorkouts);
 
             // Animate the update
             setTimeout(() => {
@@ -2956,11 +2985,17 @@
 
             triggerHaptic([15, 30, 15, 30, 15]);
 
-            await syncToCloud('/sessions', sessionLog);
-            await syncToCloud('/workouts', stateWorkouts);
-
             renderWeeklyWorkoutDashboard();
             renderSessionHistory();
+
+            // Both writes go out together; the local backup inside syncToCloud
+            // means nothing is at risk if either one fails.
+            // Finishing is deliberate — send now, and drop queued tick writes
+            // since this snapshot supersedes them.
+            pendingWrites.forEach(t => clearTimeout(t));
+            pendingWrites.clear();
+            syncToCloud('/sessions', sessionLog);
+            syncToCloud('/workouts', stateWorkouts);
 
             const vol = Math.round(sessionVolume(session));
             displayNativeToast(`🏁 האימון נשמר · ${done} תרגילים · ${vol.toLocaleString()} ק"ג נפח`);
@@ -3052,9 +3087,9 @@
             active.exercises.forEach(ex => { ex.completed = false; delete ex.completedOn; });
             triggerHaptic([10, 30, 10]);
 
-            await syncToCloud('/workouts', stateWorkouts);
             renderWeeklyWorkoutDashboard();
             displayNativeToast('↺ הסימונים נוקו');
+            queueSync('/workouts', () => stateWorkouts);
         }
 
         function generateInlineExerciseRow(ex, index) {
