@@ -2629,6 +2629,24 @@
             pendingWrites.clear();
         }
 
+        // Ticking an exercise changes two classes on one card. Rebuilding the
+        // whole list to express that destroys and recreates every card — inputs,
+        // buttons and an inline SVG each — then forces a full style and layout
+        // pass. On a phone that is the lag you feel between tap and checkmark.
+        function paintCompletion(exerciseIndex, isDone) {
+            const card = document.querySelector(`.workout-card[data-ex-index="${exerciseIndex}"]`);
+            if (!card) return false;
+
+            card.classList.toggle('exercise-done', isDone);
+
+            const toggle = card.querySelector('.complete-toggle');
+            if (toggle) {
+                toggle.classList.toggle('checked', isDone);
+                toggle.textContent = isDone ? '✓' : '';
+            }
+            return true;
+        }
+
         async function toggleExerciseComplete(exerciseIndex) {
             const currentActiveWorkout = getActiveWorkout();
             if (!currentActiveWorkout) return;
@@ -2643,6 +2661,12 @@
                 delete targetExercise.completedOn;
             }
 
+            // Repaint this one card before anything else happens
+            if (!paintCompletion(exerciseIndex, nowTicked)) {
+                renderWeeklyWorkoutDashboard();
+            }
+            renderWorkoutProgress();
+
             triggerHaptic(nowTicked ? [10, 20, 10] : 8);
 
             // Ticking an exercise means a set just ended — start the rest clock
@@ -2652,10 +2676,6 @@
                 if (!isStopwatchRunning) toggleStopwatch();
             }
 
-            // Draw first, sync after. The state is already correct in memory, so
-            // waiting on a network round-trip before showing the tick just makes
-            // the app feel broken on gym wifi.
-            renderWeeklyWorkoutDashboard();
             queueSync('/workouts', () => stateWorkouts);
 
             const total = currentActiveWorkout.exercises.length;
@@ -2697,17 +2717,46 @@
                 targetExercise.reps = Math.max(1, targetExercise.reps + delta);
             }
 
-            renderWeeklyWorkoutDashboard();
+            // Only one number changed — repaint that, not the whole list
+            const painted = paintMetric(exerciseIndex, field, targetExercise);
+            if (!painted) renderWeeklyWorkoutDashboard();
+
             rebuildChangesSummaryReport();
             queueSync('/workouts', () => stateWorkouts);
+        }
 
-            // Animate the update
-            setTimeout(() => {
-                const elem = field === 'weight' ? 
-                    document.querySelector(`#inp-w-${exerciseIndex} + .step-value`) :
-                    document.querySelector(`#inp-r-${exerciseIndex} + .step-value`);
-                if (elem) animateWeightUpdate(elem, null, null);
-            }, 100);
+        // Rewrites a single readout in place, and keeps the hidden input that
+        // backs it in step so typing afterwards starts from the current value.
+        function paintMetric(exerciseIndex, field, ex) {
+            const inputId = field === 'weight' ? `inp-w-${exerciseIndex}` : `inp-r-${exerciseIndex}`;
+            const input = document.getElementById(inputId);
+            if (!input) return false;
+
+            const valueEl = input.nextElementSibling;
+            if (!valueEl || !valueEl.classList.contains('step-value')) return false;
+
+            if (field === 'weight') {
+                input.value = ex.weight;
+                valueEl.innerHTML = `${ex.weight} <small>ק"ג</small>`;
+            } else {
+                input.value = ex.reps;
+                valueEl.textContent = `${ex.reps}×${ex.sets}`;
+            }
+
+            animateWeightUpdate(valueEl, null, null);
+
+            // The plan hint sits in the label above and can flip on this change
+            const label = valueEl.closest('.inline-stepper')?.querySelector('.stepper-label');
+            if (label) {
+                const p = planOf(ex);
+                const off = field === 'weight'
+                    ? p.weight !== ex.weight
+                    : (p.reps !== ex.reps || p.sets !== ex.sets);
+                const base = field === 'weight' ? 'משקל' : 'חזרות × סטים';
+                const hint = field === 'weight' ? `תוכנית ${p.weight}` : `תוכנית ${p.reps}×${p.sets}`;
+                label.innerHTML = off ? `${base} <em class="plan-delta">${hint}</em>` : base;
+            }
+            return true;
         }
 
         // ============ LAST PERFORMED INDEX ============
