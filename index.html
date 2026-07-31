@@ -416,14 +416,16 @@
             width: max-content;
             max-width: calc(100vw - var(--s6));
             margin: 0 auto;
-            background: color-mix(in srgb, var(--surface-1) 92%, transparent);
+            /* Deliberately NOT backdrop-filter: this sits fixed above content that
+               changes on every slide, so the blur would be recomputed on each
+               repaint. An opaque surface renders for free. */
+            background: var(--surface-1);
             border: 1px solid var(--rule);
             border-radius: var(--r-pill);
             padding: var(--s2) var(--s2) var(--s2) var(--s3);
             box-shadow: var(--shadow-3), var(--lift);
-            backdrop-filter: saturate(180%) blur(20px);
-            -webkit-backdrop-filter: saturate(180%) blur(20px);
             transition: opacity 0.25s ease, transform 0.25s var(--ease-pop), visibility 0.25s;
+            will-change: transform;
         }
 
         /* Only relevant while training */
@@ -542,7 +544,10 @@
             letter-spacing: 0;
         }
 
-        .stage-slide { animation: slide-in 0.24s var(--ease-out); }
+        .stage-slide {
+            animation: slide-in 0.24s var(--ease-out);
+            will-change: opacity, transform;
+        }
 
         @keyframes slide-in {
             from { opacity: 0; transform: translateX(-8px); }
@@ -1562,8 +1567,8 @@
             position: fixed;
             inset: 0;
             background: rgba(10, 13, 17, 0.5);
-            backdrop-filter: blur(3px);
-            -webkit-backdrop-filter: blur(3px);
+            backdrop-filter: blur(2px);
+            -webkit-backdrop-filter: blur(2px);
             z-index: 1400;
             opacity: 0;
             visibility: hidden;
@@ -2788,6 +2793,7 @@
             if (recovered.length === 0) return false;
 
             sessionLog.push(...recovered);
+            invalidateIndexes();
             const count = recovered.reduce((n, s) => n + s.entries.length, 0);
             console.log(`🛟 Recovered ${recovered.length} unfinished workout(s), ${count} exercises`);
             displayNativeToast(`🛟 שוחזר אימון שלא נסגר · ${count} תרגילים נרשמו ביומן`);
@@ -2846,6 +2852,7 @@
             
             if (!targetExercise.history) targetExercise.history = [];
             targetExercise.history.push(oldRecord);
+            invalidateIndexes();
 
             if (field === 'weight') targetExercise.weight = numVal;
             if (field === 'reps') targetExercise.reps = Math.max(1, Math.floor(numVal));
@@ -2985,6 +2992,7 @@
             
             if (!targetExercise.history) targetExercise.history = [];
             targetExercise.history.push(oldRecord);
+            invalidateIndexes();
 
             if (field === 'weight') {
                 targetExercise.weight = Math.max(0, parseFloat((targetExercise.weight + delta).toFixed(1)));
@@ -3219,7 +3227,53 @@
             if (clamped === stageIndex && viaSwipe) return;
             stageIndex = clamped;
             triggerHaptic(6);
-            renderWeeklyWorkoutDashboard();
+
+            // Swap the slide rather than redrawing the screen. Nothing outside
+            // this one element changes when you move through the session.
+            if (!paintSlide(slides)) renderWeeklyWorkoutDashboard();
+        }
+
+        function paintSlide(slides) {
+            const holder = document.getElementById('stage-slide');
+            const counter = document.querySelector('.stage-count');
+            if (!holder || !counter) return false;
+
+            const active = getActiveWorkout();
+            if (!active) return false;
+
+            holder.innerHTML = slideMarkup(slides[stageIndex], active);
+
+            // Restart the entry animation without touching anything else
+            holder.style.animation = 'none';
+            void holder.offsetWidth;
+            holder.style.animation = '';
+
+            counter.innerHTML = `${stageIndex + 1} <span>מתוך ${slides.length}</span>`;
+
+            document.querySelectorAll('.stage-dot').forEach((dot, i) => {
+                const slide = slides[i];
+                dot.classList.toggle('here', i === stageIndex);
+                if (slide) dot.classList.toggle('done', slide.every(ix => isCompletedToday(active.exercises[ix])));
+            });
+
+            const arrows = document.querySelectorAll('.stage-arrow');
+            if (arrows[0]) arrows[0].disabled = stageIndex === 0;
+            if (arrows[1]) arrows[1].disabled = stageIndex >= slides.length - 1;
+
+            return true;
+        }
+
+        // One slide, whichever kind it is — shared by the full render and the swap
+        function slideMarkup(slide, active) {
+            if (!slide) return '';
+            return slide.length === 2
+                ? `<div class="superset-wrapper">
+                       <div class="superset-header-tag">⚡ SUPER SET</div>
+                       ${generateInlineExerciseRow(active.exercises[slide[0]], slide[0])}
+                       <div style="height: 10px;"></div>
+                       ${generateInlineExerciseRow(active.exercises[slide[1]], slide[1])}
+                   </div>`
+                : generateInlineExerciseRow(active.exercises[slide[0]], slide[0]);
         }
 
         function nextSlide() { goToSlide(stageIndex + 1); }
@@ -3259,6 +3313,20 @@
                 </div>`;
         }
 
+        // Rebuilding these on every render is wasted work: moving between slides
+        // changes nothing they depend on. They are invalidated explicitly whenever
+        // the underlying records actually change.
+        let indexesStale = true;
+
+        function invalidateIndexes() { indexesStale = true; }
+
+        function ensureIndexes() {
+            if (!indexesStale) return;
+            buildLastPerformedIndex();
+            buildSparkIndex();
+            indexesStale = false;
+        }
+
         function renderWeeklyWorkoutDashboard() {
             const displayZone = document.getElementById('weekly-workout-container');
             if (stateWorkouts.length === 0) {
@@ -3272,21 +3340,12 @@
             }
 
             const active = getActiveWorkout();
-            buildLastPerformedIndex();
-            buildSparkIndex();
+            ensureIndexes();
 
             const slides = buildSlides(active.exercises);
             const stage = viewMode === 'stage' && slides.length > 0;
 
-            // Render one slide, whichever kind it is
-            const slideHtml = (slide) => slide.length === 2
-                ? `<div class="superset-wrapper">
-                       <div class="superset-header-tag">⚡ SUPER SET</div>
-                       ${generateInlineExerciseRow(active.exercises[slide[0]], slide[0])}
-                       <div style="height: 10px;"></div>
-                       ${generateInlineExerciseRow(active.exercises[slide[1]], slide[1])}
-                   </div>`
-                : generateInlineExerciseRow(active.exercises[slide[0]], slide[0]);
+            const slideHtml = (slide) => slideMarkup(slide, active);
 
             let htmlBuffer = '';
             if (stage) {
@@ -3404,6 +3463,7 @@
             if (!session) return;
 
             sessionLog.push(session);
+            invalidateIndexes();
 
             // The board resets for next time; the record is already safe
             active.exercises.forEach(ex => {
@@ -3413,6 +3473,7 @@
 
             triggerHaptic([15, 30, 15, 30, 15]);
 
+            invalidateIndexes();
             stageIndex = 0;
             renderWeeklyWorkoutDashboard();
             renderSessionHistory();
@@ -3669,6 +3730,7 @@
                         } else {
                             displayNativeToast(`💾 ${parsedWorkoutsCount} אימונים נשמרו במכשיר - יסתנכרנו כשהחיבור יחזור`);
                         }
+                        invalidateIndexes();
                         renderWeeklyWorkoutDashboard();
                         rebuildChangesSummaryReport();
                         fileInput.value = '';
@@ -4818,6 +4880,7 @@
             // Open where you actually are, not back at exercise one
             seekFirstUndone();
 
+            invalidateIndexes();
             renderWeeklyWorkoutDashboard();
             rebuildChangesSummaryReport();
 
