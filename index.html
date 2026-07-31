@@ -1006,7 +1006,6 @@
             font-variant-numeric: tabular-nums;
         }
 
-        #analytics-suggestions,
         #muscle-group-browser {
             background: var(--surface-1) !important;
             border: 1px solid var(--rule) !important;
@@ -1014,8 +1013,121 @@
             box-shadow: var(--shadow-2);
         }
 
-        #analytics-suggestions > div,
         #muscle-group-list > div { color: var(--ink); }
+
+        /* ============ Analytics overview ============
+           Rows, not cards. A card per exercise would be twelve boxes competing
+           for attention; rows let the eye run down the column and stop at what
+           matters. */
+
+        .ov-summary .val.rising  { color: var(--done); }
+        .ov-summary .val.stalled { color: var(--alert); }
+
+        .ov-tools {
+            display: flex;
+            gap: var(--s2);
+            margin-bottom: var(--s3);
+        }
+
+        .ov-head {
+            font-size: var(--t-micro);
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--ink-faint);
+            margin: var(--s4) 0 var(--s2);
+            display: flex;
+            align-items: center;
+            gap: var(--s2);
+        }
+
+        .ov-head:first-child { margin-top: var(--s1); }
+
+        /* A short bar carries the section's meaning without an icon */
+        .ov-head::before {
+            content: '';
+            width: 3px;
+            height: 11px;
+            border-radius: 2px;
+            background: var(--ink-faint);
+        }
+
+        .ov-head.stalled { color: var(--alert); }
+        .ov-head.stalled::before { background: var(--alert); }
+        .ov-head.rising::before  { background: var(--done); }
+
+        .ov-row {
+            display: flex;
+            align-items: center;
+            gap: var(--s3);
+            width: 100%;
+            background: var(--surface-1);
+            border: 1px solid var(--rule);
+            border-radius: var(--r-md);
+            padding: var(--s2) var(--s3);
+            margin-bottom: var(--s1);
+            box-shadow: var(--shadow-1), var(--lift);
+            font-family: inherit;
+            text-align: start;
+            cursor: pointer;
+            min-height: 52px;
+            transition: transform 0.14s ease, border-color 0.18s ease;
+        }
+
+        .ov-row:active {
+            transform: scale(0.99);
+            border-color: color-mix(in srgb, var(--accent) 40%, transparent);
+        }
+
+        .ov-main {
+            display: flex;
+            flex-direction: column;
+            gap: 1px;
+            min-width: 0;
+            flex: 1;
+        }
+
+        .ov-name {
+            font-size: var(--t-sm);
+            font-weight: 600;
+            color: var(--ink);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .ov-detail {
+            font-size: var(--t-micro);
+            color: var(--ink-faint);
+            font-family: var(--mono);
+            font-variant-numeric: tabular-nums;
+        }
+
+        .ov-value {
+            font-family: var(--mono);
+            font-size: var(--t-lg);
+            font-weight: 700;
+            color: var(--accent);
+            letter-spacing: -0.03em;
+            font-variant-numeric: tabular-nums;
+            flex-shrink: 0;
+            min-width: 42px;
+            text-align: end;
+        }
+
+        .ov-row .spark { margin-inline-start: 0; }
+
+        .ov-back {
+            background: none;
+            border: none;
+            color: var(--accent);
+            font-family: inherit;
+            font-size: var(--t-sm);
+            font-weight: 600;
+            cursor: pointer;
+            padding: var(--s1) 0;
+            margin-bottom: var(--s2);
+        }
 
         /* ============ Session log ============ */
 
@@ -1094,7 +1206,14 @@
             flex-shrink: 0;
         }
 
+        /* Beat the prescription — on weight, reps or sets. Carries an arrow as
+           well as colour so it doesn't depend on distinguishing green. */
         .session-fig.beat { color: var(--done); }
+
+        .session-fig b {
+            font-weight: 700;
+            margin-inline-start: 1px;
+        }
 
         /* ============ Empty states ============ */
 
@@ -1673,39 +1792,63 @@
                 <!-- VIEW 2: PROGRESS ANALYTICS -->
                 <div id="view-analytics" class="tab-view">
                     <div class="view-title">📈 מדדי התקדמות</div>
-                    <div style="display:flex; gap:8px; margin-bottom: 0;">
-                        <input 
-                            type="text" 
-                            id="analytics-picker" 
-                            placeholder="חפש שם תרגיל..." 
-                            oninput="filterAnalyticsExercises(this.value)"
-                            onkeydown="handleAnalyticsKeydown(event)"
-                            style="flex:1; margin-bottom:0;">
-                        <button class="btn btn-secondary" onclick="toggleMuscleGroupBrowser()" style="width:auto; padding:0 16px; margin:0; flex-shrink:0;" title="עיון לפי קבוצת שריר">📋</button>
-                    </div>
-                    <div id="analytics-suggestions" style="display:none; max-height:200px; overflow-y:auto; margin-top:8px; margin-bottom:12px; z-index:10; position:relative;"></div>
-                    <div id="muscle-group-browser" style="display:none; max-height:280px; overflow-y:auto; margin-top:8px; margin-bottom:12px; z-index:10; position:relative;">
-                        <div id="muscle-group-list"></div>
-                    </div>
-                    
-                    <div id="analytics-panel" style="display: none;">
-                        <div class="metrics-row">
+
+                    <!-- BROWSE: the landing state, already full of answers -->
+                    <div id="analytics-browse">
+                        <div class="metrics-row ov-summary" id="analytics-summary" style="display:none;">
                             <div class="metric-tile">
-                                <div>משקל שיא (PR)</div>
-                                <div class="val" id="meta-pr">0 ק"ג</div>
+                                <div>בעלייה</div>
+                                <div class="val rising" id="sum-rising">0</div>
                             </div>
                             <div class="metric-tile">
-                                <div>סך סטים</div>
-                                <div class="val" id="meta-count">0</div>
+                                <div>תקועים</div>
+                                <div class="val stalled" id="sum-stalled">0</div>
+                            </div>
+                            <div class="metric-tile">
+                                <div>תרגילים</div>
+                                <div class="val" id="sum-total">0</div>
                             </div>
                         </div>
-                        
-                        <div class="graph-container" id="graph-wrapper"></div>
-                        
-                        <h4 style="font-size: 14px; margin-bottom: 12px; color: var(--accent); font-weight: 800;">היסטוריית שינויים:</h4>
-                        <div id="analytics-logs"></div>
+
+                        <div class="ov-tools">
+                            <input type="text" id="analytics-picker" placeholder="סנן לפי שם..."
+                                   oninput="filterOverview(this.value)" style="flex:1; margin-bottom:0;">
+                            <button class="btn btn-secondary" onclick="toggleMuscleGroupBrowser()"
+                                    style="width:auto; padding:0 16px; margin:0; flex-shrink:0;"
+                                    title="עיון לפי קבוצת שריר">📋</button>
+                        </div>
+
+                        <div id="muscle-group-browser" style="display:none; max-height:280px; overflow-y:auto; margin-bottom:12px; position:relative; z-index:10;">
+                            <div id="muscle-group-list"></div>
+                        </div>
+
+                        <div id="analytics-overview"></div>
                     </div>
-                    <div id="analytics-empty" class="empty-state">אנא בחר תרגיל לצפייה בגרף</div>
+
+                    <!-- DETAIL: one exercise, opened from the list -->
+                    <div id="analytics-detail" style="display:none;">
+                        <button class="ov-back" onclick="closeExerciseDetail()">‹ לכל התרגילים</button>
+                        <div class="view-title" id="detail-title" style="font-size:var(--t-lg);"></div>
+
+                        <div id="analytics-panel">
+                            <div class="metrics-row">
+                                <div class="metric-tile">
+                                    <div>משקל שיא</div>
+                                    <div class="val" id="meta-pr">0</div>
+                                </div>
+                                <div class="metric-tile">
+                                    <div>סך סטים</div>
+                                    <div class="val" id="meta-count">0</div>
+                                </div>
+                            </div>
+
+                            <div class="graph-container" id="graph-wrapper"></div>
+
+                            <h4 style="margin-bottom:10px; color:var(--ink-faint); font-size:var(--t-micro); letter-spacing:.06em; text-transform:uppercase;">היסטוריה</h4>
+                            <div id="analytics-logs"></div>
+                        </div>
+                        <div id="analytics-empty" class="empty-state" style="display:none;"></div>
+                    </div>
                 </div>
 
                 <!-- VIEW 3: ADD NEW DATA -->
@@ -2283,6 +2426,10 @@
             if (tabId === 'view-history') {
                 renderSessionHistory();
                 renderHistorySummary();
+            }
+
+            if (tabId === 'view-analytics') {
+                closeExerciseDetail();
             }
 
             // The rest timer belongs to the workout, not to analytics or settings
@@ -3108,10 +3255,14 @@
                 const vol = Math.round(sessionVolume(s));
                 const dur = formatDuration(s.durationSec);
                 const rows = s.entries.map(e => {
-                    const beat = e.planWeight != null && e.weight > e.planWeight;
+                    // Progress isn't only heavier. More reps or more sets against
+                    // the same prescription is progress too — any increase counts.
+                    const beat = (e.planWeight != null && e.weight > e.planWeight)
+                              || (e.planReps  != null && e.reps  > e.planReps)
+                              || (e.planSets  != null && e.sets  > e.planSets);
                     return `<div class="session-row">
                         <span class="session-ex">${e.name}</span>
-                        <span class="session-fig${beat ? ' beat' : ''}">${e.reps}×${e.sets} · ${e.weight}</span>
+                        <span class="session-fig${beat ? ' beat' : ''}">${e.reps}×${e.sets} · ${e.weight}${beat ? ' <b>↑</b>' : ''}</span>
                     </div>`;
                 }).join('');
 
@@ -3578,8 +3729,6 @@
 
         function toggleMuscleGroupBrowser() {
             const browser = document.getElementById('muscle-group-browser');
-            const suggestions = document.getElementById('analytics-suggestions');
-            suggestions.style.display = 'none';
 
             if (browser.style.display === 'none') {
                 renderMuscleGroupList();
@@ -3650,35 +3799,13 @@
         }
 
         function selectMuscleGroupExercise(index) {
-            const [root, display] = currentGroupExerciseList[index];
-            document.getElementById('analytics-picker').value = display;
+            const [root] = currentGroupExerciseList[index];
             document.getElementById('muscle-group-browser').style.display = 'none';
-            runExerciseAnalytics(root);
+            openExerciseDetail(root);
         }
 
         let analyticsSelectedIndex = -1;
 
-        function handleAnalyticsKeydown(event) {
-            const suggestionBox = document.getElementById('analytics-suggestions');
-            const suggestions = suggestionBox.querySelectorAll('div');
-            
-            if (event.key === 'ArrowDown') {
-                event.preventDefault();
-                analyticsSelectedIndex = Math.min(analyticsSelectedIndex + 1, suggestions.length - 1);
-                updateAnalyticsSuggestionSelection(suggestions);
-            } else if (event.key === 'ArrowUp') {
-                event.preventDefault();
-                analyticsSelectedIndex = Math.max(analyticsSelectedIndex - 1, -1);
-                updateAnalyticsSuggestionSelection(suggestions);
-            } else if (event.key === 'Enter') {
-                event.preventDefault();
-                if (analyticsSelectedIndex >= 0 && analyticsSelectedIndex < suggestions.length) {
-                    suggestions[analyticsSelectedIndex].click();
-                }
-            } else if (event.key === 'Escape') {
-                suggestionBox.style.display = 'none';
-            }
-        }
 
         function updateAnalyticsSuggestionSelection(suggestions) {
             suggestions.forEach((s, i) => {
@@ -3691,61 +3818,7 @@
             });
         }
 
-        function handleAnalyticsSelect(index) {
-            const exerciseMap = getUniqueExercises();
-            const exercises = Array.from(exerciseMap.entries());
-            
-            if (index >= 0 && index < exercises.length) {
-                const [normalized, display] = exercises[index];
-                document.getElementById('analytics-picker').value = display;
-                document.getElementById('analytics-suggestions').style.display = 'none';
-                runExerciseAnalytics(normalized);
-            }
-        }
 
-        function filterAnalyticsExercises(searchQuery) {
-            const suggestionBox = document.getElementById('analytics-suggestions');
-            const groupBrowser = document.getElementById('muscle-group-browser');
-            groupBrowser.style.display = 'none';
-            const exerciseMap = getUniqueExercises();
-            
-            analyticsSelectedIndex = -1; // Reset selection
-            
-            if (!searchQuery.trim()) {
-                suggestionBox.style.display = 'none';
-                return;
-            }
-            
-            const normalizedQuery = normalizeExerciseName(searchQuery);
-            const matches = [];
-            
-            let index = 0;
-            exerciseMap.forEach((displayName, normalizedName) => {
-                // Check if normalized name contains all words from query
-                const queryWords = normalizedQuery.split(/\s+/);
-                if (queryWords.every(word => normalizedName.includes(word))) {
-                    matches.push({ index: index, normalized: normalizedName, display: displayName });
-                }
-                index++;
-            });
-            
-            if (matches.length === 0) {
-                suggestionBox.style.display = 'none';
-                return;
-            }
-            
-            suggestionBox.innerHTML = matches.map(m => `
-                <div 
-                    style="padding: 12px 14px; border-bottom: 1px solid rgba(0,0,0,0.04); cursor: pointer; font-size: 14px; transition: background 0.15s;" 
-                    onmouseover="this.style.background='rgba(0,82,204,0.05)'"
-                    onmouseout="this.style.background='transparent'"
-                    onclick="handleAnalyticsSelect(${m.index})">
-                    ${m.display}
-                </div>
-            `).join('');
-            
-            suggestionBox.style.display = 'block';
-        }
 
         function populateAnalyticsDropdown() {
             // Legacy function - no longer needed
@@ -3794,6 +3867,170 @@
             });
 
             return Array.from(byDay.values()).sort((a, b) => a.timestamp - b.timestamp);
+        }
+
+        // ============ EXERCISE OVERVIEW ============
+        // The old screen opened empty and asked you to search. But "what's my
+        // history on lateral raises" is a rare question; "am I progressing" and
+        // "where am I stuck" are the real ones. This builds the whole picture in
+        // a single pass so the page can answer them without any input.
+
+        function buildExerciseOverview() {
+            const { clusterOf, exerciseMap } = computeExerciseClusters();
+            const series = new Map();   // root -> Map(dayKey -> {t, weight, reps, sets, performed})
+
+            const add = (name, iso, weight, reps, sets, performed) => {
+                const root = clusterOf[normalizeExerciseName((name || '').trim())];
+                if (!root) return;
+                const t = new Date(iso).getTime();
+                if (!Number.isFinite(t)) return;
+                if (!series.has(root)) series.set(root, new Map());
+                const day = dayKeyOf(iso);
+                const existing = series.get(root).get(day);
+                // A logged session outranks a prescription for the same day
+                if (!existing || performed) {
+                    series.get(root).set(day, { t, weight, reps, sets, performed });
+                }
+            };
+
+            stateWorkouts.forEach(w =>
+                w.exercises?.forEach(ex => add(ex.name, w.date, ex.weight, ex.reps, ex.sets, false)));
+            sessionLog.forEach(s =>
+                s.entries?.forEach(e => add(e.name, s.date, e.weight, e.reps, e.sets, true)));
+
+            const rows = [];
+            series.forEach((days, root) => {
+                const pts = Array.from(days.values()).sort((a, b) => a.t - b.t);
+                if (!pts.length) return;
+
+                const latest = pts[pts.length - 1];
+                const first = pts[0];
+
+                // Volume captures progress that weight alone misses — more reps at
+                // the same load is still progress.
+                const vol = p => (p.weight || 0) * (p.reps || 0) * (p.sets || 0);
+                const delta = latest.weight - first.weight;
+                const volDelta = vol(latest) - vol(first);
+
+                let state;
+                if (pts.length < 3) state = 'new';
+                else if (delta > 0 || volDelta > 0) state = 'rising';
+                else state = 'stalled';
+
+                rows.push({
+                    root,
+                    display: exerciseMap.get(root) || root,
+                    group: categorizeExercise(exerciseMap.get(root) || root),
+                    readings: pts.length,
+                    latest,
+                    delta,
+                    lastSeen: latest.t,
+                    state
+                });
+            });
+
+            // Stuck lifts first — that's the decision you came to make
+            const order = { stalled: 0, rising: 1, new: 2 };
+            rows.sort((a, b) => (order[a.state] - order[b.state]) || (b.lastSeen - a.lastSeen));
+            return rows;
+        }
+
+        let overviewFilter = '';
+
+        function renderAnalyticsOverview() {
+            const zone = document.getElementById('analytics-overview');
+            const summary = document.getElementById('analytics-summary');
+            if (!zone) return;
+
+            const all = buildExerciseOverview();
+
+            if (all.length === 0) {
+                if (summary) summary.style.display = 'none';
+                zone.innerHTML = `<div class="empty-state">
+                    <div class="empty-state-icon">📈</div>
+                    <div class="empty-state-title">אין עדיין נתונים</div>
+                    <div class="empty-state-subtitle">אחרי אימון או שניים תופיע כאן תמונת ההתקדמות</div>
+                </div>`;
+                return;
+            }
+
+            // Counts describe the whole picture, not the filtered slice
+            if (summary) {
+                summary.style.display = 'grid';
+                const n = s => all.filter(r => r.state === s).length;
+                document.getElementById('sum-total').textContent = all.length;
+                document.getElementById('sum-rising').textContent = n('rising');
+                document.getElementById('sum-stalled').textContent = n('stalled');
+            }
+
+            const q = overviewFilter.trim().toLowerCase();
+            const rows = q ? all.filter(r => r.display.toLowerCase().includes(q)) : all;
+
+            if (rows.length === 0) {
+                zone.innerHTML = `<div class="empty-state">
+                    <div class="empty-state-subtitle">לא נמצא תרגיל בשם "${overviewFilter}"</div>
+                </div>`;
+                return;
+            }
+
+            const heads = {
+                stalled: { label: 'דורש תשומת לב', note: 'ללא שיפור' },
+                rising:  { label: 'בעלייה',        note: '' },
+                new:     { label: 'מעט נתונים',    note: 'צריך עוד אימונים' }
+            };
+
+            let html = '';
+            let current = null;
+            rows.forEach(r => {
+                if (r.state !== current) {
+                    current = r.state;
+                    html += `<div class="ov-head ${r.state}">${heads[r.state].label}</div>`;
+                }
+
+                const spark = sparklineFor(r.display);
+                const sign = r.delta > 0 ? '+' : '';
+                const detail = r.state === 'new'
+                    ? `${r.readings} מדידות`
+                    : r.delta !== 0
+                        ? `${r.readings} מדידות · ${sign}${r.delta} ק"ג`
+                        : `${r.readings} מדידות · ללא שינוי`;
+
+                html += `
+                    <button class="ov-row" onclick="openExerciseDetail('${r.root}')">
+                        <span class="ov-main">
+                            <span class="ov-name">${r.display}</span>
+                            <span class="ov-detail">${detail}</span>
+                        </span>
+                        ${spark}
+                        <span class="ov-value">${r.latest.weight}</span>
+                    </button>`;
+            });
+
+            zone.innerHTML = html;
+        }
+
+        function filterOverview(value) {
+            overviewFilter = value || '';
+            renderAnalyticsOverview();
+        }
+
+        function openExerciseDetail(root) {
+            triggerHaptic(8);
+            document.getElementById('analytics-browse').style.display = 'none';
+            document.getElementById('analytics-detail').style.display = 'block';
+
+            const { exerciseMap } = computeExerciseClusters();
+            document.getElementById('detail-title').textContent = exerciseMap.get(root) || root;
+
+            runExerciseAnalytics(root);
+            document.querySelector('.content-area').scrollTop = 0;
+        }
+
+        function closeExerciseDetail() {
+            triggerHaptic(8);
+            document.getElementById('analytics-detail').style.display = 'none';
+            document.getElementById('analytics-browse').style.display = 'block';
+            renderAnalyticsOverview();
         }
 
         function runExerciseAnalytics(normalizedName) {
