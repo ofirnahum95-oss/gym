@@ -513,6 +513,188 @@
         #weekly-workout-container:has(> .empty-state)::before { display: none; }
         #weekly-workout-container:has(> .empty-state) { padding-inline-start: 0; }
 
+        /* ============ Stage mode ============
+           One exercise fills the screen. Nothing to scroll past to reach the
+           eighth lift, and the numbers get the room they deserve. */
+
+        .header-actions {
+            display: flex;
+            gap: var(--s2);
+            flex-shrink: 0;
+        }
+
+        .stage-count {
+            font-family: var(--mono);
+            font-size: var(--t-xl);
+            font-weight: 700;
+            color: var(--ink);
+            letter-spacing: -0.03em;
+            font-variant-numeric: tabular-nums;
+            text-align: center;
+            margin-bottom: var(--s3);
+        }
+
+        .stage-count span {
+            font-family: var(--sans);
+            font-size: var(--t-xs);
+            font-weight: 500;
+            color: var(--ink-faint);
+            letter-spacing: 0;
+        }
+
+        .stage-slide { animation: slide-in 0.24s var(--ease-out); }
+
+        @keyframes slide-in {
+            from { opacity: 0; transform: translateX(-8px); }
+            to   { opacity: 1; transform: translateX(0); }
+        }
+
+        /* The rail: dots double as a map of the session */
+        .stage-rail {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: var(--s3);
+            margin-top: var(--s4);
+        }
+
+        .stage-arrow {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: 1px solid var(--rule);
+            background: var(--surface-1);
+            color: var(--ink);
+            font-size: var(--t-xl);
+            font-weight: 700;
+            line-height: 1;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            box-shadow: var(--shadow-1);
+            transition: transform 0.14s ease, opacity 0.18s ease;
+            position: relative;
+        }
+
+        .stage-arrow::after { content: ''; position: absolute; inset: -2px; }
+        .stage-arrow:active { transform: scale(0.9); }
+        .stage-arrow:disabled { opacity: 0.25; pointer-events: none; }
+
+        .stage-dots {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            flex-wrap: wrap;
+            justify-content: center;
+            max-width: 190px;
+        }
+
+        .stage-dot {
+            width: 7px;
+            height: 7px;
+            padding: 0;
+            border: none;
+            border-radius: 50%;
+            background: var(--rule);
+            cursor: pointer;
+            transition: all 0.22s var(--ease-pop);
+            position: relative;
+        }
+
+        /* Small dot, thumb-sized target */
+        .stage-dot::after { content: ''; position: absolute; inset: -7px; }
+
+        .stage-dot.done { background: var(--done); }
+
+        .stage-dot.here {
+            background: var(--accent);
+            width: 20px;
+            border-radius: var(--r-pill);
+        }
+
+        /* --- The card, given a whole screen --- */
+
+        .stage .workout-card {
+            padding: var(--s5) var(--s4);
+            margin-bottom: 0;
+        }
+
+        /* The rail numbering is redundant when there is one card and a counter */
+        .stage .workout-card[data-num]::before { display: none; }
+
+        .stage .exercise-header-row {
+            flex-direction: column-reverse;
+            align-items: center;
+            text-align: center;
+            gap: var(--s3);
+            margin-bottom: var(--s5);
+        }
+
+        .stage .workout-card h3 {
+            font-size: var(--t-xl);
+            line-height: 1.25;
+            flex: none;
+        }
+
+        .stage .complete-toggle {
+            width: 46px;
+            height: 46px;
+            min-width: 46px;
+            font-size: var(--t-xl);
+            margin-top: 0;
+        }
+
+        .stage .card-selectors { gap: var(--s3); }
+
+        .stage .inline-stepper {
+            flex-direction: column;
+            gap: var(--s2);
+            padding: var(--s4) var(--s2);
+        }
+
+        .stage .stepper-label {
+            flex-basis: auto;
+            margin-bottom: 0;
+            font-size: var(--t-xs);
+        }
+
+        /* This is the number you came to read */
+        .stage .step-value {
+            font-size: 44px;
+            width: 100%;
+        }
+
+        .stage .step-value small { font-size: var(--t-sm); }
+
+        .stage .inline-edit-input {
+            font-size: var(--t-readout);
+            min-height: 54px;
+            width: 100%;
+        }
+
+        .stage .ctrl-btn {
+            width: 44px;
+            height: 44px;
+            min-width: 44px;
+            font-size: var(--t-xl);
+        }
+
+        .stage .last-time {
+            justify-content: center;
+            margin-top: var(--s4);
+            padding-top: var(--s3);
+        }
+
+        .stage .last-time-arrow,
+        .stage .spark { margin-inline-start: var(--s2); }
+
+        .stage .superset-wrapper { padding: var(--s3); }
+        .stage .superset-wrapper .workout-card { padding: var(--s3) var(--s2); }
+        .stage .superset-wrapper .step-value { font-size: var(--t-readout); }
+        .stage .superset-wrapper .exercise-header-row { margin-bottom: var(--s3); }
+
         /* ============ Exercise card ============ */
 
         .workout-card {
@@ -1509,21 +1691,6 @@
         [dir="rtl"] .nav-tab::before { border-radius: 3px 0 0 3px; }
         .nav-tab.active::before { transform: translateY(-50%) scaleY(1); }
 
-        .nav-tab-badge {
-            margin-inline-start: auto;
-            background: var(--alert);
-            color: #fff;
-            font-family: var(--mono);
-            font-size: var(--t-micro);
-            font-weight: 700;
-            min-width: 18px;
-            height: 18px;
-            border-radius: var(--r-pill);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 0 5px;
-        }
 
         /* ============ Sheets ============ */
 
@@ -1562,31 +1729,6 @@
             pointer-events: auto;
             font-size: var(--t-xl);
             border-radius: 50%;
-        }
-
-        .bottom-sheet {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: var(--surface-1);
-            border-radius: var(--r-xl) var(--r-xl) 0 0;
-            padding: var(--s4);
-            max-height: 80vh;
-            overflow-y: auto;
-            z-index: 1001;
-            box-shadow: var(--shadow-3);
-            animation: sheet-up 0.3s var(--ease-out);
-        }
-
-        .bottom-sheet.hidden { display: none; }
-
-        .bottom-sheet-handle {
-            width: 34px;
-            height: 4px;
-            background: var(--rule);
-            border-radius: 2px;
-            margin: 0 auto var(--s3);
         }
 
         /* ============ Toast ============ */
@@ -1637,53 +1779,6 @@
 
         .sync-status.syncing { color: var(--accent); }
 
-        .long-press-menu {
-            position: fixed;
-            background: var(--ink);
-            border-radius: var(--r-md);
-            padding: var(--s1) 0;
-            min-width: 190px;
-            z-index: 10000;
-            box-shadow: var(--shadow-3);
-            display: none;
-        }
-
-        .long-press-menu.show { display: block; }
-
-        .long-press-menu-item {
-            color: var(--surface-0);
-            padding: var(--s3) var(--s4);
-            font-size: var(--t-sm);
-            cursor: pointer;
-        }
-
-        .long-press-menu-item.destructive { color: var(--alert); }
-
-        .activity-indicator {
-            width: 18px;
-            height: 18px;
-            border: 2px solid var(--rule);
-            border-top-color: var(--accent);
-            border-radius: 50%;
-            animation: spin 0.8s linear infinite;
-        }
-
-        @keyframes spin { to { transform: rotate(360deg); } }
-
-        .skeleton-line {
-            background: linear-gradient(90deg, var(--surface-2) 0%, var(--surface-1) 50%, var(--surface-2) 100%);
-            background-size: 200% 100%;
-            animation: shimmer 1.4s infinite;
-            border-radius: var(--r-sm);
-            height: var(--s3);
-            margin: var(--s2) 0;
-        }
-
-        @keyframes shimmer {
-            0%   { background-position: -200% 0; }
-            100% { background-position: 200% 0; }
-        }
-
         .pull-to-refresh {
             position: absolute;
             top: -56px;
@@ -1709,13 +1804,6 @@
 
         /* ============ Utility ============ */
 
-        .progress-ring { transform: rotate(-90deg); transform-origin: 50% 50%; }
-        .progress-ring-circle { stroke-dasharray: 100; stroke-dashoffset: 100; }
-        .progress-ring-text {
-            font-family: var(--mono);
-            font-weight: 700;
-            color: var(--accent);
-        }
 
         .step-value.updating { animation: value-pulse 0.5s ease-out; }
 
@@ -1723,14 +1811,6 @@
             0%   { transform: scale(1); }
             45%  { transform: scale(1.07); }
             100% { transform: scale(1); }
-        }
-
-        .achievement-badge { animation: badge-in 0.55s var(--ease-pop); }
-
-        @keyframes badge-in {
-            0%   { opacity: 0; transform: scale(0.4) translateY(40px); }
-            60%  { opacity: 1; transform: scale(1.08); }
-            100% { transform: scale(1) translateY(0); }
         }
 
         :focus-visible {
@@ -1773,7 +1853,10 @@
                 <div id="view-workout" class="tab-view active">
                     <div class="view-header-row">
                         <div class="view-title">📅 אימון נוכחי</div>
-                        <button id="edit-mode-toggle" class="edit-toggle-btn" onclick="toggleEditMode()">✏️ ערוך</button>
+                        <div class="header-actions">
+                            <button id="view-mode-toggle" class="edit-toggle-btn" onclick="toggleViewMode()">☰ הכל</button>
+                            <button id="edit-mode-toggle" class="edit-toggle-btn" onclick="toggleEditMode()">✏️ ערוך</button>
+                        </div>
                     </div>
 
                     <div class="workout-progress" id="workout-progress" style="display:none;">
@@ -2264,54 +2347,44 @@
             }
         }
 
-        // ============ iOS SWIPE GESTURES ============
+        // ============ SWIPE BETWEEN EXERCISES ============
+        // Horizontal swipe used to change tabs. With a drawer for navigation and
+        // one exercise on screen, the gesture belongs to the workout: swiping is
+        // how you move through the session. Two meanings for one gesture would
+        // just make both unreliable.
         let swipeStartX = 0;
         let swipeStartY = 0;
         let swipeStartTime = 0;
 
         function initSwipeGestures() {
             const contentArea = document.querySelector('.content-area');
-            
+
             contentArea.addEventListener('touchstart', (e) => {
                 swipeStartX = e.touches[0].clientX;
                 swipeStartY = e.touches[0].clientY;
                 swipeStartTime = Date.now();
-            }, false);
+            }, { passive: true });
 
             contentArea.addEventListener('touchend', (e) => {
                 if (!swipeStartX) return;
-                
-                const swipeEndX = e.changedTouches[0].clientX;
-                const swipeEndY = e.changedTouches[0].clientY;
-                const swipeDuration = Date.now() - swipeStartTime;
-                
-                const deltaX = swipeEndX - swipeStartX;
-                const deltaY = swipeEndY - swipeStartY;
-                const minSwipeDistance = 40;
-                const maxSwipeDuration = 500;
 
-                // Only consider horizontal swipes (not scrolls)
-                if (Math.abs(deltaY) > Math.abs(deltaX)) {
-                    swipeStartX = 0;
-                    return;
-                }
-
-                // Detect left/right swipes
-                if (Math.abs(deltaX) > minSwipeDistance && swipeDuration < maxSwipeDuration) {
-                    const tabs = document.querySelectorAll('.nav-tab');
-                    const currentActiveTab = document.querySelector('.nav-tab.active');
-                    const currentIndex = Array.from(tabs).indexOf(currentActiveTab);
-
-                    if (deltaX > 0 && currentIndex > 0) {
-                        // Swiped right - go to previous tab
-                        switchTab(tabs[currentIndex - 1].getAttribute('data-tab-id'), tabs[currentIndex - 1]);
-                    } else if (deltaX < 0 && currentIndex < tabs.length - 1) {
-                        // Swiped left - go to next tab
-                        switchTab(tabs[currentIndex + 1].getAttribute('data-tab-id'), tabs[currentIndex + 1]);
-                    }
-                }
+                const dx = e.changedTouches[0].clientX - swipeStartX;
+                const dy = e.changedTouches[0].clientY - swipeStartY;
+                const dt = Date.now() - swipeStartTime;
                 swipeStartX = 0;
-            }, false);
+
+                // Only in stage mode, and only on the workout screen
+                if (viewMode !== 'stage') return;
+                const onWorkout = document.getElementById('view-workout')?.classList.contains('active');
+                if (!onWorkout) return;
+
+                // A scroll is not a swipe
+                if (Math.abs(dy) > Math.abs(dx)) return;
+                if (Math.abs(dx) < 50 || dt > 500) return;
+
+                // RTL: swiping right moves forward through the session
+                if (dx > 0) nextSlide(); else prevSlide();
+            }, { passive: true });
         }
 
         // ============ iOS PULL-TO-REFRESH ============
@@ -2364,30 +2437,6 @@
             });
         }
 
-        // ============ iOS LONG PRESS CONTEXT MENU ============
-        function initLongPressMenu() {
-            let longPressTimer;
-            
-            document.addEventListener('touchstart', (e) => {
-                const card = e.target.closest('.card, .workout-card, .exercise-item');
-                if (!card) return;
-                
-                longPressTimer = setTimeout(() => {
-                    triggerHaptic([20, 10, 20]);
-                    showContextMenu(e.touches[0].clientX, e.touches[0].clientY, card);
-                }, 500);
-            });
-
-            document.addEventListener('touchend', () => {
-                clearTimeout(longPressTimer);
-            });
-        }
-
-        function showContextMenu(x, y, element) {
-            // Implementation: Create floating menu at x,y
-            // Options depend on element type (exercise, workout, etc.)
-            // For now, this is a placeholder
-        }
 
         // ============ CORE FUNCTIONS ============
 
@@ -2684,16 +2733,65 @@
                         changed = true;
                     }
 
-                    // Stale ticks from a previous day get retired on load
-                    if (ex.completed && ex.completedOn && ex.completedOn !== today) {
-                        ex.completed = false;
-                        delete ex.completedOn;
-                        changed = true;
-                    }
+                    // Ticks from an earlier day are handled by recoverUnfinishedWorkout,
+                    // which turns them into a session before clearing them.
                 });
             });
 
             return changed;
+        }
+
+        // If the app closed mid-workout — phone died, you drove home, you simply
+        // forgot — the ticks used to be wiped on the next launch and the session
+        // was never written. That is silent data loss. Recover it instead, dated
+        // to the day it actually happened.
+        function recoverUnfinishedWorkout() {
+            const today = todayKey();
+            const recovered = [];
+
+            stateWorkouts.forEach(w => {
+                const strays = (w.exercises || []).filter(
+                    ex => ex.completed && ex.completedOn && ex.completedOn !== today);
+                if (strays.length === 0) return;
+
+                // Group by the day they were ticked — one session per day
+                const byDay = new Map();
+                strays.forEach(ex => {
+                    if (!byDay.has(ex.completedOn)) byDay.set(ex.completedOn, []);
+                    byDay.get(ex.completedOn).push(ex);
+                });
+
+                byDay.forEach((list, day) => {
+                    const already = sessionLog.some(s =>
+                        s.workoutId === w.id && dayKeyOf(s.date) === dayKeyOf(day));
+                    if (!already) {
+                        const [y, m, d] = day.split('-').map(Number);
+                        recovered.push({
+                            id: 'sess-rec-' + new Date(y, m - 1, d).getTime(),
+                            date: new Date(y, m - 1, d, 18, 0, 0).toISOString(),
+                            workoutId: w.id || null,
+                            durationSec: 0,
+                            recovered: true,
+                            entries: list.map(ex => {
+                                const p = planOf(ex);
+                                return {
+                                    name: ex.name, weight: ex.weight, reps: ex.reps, sets: ex.sets,
+                                    planWeight: p.weight, planReps: p.reps, planSets: p.sets
+                                };
+                            })
+                        });
+                    }
+                    list.forEach(ex => { ex.completed = false; delete ex.completedOn; });
+                });
+            });
+
+            if (recovered.length === 0) return false;
+
+            sessionLog.push(...recovered);
+            const count = recovered.reduce((n, s) => n + s.entries.length, 0);
+            console.log(`🛟 Recovered ${recovered.length} unfinished workout(s), ${count} exercises`);
+            displayNativeToast(`🛟 שוחזר אימון שלא נסגר · ${count} תרגילים נרשמו ביומן`);
+            return true;
         }
 
         function toggleReviewSheet(show) {
@@ -2798,6 +2896,18 @@
                 toggle.classList.toggle('checked', isDone);
                 toggle.textContent = isDone ? '✓' : '';
             }
+
+            // The rail dots are a map of the session, so they move with it
+            const active = getActiveWorkout();
+            if (active) {
+                const slides = buildSlides(active.exercises);
+                const dots = document.querySelectorAll('.stage-dot');
+                slides.forEach((slide, i) => {
+                    const dot = dots[i];
+                    if (!dot) return;
+                    dot.classList.toggle('done', slide.every(ix => isCompletedToday(active.exercises[ix])));
+                });
+            }
             return true;
         }
 
@@ -2831,6 +2941,17 @@
             }
 
             queueSync('/workouts', () => stateWorkouts);
+
+            // In stage mode, completing the slide moves you on — the gesture you
+            // were going to make anyway
+            if (nowTicked && viewMode === 'stage') {
+                const slides = currentSlides();
+                const slide = slides[stageIndex];
+                if (slide && slide.every(i => isCompletedToday(currentActiveWorkout.exercises[i]))
+                          && stageIndex < slides.length - 1) {
+                    setTimeout(() => goToSlide(stageIndex + 1), 420);
+                }
+            }
 
             const total = currentActiveWorkout.exercises.length;
             const done = currentActiveWorkout.exercises.filter(isCompletedToday).length;
@@ -2921,8 +3042,7 @@
                 const arrow = strip?.querySelector('.last-time-arrow');
                 const prev = lastPerformedFor(ex.name);
                 if (strip && prev) {
-                    const dir = ex.weight > prev.weight ? 'up'
-                              : ex.weight < prev.weight ? 'down' : 'same';
+                    const dir = trendAgainst(ex, prev);
                     strip.classList.remove('up', 'down', 'same');
                     strip.classList.add(dir);
                     if (arrow) arrow.textContent = dir === 'up' ? '↑' : dir === 'down' ? '↓' : '=';
@@ -2998,32 +3118,38 @@
         }
 
         // ============ SPARKLINE ============
-        // A 6-point trace of where this exercise has been heading. Occupies the
-        // space an arrow used to, and carries direction, magnitude and shape
-        // instead of just direction.
+        // Traces total work (weight × reps × sets), not weight alone. An extra
+        // rep at the same load is progress, and a weight-only trace would draw
+        // it as a flat line.
         let sparkIndex = new Map();
+
+        function workVolume(weight, reps, sets) {
+            return (weight || 0) * (reps || 0) * (sets || 0);
+        }
 
         function buildSparkIndex() {
             const { clusterOf } = computeExerciseClusters();
             const series = new Map();
 
-            const add = (name, iso, weight) => {
+            const add = (name, iso, weight, reps, sets) => {
                 const root = clusterOf[normalizeExerciseName((name || '').trim())];
                 if (!root) return;
                 const t = new Date(iso).getTime();
-                if (!Number.isFinite(t) || typeof weight !== 'number') return;
+                if (!Number.isFinite(t)) return;
+                const v = workVolume(weight, reps, sets);
+                if (!v) return;
                 if (!series.has(root)) series.set(root, new Map());
                 // One reading per day; a logged session overwrites the plan
-                series.get(root).set(dayKeyOf(iso), { t, weight });
+                series.get(root).set(dayKeyOf(iso), { t, v });
             };
 
-            stateWorkouts.forEach(w => w.exercises?.forEach(ex => add(ex.name, w.date, ex.weight)));
-            sessionLog.forEach(s => s.entries?.forEach(e => add(e.name, s.date, e.weight)));
+            stateWorkouts.forEach(w => w.exercises?.forEach(ex => add(ex.name, w.date, ex.weight, ex.reps, ex.sets)));
+            sessionLog.forEach(s => s.entries?.forEach(e => add(e.name, s.date, e.weight, e.reps, e.sets)));
 
             sparkIndex = new Map();
             series.forEach((days, root) => {
                 const pts = Array.from(days.values()).sort((a, b) => a.t - b.t).slice(-6);
-                if (pts.length >= 2) sparkIndex.set(root, pts.map(p => p.weight));
+                if (pts.length >= 2) sparkIndex.set(root, pts.map(p => p.v));
             });
         }
 
@@ -3056,6 +3182,83 @@
             </svg>`;
         }
 
+        // ============ STAGE MODE ============
+        // A workout is a sequence you walk through, not a document you scroll.
+        // Stage mode puts one exercise on screen at a time so the numbers can be
+        // large, the timer is always in view, and there is nothing to scroll past
+        // to reach exercise eight.
+
+        let viewMode = 'stage';   // 'stage' | 'list'
+        let stageIndex = 0;
+
+        // A slide is one exercise, or a superset pair that belongs together
+        function buildSlides(exercises) {
+            const slides = [];
+            let i = 0;
+            while (i < exercises.length) {
+                if (exercises[i].superset && i + 1 < exercises.length && exercises[i + 1].superset) {
+                    slides.push([i, i + 1]);
+                    i += 2;
+                } else {
+                    slides.push([i]);
+                    i += 1;
+                }
+            }
+            return slides;
+        }
+
+        function currentSlides() {
+            const active = getActiveWorkout();
+            return active && active.exercises ? buildSlides(active.exercises) : [];
+        }
+
+        function goToSlide(n, viaSwipe) {
+            const slides = currentSlides();
+            if (!slides.length) return;
+            const clamped = Math.max(0, Math.min(n, slides.length - 1));
+            if (clamped === stageIndex && viaSwipe) return;
+            stageIndex = clamped;
+            triggerHaptic(6);
+            renderWeeklyWorkoutDashboard();
+        }
+
+        function nextSlide() { goToSlide(stageIndex + 1); }
+        function prevSlide() { goToSlide(stageIndex - 1); }
+
+        function toggleViewMode() {
+            viewMode = viewMode === 'stage' ? 'list' : 'stage';
+            try { localStorage.setItem('fitpro-viewmode', viewMode); } catch (e) {}
+            triggerHaptic(10);
+            renderWeeklyWorkoutDashboard();
+            const scroller = document.querySelector('.content-area');
+            if (scroller) scroller.scrollTop = 0;
+        }
+
+        // Jump to the first exercise that still needs doing — where you actually are
+        function seekFirstUndone() {
+            const active = getActiveWorkout();
+            if (!active || !active.exercises) return;
+            const slides = buildSlides(active.exercises);
+            const at = slides.findIndex(s => s.some(i => !isCompletedToday(active.exercises[i])));
+            stageIndex = at === -1 ? slides.length - 1 : at;
+        }
+
+        function renderStageChrome(slides) {
+            const dots = slides.map((s, i) => {
+                const active = getActiveWorkout();
+                const done = s.every(ix => isCompletedToday(active.exercises[ix]));
+                const cls = i === stageIndex ? 'here' : done ? 'done' : '';
+                return `<button class="stage-dot ${cls}" onclick="goToSlide(${i})" aria-label="תרגיל ${i + 1}"></button>`;
+            }).join('');
+
+            return `
+                <div class="stage-rail">
+                    <button class="stage-arrow" onclick="prevSlide()" ${stageIndex === 0 ? 'disabled' : ''} aria-label="הקודם">›</button>
+                    <div class="stage-dots">${dots}</div>
+                    <button class="stage-arrow" onclick="nextSlide()" ${stageIndex >= slides.length - 1 ? 'disabled' : ''} aria-label="הבא">‹</button>
+                </div>`;
+        }
+
         function renderWeeklyWorkoutDashboard() {
             const displayZone = document.getElementById('weekly-workout-container');
             if (stateWorkouts.length === 0) {
@@ -3071,33 +3274,37 @@
             const active = getActiveWorkout();
             buildLastPerformedIndex();
             buildSparkIndex();
-            let htmlBuffer = '';
-            let cursor = 0;
 
-            while (cursor < active.exercises.length) {
-                const item = active.exercises[cursor];
-                
-                if (item.superset && cursor + 1 < active.exercises.length && active.exercises[cursor + 1].superset) {
-                    htmlBuffer += `
-                        <div class="superset-wrapper">
-                            <div class="superset-header-tag">⚡ SUPER SET</div>
-                            ${generateInlineExerciseRow(active.exercises[cursor], cursor)}
-                            <div style="height: 10px;"></div>
-                            ${generateInlineExerciseRow(active.exercises[cursor + 1], cursor + 1)}
-                        </div>`;
-                    cursor += 2;
-                } else {
-                    htmlBuffer += generateInlineExerciseRow(item, cursor);
-                    cursor += 1;
-                }
-            }
-            displayZone.innerHTML = htmlBuffer;
-            
-            if (isEditingModeActive) {
-                displayZone.classList.add('is-editing');
+            const slides = buildSlides(active.exercises);
+            const stage = viewMode === 'stage' && slides.length > 0;
+
+            // Render one slide, whichever kind it is
+            const slideHtml = (slide) => slide.length === 2
+                ? `<div class="superset-wrapper">
+                       <div class="superset-header-tag">⚡ SUPER SET</div>
+                       ${generateInlineExerciseRow(active.exercises[slide[0]], slide[0])}
+                       <div style="height: 10px;"></div>
+                       ${generateInlineExerciseRow(active.exercises[slide[1]], slide[1])}
+                   </div>`
+                : generateInlineExerciseRow(active.exercises[slide[0]], slide[0]);
+
+            let htmlBuffer = '';
+            if (stage) {
+                if (stageIndex >= slides.length) stageIndex = slides.length - 1;
+                htmlBuffer = `
+                    <div class="stage-count">${stageIndex + 1} <span>מתוך ${slides.length}</span></div>
+                    <div class="stage-slide" id="stage-slide">${slideHtml(slides[stageIndex])}</div>
+                    ${renderStageChrome(slides)}`;
             } else {
-                displayZone.classList.remove('is-editing');
+                htmlBuffer = slides.map(slideHtml).join('');
             }
+
+            displayZone.innerHTML = htmlBuffer;
+            displayZone.classList.toggle('stage', stage);
+            displayZone.classList.toggle('is-editing', isEditingModeActive);
+
+            const modeBtn = document.getElementById('view-mode-toggle');
+            if (modeBtn) modeBtn.textContent = stage ? '☰ הכל' : '▣ אחד';
 
             renderWorkoutProgress();
         }
@@ -3206,6 +3413,7 @@
 
             triggerHaptic([15, 30, 15, 30, 15]);
 
+            stageIndex = 0;
             renderWeeklyWorkoutDashboard();
             renderSessionHistory();
 
@@ -3317,6 +3525,18 @@
             queueSync('/workouts', () => stateWorkouts);
         }
 
+        // Compares today's effort with the previous session on the same lift.
+        // Falls back to load when either record has no rep/set data.
+        function trendAgainst(ex, prev) {
+            const now = workVolume(ex.weight, ex.reps, ex.sets);
+            const then = workVolume(prev.weight, prev.reps, prev.sets);
+            if (now && then) {
+                return now > then ? 'up' : now < then ? 'down' : 'same';
+            }
+            return ex.weight > prev.weight ? 'up'
+                 : ex.weight < prev.weight ? 'down' : 'same';
+        }
+
         function generateInlineExerciseRow(ex, index) {
             const isDone = isCompletedToday(ex);
             const p = planOf(ex);
@@ -3332,8 +3552,9 @@
             const prev = lastPerformedFor(ex.name);
             let prevRow = '';
             if (prev) {
-                const dir = ex.weight > prev.weight ? 'up'
-                          : ex.weight < prev.weight ? 'down' : 'same';
+                // Progress is total work, not load alone — more reps at the same
+                // weight is still a step forward.
+                const dir = trendAgainst(ex, prev);
                 const arrow = dir === 'up' ? '↑' : dir === 'down' ? '↓' : '=';
                 const spark = sparklineFor(ex.name);
                 prevRow = `
@@ -3807,23 +4028,9 @@
         let analyticsSelectedIndex = -1;
 
 
-        function updateAnalyticsSuggestionSelection(suggestions) {
-            suggestions.forEach((s, i) => {
-                if (i === analyticsSelectedIndex) {
-                    s.style.background = 'rgba(0,82,204,0.1)';
-                    s.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-                } else {
-                    s.style.background = 'transparent';
-                }
-            });
-        }
 
 
 
-        function populateAnalyticsDropdown() {
-            // Legacy function - no longer needed
-            // Exercise suggestions are now handled dynamically by filterAnalyticsExercises
-        }
 
         // Collects one data point per day for an exercise, merging two sources:
         // imported programmes (the best record of the past) and session logs
@@ -4417,23 +4624,6 @@
             displayNativeToast(`🎨 צבע שונה ל-${color}`);
         }
 
-        function showProgressRing(percentage, containerId) {
-            const container = document.getElementById(containerId);
-            if (!container) return;
-            
-            const radius = 40;
-            const circumference = 2 * Math.PI * radius;
-            const offset = circumference - (percentage / 100) * circumference;
-            
-            const svg = `
-                <svg class="progress-ring" width="100" height="100">
-                    <circle cx="50" cy="50" r="${radius}" fill="none" stroke="currentColor" stroke-width="2" opacity="0.1"/>
-                    <circle class="progress-ring-circle" cx="50" cy="50" r="${radius}" fill="none" stroke="var(--accent)" stroke-width="3" style="--progress: ${offset};"/>
-                </svg>
-                <div class="progress-ring-text">${percentage}%</div>
-            `;
-            container.innerHTML = svg;
-        }
 
         function animateWeightUpdate(element, oldValue, newValue) {
             if (element) {
@@ -4444,32 +4634,6 @@
             }
         }
 
-        function enableSwipeActions(element, onDelete, onEdit) {
-            let startX = 0;
-            let currentX = 0;
-            
-            element.addEventListener('touchstart', (e) => {
-                startX = e.touches[0].clientX;
-            });
-            
-            element.addEventListener('touchmove', (e) => {
-                currentX = e.touches[0].clientX;
-                const diff = startX - currentX;
-                if (diff > 0) {
-                    element.style.transform = `translateX(-${Math.min(diff, 120)}px)`;
-                }
-            });
-            
-            element.addEventListener('touchend', () => {
-                const diff = startX - currentX;
-                if (diff > 80) {
-                    element.classList.add('swipe-delete');
-                    setTimeout(() => onDelete(), 300);
-                } else {
-                    element.style.transform = '';
-                }
-            });
-        }
 
         function applyMicroInteractions() {
             // Better button feedback
@@ -4646,6 +4810,14 @@
                 console.log('📭 No data found for this account');
             }
             
+            try {
+                const savedMode = localStorage.getItem('fitpro-viewmode');
+                if (savedMode === 'list' || savedMode === 'stage') viewMode = savedMode;
+            } catch (e) {}
+
+            // Open where you actually are, not back at exercise one
+            seekFirstUndone();
+
             renderWeeklyWorkoutDashboard();
             rebuildChangesSummaryReport();
 
@@ -4653,8 +4825,16 @@
             const loggedSessions = await syncFromCloud('/sessions');
             sessionLog = Array.isArray(loggedSessions) ? loggedSessions
                        : loggedSessions ? Object.values(loggedSessions) : [];
-            renderSessionHistory();
 
+            // Sessions must be loaded first so recovery can avoid duplicating
+            // a workout that was already recorded properly.
+            if (recoverUnfinishedWorkout()) {
+                syncToCloud('/sessions', sessionLog);
+                syncToCloud('/workouts', stateWorkouts);
+                renderWeeklyWorkoutDashboard();
+            }
+
+            renderSessionHistory();
             retryPendingSyncIfNeeded();
         }
 
@@ -4692,7 +4872,6 @@
                 initSwipeGestures();
                 initPullToRefresh();
                 initKeyboardHandling();
-                initLongPressMenu();
             }, 100);
         });
 
