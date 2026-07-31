@@ -2451,6 +2451,13 @@
                 document.querySelectorAll('.inline-edit-input').forEach(el => el.classList.remove('active'));
                 displayNativeToast('🔒 השינויים נשמרו');
             }
+
+            // The class is stamped onto each stepper at render time as well as
+            // onto the container, so both have to be kept in step — otherwise
+            // leaving edit mode leaves the fields looking editable.
+            document.querySelectorAll('.inline-stepper').forEach(el => {
+                el.classList.toggle('is-editing', isEditingModeActive);
+            });
         }
 
         // ============ WORKOUT MODEL ============
@@ -2745,8 +2752,11 @@
 
             animateWeightUpdate(valueEl, null, null);
 
+            const stepper = valueEl.closest('.inline-stepper');
+            const card = input.closest('.workout-card');
+
             // The plan hint sits in the label above and can flip on this change
-            const label = valueEl.closest('.inline-stepper')?.querySelector('.stepper-label');
+            const label = stepper?.querySelector('.stepper-label');
             if (label) {
                 const p = planOf(ex);
                 const off = field === 'weight'
@@ -2755,6 +2765,21 @@
                 const base = field === 'weight' ? 'משקל' : 'חזרות × סטים';
                 const hint = field === 'weight' ? `תוכנית ${p.weight}` : `תוכנית ${p.reps}×${p.sets}`;
                 label.innerHTML = off ? `${base} <em class="plan-delta">${hint}</em>` : base;
+            }
+
+            // The against-last-time arrow is also a function of the weight, so it
+            // has to move with it rather than waiting for the next full render
+            if (field === 'weight' && card) {
+                const strip = card.querySelector('.last-time');
+                const arrow = strip?.querySelector('.last-time-arrow');
+                const prev = lastPerformedFor(ex.name);
+                if (strip && prev) {
+                    const dir = ex.weight > prev.weight ? 'up'
+                              : ex.weight < prev.weight ? 'down' : 'same';
+                    strip.classList.remove('up', 'down', 'same');
+                    strip.classList.add(dir);
+                    if (arrow) arrow.textContent = dir === 'up' ? '↑' : dir === 'down' ? '↓' : '=';
+                }
             }
             return true;
         }
