@@ -73,14 +73,19 @@
             --alert: #e5484d;
             --superset: #6d5efc;
 
-            /* Two-part shadows: a tight contact shadow plus a soft ambient one.
-               A single blur reads as a sticker; two read as an object. */
+            /* ELEVATION LADDER
+               Height is meaning, not decoration. Each level pairs a tight contact
+               shadow with a soft ambient one — a single blur reads as a sticker,
+               two read as an object resting above a surface.
+                 1  at rest        2  raised        3  focused        4  floating  */
             --shadow-1: 0 1px 1px rgba(18, 22, 28, 0.04),
                         0 2px 6px rgba(18, 22, 28, 0.045);
             --shadow-2: 0 1px 2px rgba(18, 22, 28, 0.05),
                         0 8px 22px rgba(18, 22, 28, 0.07);
             --shadow-3: 0 2px 6px rgba(18, 22, 28, 0.07),
                         0 18px 48px rgba(18, 22, 28, 0.14);
+            --shadow-4: 0 3px 8px rgba(18, 22, 28, 0.08),
+                        0 28px 64px rgba(18, 22, 28, 0.18);
 
             /* Hairline of light on the top edge — how a real surface catches
                light, and what stops a card reading as a flat rectangle. */
@@ -116,6 +121,8 @@
                         0 8px 22px rgba(0, 0, 0, 0.4);
             --shadow-3: 0 2px 6px rgba(0, 0, 0, 0.5),
                         0 18px 48px rgba(0, 0, 0, 0.55);
+            --shadow-4: 0 3px 8px rgba(0, 0, 0, 0.55),
+                        0 28px 64px rgba(0, 0, 0, 0.65);
 
             /* In the dark the light comes from within the surface, not above */
             --lift: inset 0 1px 0 rgba(255, 255, 255, 0.06);
@@ -545,13 +552,7 @@
         }
 
         .stage-slide {
-            animation: slide-in 0.24s var(--ease-out);
             will-change: opacity, transform;
-        }
-
-        @keyframes slide-in {
-            from { opacity: 0; transform: translateX(-8px); }
-            to   { opacity: 1; transform: translateX(0); }
         }
 
         /* The rail: dots double as a map of the session */
@@ -699,6 +700,79 @@
         .stage .superset-wrapper .workout-card { padding: var(--s3) var(--s2); }
         .stage .superset-wrapper .step-value { font-size: var(--t-readout); }
         .stage .superset-wrapper .exercise-header-row { margin-bottom: var(--s3); }
+
+        /* ============ Depth & motion ============
+           Every animation below moves only transform and opacity. Those are
+           handled by the compositor, so raising a card costs nothing to paint —
+           which is what makes a layered interface safe on a phone. */
+
+        /* The card you're working on sits visibly above everything else */
+        .stage .workout-card {
+            box-shadow: var(--shadow-4), var(--lift);
+            border-color: transparent;
+        }
+
+        /* Directional entry: the new card arrives from where you're heading */
+        .stage-slide.enter-fwd { animation: slide-from-end 0.34s var(--ease-out) both; }
+        .stage-slide.enter-back { animation: slide-from-start 0.34s var(--ease-out) both; }
+
+        /* RTL: forward travel comes from the left edge */
+        @keyframes slide-from-end {
+            from { opacity: 0; transform: translate3d(-18px, 0, 0) scale(0.97); }
+            to   { opacity: 1; transform: translate3d(0, 0, 0) scale(1); }
+        }
+
+        @keyframes slide-from-start {
+            from { opacity: 0; transform: translate3d(18px, 0, 0) scale(0.97); }
+            to   { opacity: 1; transform: translate3d(0, 0, 0) scale(1); }
+        }
+
+        /* Pressing pushes an element towards the surface it rests on, and the
+           shadow it casts shrinks with it — the two must move together or the
+           object reads as sliding rather than being pressed. */
+        .workout-card,
+        .ov-row,
+        .session-card,
+        .metric-tile {
+            transition: transform 0.16s var(--ease-out),
+                        box-shadow 0.16s var(--ease-out),
+                        opacity 0.28s ease,
+                        border-color 0.2s ease;
+        }
+
+        .ov-row:active {
+            transform: translate3d(0, 1px, 0) scale(0.995);
+            box-shadow: var(--shadow-1);
+        }
+
+        /* The completion control rises to meet the finger, then settles */
+        .complete-toggle {
+            box-shadow: 0 0 0 0 color-mix(in srgb, var(--done) 32%, transparent);
+        }
+
+        .complete-toggle.checked {
+            animation: tick-settle 0.42s var(--ease-pop);
+        }
+
+        @keyframes tick-settle {
+            0%   { transform: scale(0.82); }
+            55%  { transform: scale(1.12); }
+            100% { transform: scale(1); }
+        }
+
+        /* Buttons depress rather than merely dimming */
+        .btn { transition: transform 0.14s var(--ease-out), box-shadow 0.14s var(--ease-out), opacity 0.14s ease; }
+        .btn-primary:active { transform: translate3d(0, 1px, 0) scale(0.985); box-shadow: var(--shadow-1); }
+        .btn-success:active { transform: translate3d(0, 1px, 0) scale(0.985); box-shadow: var(--shadow-1); }
+
+        /* The rail marker glides between positions instead of blinking */
+        .stage-dot { will-change: transform; }
+
+        /* Views arrive with a hint of depth rather than a flat fade */
+        @keyframes view-in {
+            from { opacity: 0; transform: translate3d(0, 10px, 0) scale(0.995); }
+            to   { opacity: 1; transform: translate3d(0, 0, 0) scale(1); }
+        }
 
         /* ============ Exercise card ============ */
 
@@ -1429,11 +1503,6 @@
         }
 
         .tab-view.active { display: block; }
-
-        @keyframes view-in {
-            from { opacity: 0; transform: translateY(var(--s2)); }
-            to   { opacity: 1; transform: translateY(0); }
-        }
 
         /* ============ Auth gate ============ */
 
@@ -3225,15 +3294,17 @@
             if (!slides.length) return;
             const clamped = Math.max(0, Math.min(n, slides.length - 1));
             if (clamped === stageIndex && viaSwipe) return;
+
+            // Motion carries meaning: the new card arrives from the side you're
+            // travelling towards, so the session has a sense of direction.
+            const direction = clamped > stageIndex ? 'fwd' : 'back';
             stageIndex = clamped;
             triggerHaptic(6);
 
-            // Swap the slide rather than redrawing the screen. Nothing outside
-            // this one element changes when you move through the session.
-            if (!paintSlide(slides)) renderWeeklyWorkoutDashboard();
+            if (!paintSlide(slides, direction)) renderWeeklyWorkoutDashboard();
         }
 
-        function paintSlide(slides) {
+        function paintSlide(slides, direction) {
             const holder = document.getElementById('stage-slide');
             const counter = document.querySelector('.stage-count');
             if (!holder || !counter) return false;
@@ -3243,10 +3314,12 @@
 
             holder.innerHTML = slideMarkup(slides[stageIndex], active);
 
-            // Restart the entry animation without touching anything else
-            holder.style.animation = 'none';
+            // Replay the entry motion in the direction of travel. Only transform
+            // and opacity animate, so this runs on the compositor and never
+            // triggers a repaint of the card's contents.
+            holder.classList.remove('enter-fwd', 'enter-back');
             void holder.offsetWidth;
-            holder.style.animation = '';
+            holder.classList.add(direction === 'back' ? 'enter-back' : 'enter-fwd');
 
             counter.innerHTML = `${stageIndex + 1} <span>מתוך ${slides.length}</span>`;
 
