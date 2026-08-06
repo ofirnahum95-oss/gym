@@ -1713,6 +1713,134 @@
 
         .pg-lift-gain small { font-size: var(--t-micro); opacity: 0.7; }
 
+        /* --- Adherence to the plan --- */
+
+        .pg-bar-split {
+            display: flex;
+            height: 10px;
+            border-radius: var(--r-pill);
+            overflow: hidden;
+            background: var(--surface-sunk);
+            margin-bottom: var(--s3);
+        }
+
+        .pg-bar-split .seg {
+            display: block;
+            transform-origin: inline-start;
+            animation: fill-grow 0.5s var(--ease-out) both;
+        }
+
+        .seg.above { background: var(--done); }
+        .seg.on    { background: var(--accent); }
+        .seg.below { background: var(--alert); opacity: 0.75; }
+
+        .pg-legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--s3);
+            font-size: var(--t-micro);
+            color: var(--ink-soft);
+            font-family: var(--mono);
+            font-variant-numeric: tabular-nums;
+        }
+
+        .pg-legend .dot {
+            display: inline-block;
+            width: 7px;
+            height: 7px;
+            border-radius: 2px;
+            margin-inline-end: 5px;
+        }
+
+        .dot.above { background: var(--done); }
+        .dot.on    { background: var(--accent); }
+        .dot.below { background: var(--alert); }
+        .dot.open  { background: var(--ink-faint); }
+        .dot.close { background: var(--accent); }
+
+        /* --- Block-to-block progression --- */
+
+        .pg-blocks {
+            display: flex;
+            align-items: flex-end;
+            gap: var(--s2);
+            height: 110px;
+            margin-bottom: var(--s2);
+        }
+
+        .pg-block {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 100%;
+            min-width: 0;
+        }
+
+        /* Two bars per block: where it opened, where it closed. Reading the
+           opening bars left to right shows whether the floor is rising. */
+        .pg-block-bars {
+            flex: 1;
+            width: 100%;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            gap: 2px;
+        }
+
+        .pg-block-open,
+        .pg-block-close {
+            width: 45%;
+            border-radius: var(--r-sm) var(--r-sm) 2px 2px;
+            transform-origin: bottom;
+            animation: bar-rise 0.5s var(--ease-out) both;
+        }
+
+        .pg-block-open  { background: var(--ink-faint); opacity: 0.55; }
+        .pg-block-close { background: var(--accent); }
+
+        .pg-block-lab {
+            font-family: var(--mono);
+            font-size: var(--t-micro);
+            color: var(--ink-faint);
+            margin-top: var(--s1);
+            white-space: nowrap;
+        }
+
+        /* Window picker — every comparable tracker offers this; a fixed period
+           hides both recent momentum and the long arc. */
+        .pg-window {
+            display: flex;
+            gap: var(--s1);
+            background: var(--surface-sunk);
+            border-radius: var(--r-pill);
+            padding: 3px;
+            margin: var(--s3) 0 var(--s4);
+        }
+
+        .pg-window-opt {
+            flex: 1;
+            background: none;
+            border: none;
+            border-radius: var(--r-pill);
+            font-family: inherit;
+            font-size: var(--t-xs);
+            font-weight: 600;
+            color: var(--ink-soft);
+            cursor: pointer;
+            padding: var(--s2) 0;
+            min-height: 36px;
+            transition: background 0.18s ease, color 0.18s ease;
+        }
+
+        .pg-window-opt.on {
+            background: var(--surface-1);
+            color: var(--ink);
+            box-shadow: var(--shadow-1);
+        }
+
+        .pg-note b { font-weight: 700; color: var(--ink-soft); }
+
         /* Lists of lifts are just rows — a box around each would put six framed
            panels on one screen, all competing. Boxes are kept for the two
            sections that actually contain graphics. */
@@ -3012,11 +3140,15 @@
         }
 
         function updateStopwatchDisplay() {
+            // Runs four times a second while resting, so a missing element here
+            // would throw continuously rather than once.
+            const clock = document.getElementById('stopwatch-clock');
+            if (!clock) return;
+
             const elapsed = getStopwatchElapsed();
             const minutes = Math.floor(elapsed / 60);
             const seconds = elapsed % 60;
-            const display = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-            document.getElementById('stopwatch-clock').textContent = display;
+            clock.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
         }
 
         // Persist so the timer survives iOS discarding the page in the background
@@ -3145,9 +3277,15 @@
 
         let activeWorkoutId = null;
 
-        function todayKey() {
-            const d = new Date();
+        // The single definition of "which calendar day". Zero-padded so keys sort
+        // lexicographically, which the recovery code relies on.
+        function dayKeyOf(iso) {
+            const d = iso ? new Date(iso) : new Date();
             return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        }
+
+        function todayKey() {
+            return dayKeyOf();
         }
 
         // The session you are currently logging into. Explicit id first; otherwise
@@ -3546,11 +3684,6 @@
         // calling it per card would make rendering quadratic for no reason.
         let lastPerformedIndex = new Map();
 
-        function dayKeyOf(iso) {
-            const d = new Date(iso);
-            return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
-        }
-
         function buildLastPerformedIndex() {
             const { clusterOf } = computeExerciseClusters();
             const todayK = dayKeyOf(new Date().toISOString());
@@ -3863,63 +3996,6 @@
             return gains;
         }
 
-        // ============ ESTIMATED 1RM ============
-        // Comparing raw load breaks when the rep range changes: is 60×10 better
-        // or worse than 70×5? Epley's formula normalises both to a single number
-        // so progress stays visible across programme changes.
-        //
-        // It is an estimate, and it drifts at high rep counts — above about 12
-        // reps the model overstates. Treated as a trend line, not a true max.
-        function estimate1RM(weight, reps) {
-            if (!weight || !reps || reps < 1) return 0;
-            if (reps === 1) return weight;
-            if (reps > 15) return 0;          // beyond the formula's useful range
-            return weight * (1 + reps / 30);
-        }
-
-        function round1RM(v) {
-            return Math.round(v * 10) / 10;
-        }
-
-        // Best estimated max per lift, within a window, plus where it started
-        function build1RMProgress(withinDays) {
-            const cutoff = Date.now() - withinDays * 86400000;
-            const rows = [];
-
-            allReadings().forEach(({ display, points }) => {
-                // Only readings the formula can speak to
-                const scored = points
-                    .map(p => ({ ...p, e: estimate1RM(p.weight, p.reps) }))
-                    .filter(p => p.e > 0);
-                if (!scored.length) return;
-
-                const inWindow = scored.filter(p => p.t >= cutoff);
-                if (!inWindow.length) return;
-
-                const before = scored.filter(p => p.t < cutoff).pop();
-                if (!before && inWindow.length < 2) return;
-
-                const start = before || inWindow[0];
-                const latest = inWindow[inWindow.length - 1];
-                const best = inWindow.reduce((b, p) => p.e > b.e ? p : b, inWindow[0]);
-                const gain = latest.e - start.e;
-
-                rows.push({
-                    display,
-                    from: round1RM(start.e),
-                    to: round1RM(latest.e),
-                    best: round1RM(best.e),
-                    gain: round1RM(gain),
-                    pct: start.e ? Math.round((gain / start.e) * 100) : 0,
-                    latestRaw: `${latest.weight}×${latest.reps}`,
-                    lastSeen: latest.t
-                });
-            });
-
-            rows.sort((a, b) => b.gain - a.gain);
-            return rows;
-        }
-
         // ============ MUSCLE GROUP BALANCE ============
         // The one report here that changes a decision rather than just reporting:
         // it shows which parts of the body are moving and which are being left
@@ -3943,7 +4019,7 @@
                     const display = exerciseMap.get(root) || e.name;
                     const g = ensure(categorizeExercise(display));
                     g.sets += e.sets || 0;
-                    g.volume += (e.weight || 0) * (e.reps || 0) * (e.sets || 0);
+                    g.volume += workVolume(e.weight, e.reps, e.sets);
                     g.lifts.add(root || display);
                 });
             });
@@ -3982,7 +4058,7 @@
             return `${months[m - 1]} ${String(y).slice(2)}`;
         }
 
-        function buildProgressReport() {
+        function buildProgressReport(windowDays = 60) {
             if (!sessionLog.length) return null;
 
             const sorted = [...sessionLog].sort((a, b) => new Date(a.date) - new Date(b.date));
@@ -4025,25 +4101,145 @@
                 });
             }
 
-            const gains = buildWeightGains(60);
+            const gains = buildWeightGains(windowDays);
             const totalGain = gains.reduce((n, g) => n + g.gain, 0);
-            const strength = build1RMProgress(60).filter(x => x.gain > 0);
-            const balance = buildGroupBalance(60, gains);
+            const balance = buildGroupBalance(windowDays, gains);
             const stalled = buildExerciseOverview().filter(r => r.state === 'stalled');
+            const adherence = buildAdherence(windowDays);
+            const blocks = buildBlockProgress();
 
             return {
                 sessions: sorted.length,
-                weeks, momentum,
-                gains, totalGain, strength, balance, stalled
+                weeks, momentum, windowDays,
+                gains, totalGain, balance, stalled,
+                adherence, blocks
             };
         }
 
+
+        // ============ ADHERENCE ============
+        // Every logged entry carries what the trainer prescribed alongside what
+        // was actually done. No commercial tracker can compute this — they have
+        // no plan to compare against. It answers "am I doing the programme, or
+        // drifting from it?"
+        function buildAdherence(withinDays) {
+            const cutoff = Date.now() - withinDays * 86400000;
+            let above = 0, on = 0, below = 0, unknown = 0;
+            const shortfalls = new Map();
+
+            sessionLog.forEach(s => {
+                if (new Date(s.date).getTime() < cutoff) return;
+                s.entries?.forEach(e => {
+                    if (e.planWeight == null || e.planReps == null) { unknown++; return; }
+
+                    const did = workVolume(e.weight, e.reps, e.sets);
+                    const asked = workVolume(e.planWeight, e.planReps, e.planSets || e.sets);
+                    if (!asked) { unknown++; return; }
+
+                    const ratio = did / asked;
+                    if (ratio > 1.02) above++;
+                    else if (ratio >= 0.98) on++;
+                    else {
+                        below++;
+                        const cur = shortfalls.get(e.name) || { name: e.name, times: 0, worst: 1 };
+                        cur.times++;
+                        cur.worst = Math.min(cur.worst, ratio);
+                        shortfalls.set(e.name, cur);
+                    }
+                });
+            });
+
+            const total = above + on + below;
+            if (total === 0) return null;
+
+            return {
+                above, on, below, unknown, total,
+                abovePct: Math.round((above / total) * 100),
+                onPct: Math.round((on / total) * 100),
+                belowPct: Math.round((below / total) * 100),
+                // Repeatedly falling short is the signal worth surfacing
+                persistent: Array.from(shortfalls.values())
+                    .filter(x => x.times >= 2)
+                    .sort((a, b) => a.worst - b.worst)
+                    .slice(0, 4)
+            };
+        }
+
+        // ============ BLOCK PROGRESSION ============
+        // Sessions group by workoutId, so each imported programme is a block.
+        // The question this answers is the one raw PRs miss: does each new block
+        // start where the last one finished, or does the floor stay put?
+        function buildBlockProgress() {
+            const byBlock = new Map();
+
+            sessionLog.forEach(s => {
+                const key = s.workoutId || 'unassigned';
+                if (!byBlock.has(key)) byBlock.set(key, []);
+                byBlock.get(key).push(s);
+            });
+
+            const blocks = [];
+            byBlock.forEach((sessions, id) => {
+                if (id === 'unassigned') return;
+                sessions.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+                // Total load moved, per session, as the block's shape
+                const volumes = sessions.map(sessionVolume);
+                const first = volumes[0], last = volumes[volumes.length - 1];
+
+                blocks.push({
+                    id,
+                    sessions: sessions.length,
+                    start: sessions[0].date,
+                    end: sessions[sessions.length - 1].date,
+                    openingVolume: first,
+                    closingVolume: last,
+                    withinGain: first ? Math.round(((last - first) / first) * 100) : 0,
+                    exercises: sessions[0].entries?.length || 0
+                });
+            });
+
+            blocks.sort((a, b) => new Date(a.start) - new Date(b.start));
+
+            // Did the next block pick up where the last one left off?
+            let carried = 0, compared = 0;
+            for (let i = 1; i < blocks.length; i++) {
+                const prevClose = blocks[i - 1].closingVolume;
+                const thisOpen = blocks[i].openingVolume;
+                if (!prevClose) continue;
+                compared++;
+                blocks[i].carryPct = Math.round(((thisOpen - prevClose) / prevClose) * 100);
+                if (thisOpen >= prevClose * 0.97) carried++;
+            }
+
+            return {
+                blocks: blocks.slice(-6),
+                totalBlocks: blocks.length,
+                carried, compared
+            };
+        }
+
+        let progressWindow = 60;   // days
+
+        function setProgressWindow(days) {
+            progressWindow = days;
+            triggerHaptic(8);
+            try { localStorage.setItem('fitpro-progress-window', String(days)); } catch (e) {}
+            renderProgress();
+        }
+
+        function windowLabel(days) {
+            if (days <= 30) return 'חודש';
+            if (days <= 90) return '3 חודשים';
+            if (days <= 365) return 'שנה';
+            return 'הכל';
+        }
 
         function renderProgress() {
             const zone = document.getElementById('progress-body');
             if (!zone) return;
 
-            const r = buildProgressReport();
+            const r = buildProgressReport(progressWindow);
             if (!r) {
                 zone.innerHTML = `<div class="empty-state">
                     <div class="empty-state-icon">🌱</div>
@@ -4055,11 +4251,17 @@
 
             // Order follows the question, not the order these were built:
             // headline → the detail behind it → context → what to act on.
-            let html = '';
+            let html = `
+                <div class="pg-window">
+                    ${[30, 90, 365].map(d => `
+                        <button class="pg-window-opt ${progressWindow === d ? 'on' : ''}"
+                                onclick="setProgressWindow(${d})"
+                                aria-label="הצג נתונים של ${windowLabel(d)}">${windowLabel(d)}</button>`).join('')}
+                </div>`;
 
             const liftRow = (name, from, to, badge) => `
-                <button class="pg-lift" onclick="openExerciseDetail(rootOf('${name.replace(/'/g, "\\'")}'))">
-                    <span class="pg-lift-name">${name}</span>
+                <button class="pg-lift" onclick="openExerciseDetail(rootOf('${escAttr(name)}'))">
+                    <span class="pg-lift-name">${esc(name)}</span>
                     <span class="pg-lift-move">
                         <span class="pg-from">${from}</span>
                         <span class="pg-arrow">←</span>
@@ -4078,7 +4280,7 @@
                 html += `
                     <div class="pg-hero">
                         <div class="pg-hero-num">+${r.totalGain % 1 ? r.totalGain.toFixed(1) : r.totalGain}</div>
-                        <div class="pg-hero-unit">ק"ג נוספו למוט בחודשיים האחרונים</div>
+                        <div class="pg-hero-unit">ק"ג נוספו למוט</div>
                         <div class="pg-hero-sub">ב-${r.gains.length} תרגילים · ${r.sessions} אימונים ${momText}</div>
                     </div>`;
             } else {
@@ -4086,7 +4288,7 @@
                     <div class="pg-hero">
                         <div class="pg-hero-num quiet">${r.sessions}</div>
                         <div class="pg-hero-unit">אימונים נרשמו</div>
-                        <div class="pg-hero-sub">עוד לא נרשמה עליית משקל בחודשיים ${momText}</div>
+                        <div class="pg-hero-sub">עוד לא נרשמה עליית משקל בתקופה הזו ${momText}</div>
                     </div>`;
             }
 
@@ -4102,12 +4304,57 @@
                 </div>`;
             }
 
-            // --- 3. Strength, which reads the same rows through a different lens ---
-            if (r.strength.length) {
-                html += `<div class="pg-list">
-                    <div class="pg-label">כוח משוער</div>
-                    <div class="pg-note">אומדן המשקל המרבי לחזרה אחת — מאפשר להשוות גם כשטווח החזרות משתנה.</div>
-                    ${r.strength.slice(0, 6).map(x => liftRow(x.display, x.from, x.to, '+' + x.pct + '%')).join('')}
+            // --- 3. Are you doing the programme, or drifting from it? ---
+            const ad = r.adherence;
+            if (ad) {
+                html += `<div class="pg-section">
+                    <div class="pg-label">מול התוכנית של המאמן</div>
+                    <div class="pg-bar-split">
+                        ${ad.above ? `<span class="seg above" style="flex:${ad.above}"></span>` : ''}
+                        ${ad.on    ? `<span class="seg on"    style="flex:${ad.on}"></span>` : ''}
+                        ${ad.below ? `<span class="seg below" style="flex:${ad.below}"></span>` : ''}
+                    </div>
+                    <div class="pg-legend">
+                        <span><i class="dot above"></i>מעל ${ad.abovePct}%</span>
+                        <span><i class="dot on"></i>בדיוק ${ad.onPct}%</span>
+                        <span><i class="dot below"></i>מתחת ${ad.belowPct}%</span>
+                    </div>
+                    ${ad.persistent.length ? `
+                        <div class="pg-note" style="margin-top:var(--s3);">
+                            נשארת מתחת ליעד יותר מפעם אחת ב:
+                            <b>${ad.persistent.map(x => esc(x.name)).join(' · ')}</b>
+                        </div>` : ''}
+                </div>`;
+            }
+
+            // --- 4. Does each new programme start where the last one ended? ---
+            const bl = r.blocks;
+            if (bl && bl.blocks.length >= 2) {
+                const maxVol = Math.max(...bl.blocks.flatMap(b => [b.openingVolume, b.closingVolume])) || 1;
+                html += `<div class="pg-section">
+                    <div class="pg-label">התקדמות בין תוכניות</div>
+                    <div class="pg-note" style="margin-bottom:var(--s3);">
+                        כל עמודה היא תוכנית: היכן התחלת והיכן סיימת אותה.
+                        השאלה היא אם <b>הרצפה עולה</b>, לא רק התקרה.
+                    </div>
+                    <div class="pg-blocks">
+                        ${bl.blocks.map((b, i) => `
+                            <div class="pg-block">
+                                <div class="pg-block-bars">
+                                    <span class="pg-block-open"  style="height:${Math.max(4,(b.openingVolume/maxVol)*100)}%"></span>
+                                    <span class="pg-block-close" style="height:${Math.max(4,(b.closingVolume/maxVol)*100)}%"></span>
+                                </div>
+                                <div class="pg-block-lab">${bl.blocks.length - i === 1 ? 'נוכחית' : '#' + (bl.totalBlocks - (bl.blocks.length - 1 - i))}</div>
+                            </div>`).join('')}
+                    </div>
+                    <div class="pg-legend">
+                        <span><i class="dot open"></i>פתיחה</span>
+                        <span><i class="dot close"></i>סיום</span>
+                    </div>
+                    ${bl.compared ? `
+                        <div class="pg-note" style="margin-top:var(--s3);">
+                            ב-<b>${bl.carried} מתוך ${bl.compared}</b> המעברים בין תוכניות התחלת במקום שסיימת או מעליו.
+                        </div>` : ''}
                 </div>`;
             }
 
@@ -4126,7 +4373,7 @@
             // --- 5. Balance: the part that changes what you do next ---
             if (r.balance.length) {
                 html += `<div class="pg-section">
-                    <div class="pg-label">איזון לפי קבוצת שריר · חודשיים</div>
+                    <div class="pg-label">איזון לפי קבוצת שריר</div>
                     ${r.balance.map(g => `
                         <div class="pg-group">
                             <div class="pg-group-head">
@@ -4147,7 +4394,7 @@
             if (r.stalled.length) {
                 html += `<div class="pg-list">
                     <div class="pg-label">עוד לא זזו</div>
-                    <div class="pg-note">${r.stalled.slice(0, 6).map(x => x.display).join(' · ')}</div>
+                    <div class="pg-note">${r.stalled.slice(0, 6).map(x => esc(x.display)).join(' · ')}</div>
                 </div>`;
             }
 
@@ -4321,7 +4568,7 @@
 
         function sessionVolume(session) {
             return session.entries.reduce((sum, e) =>
-                sum + (e.weight || 0) * (e.reps || 0) * (e.sets || 0), 0);
+                sum + workVolume(e.weight, e.reps, e.sets), 0);
         }
 
         // Finish the workout: snapshot what was done, then clear the board
@@ -4414,7 +4661,7 @@
                               || (e.planReps  != null && e.reps  > e.planReps)
                               || (e.planSets  != null && e.sets  > e.planSets);
                     return `<div class="session-row">
-                        <span class="session-ex">${e.name}</span>
+                        <span class="session-ex">${esc(e.name)}</span>
                         <span class="session-fig${beat ? ' beat' : ''}">${e.reps}×${e.sets} · ${e.weight}${beat ? ' <b>↑</b>' : ''}</span>
                     </div>`;
                 }).join('');
@@ -4517,7 +4764,7 @@
                         <button class="complete-toggle ${isDone ? 'checked' : ''}" onclick="toggleExerciseComplete(${index})" aria-label="סמן כהושלם">
                             ${isDone ? '✓' : ''}
                         </button>
-                        <h3>${ex.name}</h3>
+                        <h3>${esc(ex.name)}</h3>
                     </div>
                     <div class="card-selectors">
                         <div class="inline-stepper ${isEditingModeActive ? 'is-editing' : ''}">
@@ -4703,7 +4950,7 @@
             temporaryStagedWorkout.forEach((ex, idx) => {
                 html += `
                     <div class="workout-card" style="margin-bottom: 10px;">
-                        <h4 style="font-size:15px; margin-bottom:12px; font-weight: 800;">${ex.name}</h4>
+                        <h4 style="font-size:15px; margin-bottom:12px; font-weight: 800;">${esc(ex.name)}</h4>
                         <div style="display:flex; gap:10px; align-items: flex-end;">
                             <div style="flex: 1;">
                                 <label style="font-size: 11px; color: var(--ink-soft); font-weight: 700; display: block; margin-bottom: 4px;">סטים</label>
@@ -4750,6 +4997,24 @@
             rebuildChangesSummaryReport();
             switchTab('view-workout', document.querySelectorAll('.nav-tab')[0]);
             displayNativeToast(synced ? '✅ האימון נשמר וסונכרן לענן!' : '💾 האימון נשמר במכשיר - יסתנכרן כשהחיבור יחזור');
+        }
+
+        // ============ SAFETY ============
+        // Exercise names arrive from a pasted WhatsApp message — untrusted text
+        // that ends up inside innerHTML. Without escaping, a name containing
+        // markup would be parsed as HTML rather than shown as characters.
+        function esc(v) {
+            return String(v == null ? '' : v)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        // For a name being placed inside a JS string in an onclick attribute
+        function escAttr(v) {
+            return esc(v).replace(/\\/g, '\\\\');
         }
 
         // ============ EXERCISE NAME NORMALIZATION ============
@@ -4919,11 +5184,6 @@
             const { clusterOf } = computeExerciseClusters();
             const matches = (name) => clusterOf[normalizeExerciseName((name || '').trim())] === normalizedName;
 
-            const dayKey = (iso) => {
-                const d = new Date(iso);
-                return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
-            };
-
             const byDay = new Map();
 
             stateWorkouts.forEach(w => {
@@ -4931,7 +5191,7 @@
                 if (!Number.isFinite(t)) return;
                 w.exercises?.forEach(ex => {
                     if (!matches(ex.name)) return;
-                    const k = dayKey(w.date);
+                    const k = dayKeyOf(w.date);
                     if (!byDay.has(k)) {
                         byDay.set(k, { timestamp: t, weight: ex.weight, reps: ex.reps, sets: ex.sets, performed: false });
                     }
@@ -4943,7 +5203,7 @@
                 if (!Number.isFinite(t)) return;
                 s.entries?.forEach(e => {
                     if (!matches(e.name)) return;
-                    byDay.set(dayKey(s.date), {
+                    byDay.set(dayKeyOf(s.date), {
                         timestamp: t, weight: e.weight, reps: e.reps, sets: e.sets, performed: true
                     });
                 });
@@ -4969,7 +5229,7 @@
 
                 // Volume captures progress that weight alone misses — more reps at
                 // the same load is still progress.
-                const vol = p => (p.weight || 0) * (p.reps || 0) * (p.sets || 0);
+                const vol = p => workVolume(p.weight, p.reps, p.sets);
                 const delta = latest.weight - first.weight;
                 const volDelta = vol(latest) - vol(first);
 
@@ -5143,7 +5403,14 @@
             });
 
             toggleReportingButtons(true);
-            document.getElementById('changes-view-box').innerHTML = `<div style="background: var(--accent-wash); border-radius: var(--r-md); padding: 14px; font-size: 13px; line-height: 1.8; white-space: pre-wrap; word-wrap: break-word; -webkit-user-select: text; user-select: text;">${txt.replace(/\n/g, '<br>')}</div>`;
+
+            // Two different destinations, two different rules: the returned text
+            // goes to WhatsApp verbatim, while the on-screen preview is HTML and
+            // must be escaped first.
+            const box = document.getElementById('changes-view-box');
+            if (box) {
+                box.innerHTML = `<div style="background: var(--accent-wash); border-radius: var(--r-md); padding: 14px; font-size: 13px; line-height: 1.8; white-space: pre-wrap; word-wrap: break-word; -webkit-user-select: text; user-select: text;">${esc(txt).replace(/\n/g, '<br>')}</div>`;
+            }
             return txt;
         }
 
@@ -5419,24 +5686,6 @@
         }
 
 
-        function applyMicroInteractions() {
-            // Better button feedback
-            document.querySelectorAll('.btn').forEach(btn => {
-                btn.addEventListener('mousedown', function() {
-                    this.style.transform = 'scale(0.98)';
-                });
-                btn.addEventListener('mouseup', function() {
-                    this.style.transform = '';
-                });
-            });
-
-            // Card hover effects
-            document.querySelectorAll('.card, .workout-card').forEach(card => {
-                card.addEventListener('mouseenter', function() {
-                    this.style.cursor = 'pointer';
-                });
-            });
-        }
 
         function initializeTheme() {
             // Load dark mode preference
@@ -5449,9 +5698,6 @@
             if (savedColor) {
                 document.documentElement.setAttribute('data-color', savedColor);
             }
-
-            // Apply micro-interactions
-            applyMicroInteractions();
         }
 
         // Generate a real PNG home-screen icon (iOS ignores SVG for apple-touch-icon)
@@ -5594,6 +5840,11 @@
                 console.log('📭 No data found for this account');
             }
             
+            try {
+                const savedWin = parseInt(localStorage.getItem('fitpro-progress-window'), 10);
+                if ([30, 90, 365].includes(savedWin)) progressWindow = savedWin;
+            } catch (e) {}
+
             try {
                 const savedMode = localStorage.getItem('fitpro-viewmode');
                 if (savedMode === 'list' || savedMode === 'stage') viewMode = savedMode;
