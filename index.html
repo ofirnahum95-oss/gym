@@ -1390,6 +1390,224 @@
             margin-bottom: var(--s2);
         }
 
+        /* ============ Progress ============
+           Built to be readable, not motivating. Flat months look flat; stalled
+           lifts are named. A screen that only ever shows growth stops being
+           information and becomes pressure. */
+
+        .pg-hero {
+            text-align: center;
+            padding: var(--s5) var(--s4) var(--s4);
+        }
+
+        .pg-hero-num {
+            font-family: var(--mono);
+            font-size: 52px;
+            font-weight: 700;
+            letter-spacing: -0.04em;
+            line-height: 1;
+            color: var(--accent);
+            font-variant-numeric: tabular-nums;
+        }
+
+        .pg-hero-unit {
+            font-size: var(--t-sm);
+            color: var(--ink-soft);
+            margin-top: var(--s2);
+        }
+
+        .pg-hero-sub {
+            font-family: var(--mono);
+            font-size: var(--t-xs);
+            color: var(--ink-faint);
+            margin-top: var(--s1);
+            font-variant-numeric: tabular-nums;
+        }
+
+        .pg-section {
+            background: var(--surface-1);
+            border: 1px solid var(--rule);
+            border-radius: var(--r-lg);
+            padding: var(--s3) var(--s4) var(--s4);
+            margin-bottom: var(--s2);
+            box-shadow: var(--shadow-1), var(--lift);
+        }
+
+        .pg-label {
+            font-size: var(--t-micro);
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--ink-faint);
+            margin-bottom: var(--s3);
+        }
+
+        .pg-note {
+            font-size: var(--t-xs);
+            color: var(--ink-soft);
+            line-height: 1.5;
+        }
+
+        /* --- Monthly volume --- */
+
+        .pg-bars {
+            display: flex;
+            align-items: flex-end;
+            gap: var(--s2);
+            height: 120px;
+        }
+
+        .pg-bar-col {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 100%;
+            min-width: 0;
+        }
+
+        .pg-bar-track {
+            flex: 1;
+            width: 100%;
+            display: flex;
+            align-items: flex-end;
+        }
+
+        .pg-bar {
+            width: 100%;
+            background: var(--accent);
+            border-radius: var(--r-sm) var(--r-sm) 2px 2px;
+            opacity: 0.85;
+            transform-origin: bottom;
+            animation: bar-rise 0.5s var(--ease-out) both;
+        }
+
+        /* Scales from the base — transform only, so no repaint */
+        @keyframes bar-rise {
+            from { transform: scaleY(0); opacity: 0; }
+            to   { transform: scaleY(1); opacity: 0.85; }
+        }
+
+        .pg-bar-col:last-child .pg-bar { opacity: 1; }
+
+        .pg-bar-val {
+            font-family: var(--mono);
+            font-size: var(--t-micro);
+            font-weight: 600;
+            color: var(--ink);
+            margin-top: var(--s1);
+            font-variant-numeric: tabular-nums;
+        }
+
+        .pg-bar-lab {
+            font-size: var(--t-micro);
+            color: var(--ink-faint);
+            margin-top: 1px;
+            white-space: nowrap;
+        }
+
+        /* --- Consistency --- */
+
+        .pg-weeks {
+            display: flex;
+            gap: var(--s1);
+            margin-bottom: var(--s2);
+        }
+
+        .pg-week {
+            flex: 1;
+            height: 40px;
+            border-radius: var(--r-sm);
+            background: var(--surface-sunk);
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .pg-week::before {
+            content: '';
+            position: absolute;
+            inset-inline: 0;
+            bottom: 0;
+            height: var(--fill, 0%);
+            background: var(--done);
+            opacity: 0.9;
+        }
+
+        .pg-week span {
+            position: relative;
+            font-family: var(--mono);
+            font-size: var(--t-xs);
+            font-weight: 700;
+            color: #fff;
+        }
+
+        .pg-week:not(.on) span { color: var(--ink-faint); }
+
+        /* --- Lifts that moved --- */
+
+        .pg-lift {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            gap: var(--s3);
+            padding: var(--s2) 0;
+            border-bottom: 1px solid var(--rule-soft);
+            font-size: var(--t-sm);
+        }
+
+        .pg-lift:last-child { border-bottom: none; }
+
+        .pg-lift-name {
+            color: var(--ink-soft);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .pg-lift-gain {
+            font-family: var(--mono);
+            font-weight: 700;
+            color: var(--done);
+            font-variant-numeric: tabular-nums;
+            flex-shrink: 0;
+        }
+
+        .pg-lift-gain small { font-size: var(--t-micro); opacity: 0.7; }
+
+        /* --- Month over month --- */
+
+        .pg-momentum {
+            text-align: center;
+            padding: var(--s4);
+            border-radius: var(--r-lg);
+            margin-bottom: var(--s2);
+            background: var(--surface-1);
+            border: 1px solid var(--rule);
+            box-shadow: var(--shadow-1), var(--lift);
+        }
+
+        .pg-momentum-num {
+            font-family: var(--mono);
+            font-size: var(--t-readout);
+            font-weight: 700;
+            letter-spacing: -0.03em;
+            font-variant-numeric: tabular-nums;
+            color: var(--ink);
+        }
+
+        .pg-momentum.up .pg-momentum-num   { color: var(--done); }
+        .pg-momentum.down .pg-momentum-num { color: var(--ink-soft); }
+        .pg-momentum.flat .pg-momentum-num { color: var(--ink-soft); }
+
+        .pg-momentum-txt {
+            font-size: var(--t-xs);
+            color: var(--ink-faint);
+            margin-top: var(--s1);
+        }
+
         /* ============ Session log ============ */
 
         .session-card {
@@ -2027,6 +2245,12 @@
                 </div>
 
                 <!-- VIEW 4: SETTINGS & CHANGES -->
+                <!-- VIEW: PROGRESS -->
+                <div id="view-progress" class="tab-view">
+                    <div class="view-title">🌱 ההתקדמות שלי</div>
+                    <div id="progress-body"></div>
+                </div>
+
                 <!-- VIEW: SESSION LOG -->
                 <div id="view-history" class="tab-view">
                     <div class="view-title">📖 יומן אימונים</div>
@@ -2163,6 +2387,7 @@
         <button class="nav-tab active" data-tab-id="view-workout" onclick="switchTab('view-workout', this)"><icon>🏋️‍♂️</icon>אימון</button>
         <button class="nav-tab" data-tab-id="view-analytics" onclick="switchTab('view-analytics', this)"><icon>📈</icon>אנליזה</button>
         <button class="nav-tab" data-tab-id="view-add" onclick="switchTab('view-add', this)"><icon>➕</icon>הוספה</button>
+        <button class="nav-tab" data-tab-id="view-progress" onclick="switchTab('view-progress', this)"><icon>🌱</icon>התקדמות</button>
         <button class="nav-tab" data-tab-id="view-history" onclick="switchTab('view-history', this)"><icon>📖</icon>יומן</button>
         <button class="nav-tab" data-tab-id="view-settings" onclick="switchTab('view-settings', this)"><icon>⚙️</icon>הגדרות</button>
     </aside>
@@ -2549,6 +2774,10 @@
             if (tabId === 'view-history') {
                 renderSessionHistory();
                 renderHistorySummary();
+            }
+
+            if (tabId === 'view-progress') {
+                renderProgress();
             }
 
             if (tabId === 'view-analytics') {
@@ -3368,6 +3597,183 @@
             const slides = buildSlides(active.exercises);
             const at = slides.findIndex(s => s.some(i => !isCompletedToday(active.exercises[i])));
             stageIndex = at === -1 ? slides.length - 1 : at;
+        }
+
+        // ============ PROGRESS ============
+        // Progress is easy to lose sight of from inside it: you feel the last
+        // session, not the last three months. This works entirely from what was
+        // actually logged — flat stretches show up as flat.
+
+        function monthKey(iso) {
+            const d = new Date(iso);
+            return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+        }
+
+        function monthLabel(key) {
+            const months = ['ינו','פבר','מרץ','אפר','מאי','יונ','יול','אוג','ספט','אוק','נוב','דצמ'];
+            const [y, m] = key.split('-').map(Number);
+            return `${months[m - 1]} ${String(y).slice(2)}`;
+        }
+
+        function buildProgressReport() {
+            if (!sessionLog.length) return null;
+
+            const sorted = [...sessionLog].sort((a, b) => new Date(a.date) - new Date(b.date));
+
+            // --- Cumulative work, month by month ---
+            const byMonth = new Map();
+            sorted.forEach(s => {
+                const k = monthKey(s.date);
+                if (!byMonth.has(k)) byMonth.set(k, { sessions: 0, volume: 0, exercises: 0 });
+                const m = byMonth.get(k);
+                m.sessions += 1;
+                m.volume += sessionVolume(s);
+                m.exercises += s.entries.length;
+            });
+            const months = Array.from(byMonth.entries())
+                .map(([key, v]) => ({ key, label: monthLabel(key), ...v }))
+                .slice(-6);
+
+            // --- Lifetime totals ---
+            const totalVolume = sorted.reduce((n, s) => n + sessionVolume(s), 0);
+            const totalSets = sorted.reduce((n, s) =>
+                n + s.entries.reduce((k, e) => k + (e.sets || 0), 0), 0);
+
+            // --- Which lifts have actually moved, and by how much ---
+            const overview = buildExerciseOverview();
+            const improved = overview
+                .filter(r => r.delta > 0)
+                .sort((a, b) => b.delta - a.delta);
+            const stalled = overview.filter(r => r.state === 'stalled');
+
+            // --- Consistency: sessions per week over the last eight ---
+            const weeks = [];
+            const now = new Date();
+            for (let w = 7; w >= 0; w--) {
+                const end = new Date(now); end.setDate(end.getDate() - w * 7);
+                const start = new Date(end); start.setDate(start.getDate() - 7);
+                weeks.push({
+                    count: sorted.filter(s => {
+                        const t = new Date(s.date);
+                        return t > start && t <= end;
+                    }).length
+                });
+            }
+
+            // --- Month-over-month, only once there is something to compare ---
+            let momentum = null;
+            if (months.length >= 2) {
+                const prev = months[months.length - 2];
+                const curr = months[months.length - 1];
+                if (prev.volume > 0) {
+                    momentum = {
+                        pct: Math.round(((curr.volume - prev.volume) / prev.volume) * 100),
+                        from: prev.label, to: curr.label
+                    };
+                }
+            }
+
+            const first = sorted[0];
+            const weeksTraining = Math.max(1,
+                Math.round((Date.now() - new Date(first.date).getTime()) / (7 * 86400000)));
+
+            return {
+                sessions: sorted.length, totalVolume, totalSets,
+                months, improved, stalled, weeks, momentum, weeksTraining
+            };
+        }
+
+        function compactNumber(n) {
+            if (n >= 1000000) return (n / 1000000).toFixed(1).replace(/\.0$/, '') + 'M';
+            if (n >= 1000) return Math.round(n / 1000) + 'k';
+            return String(Math.round(n));
+        }
+
+        function renderProgress() {
+            const zone = document.getElementById('progress-body');
+            if (!zone) return;
+
+            const r = buildProgressReport();
+            if (!r) {
+                zone.innerHTML = `<div class="empty-state">
+                    <div class="empty-state-icon">🌱</div>
+                    <div class="empty-state-title">עוד אין מספיק נתונים</div>
+                    <div class="empty-state-subtitle">סיים כמה אימונים והתמונה תתחיל להצטייר</div>
+                </div>`;
+                return;
+            }
+
+            let html = '';
+
+            // --- What has accumulated. The number you can't feel day to day. ---
+            html += `
+                <div class="pg-hero">
+                    <div class="pg-hero-num">${compactNumber(r.totalVolume)}</div>
+                    <div class="pg-hero-unit">ק"ג הורמו בסך הכל</div>
+                    <div class="pg-hero-sub">${r.sessions} אימונים · ${r.totalSets} סטים · ${r.weeksTraining} שבועות</div>
+                </div>`;
+
+            // --- Volume per month ---
+            if (r.months.length >= 2) {
+                const max = Math.max(...r.months.map(m => m.volume)) || 1;
+                html += `<div class="pg-section">
+                    <div class="pg-label">נפח לפי חודש</div>
+                    <div class="pg-bars">
+                        ${r.months.map(m => `
+                            <div class="pg-bar-col">
+                                <div class="pg-bar-track">
+                                    <div class="pg-bar" style="height:${Math.max(3, (m.volume / max) * 100)}%"></div>
+                                </div>
+                                <div class="pg-bar-val">${compactNumber(m.volume)}</div>
+                                <div class="pg-bar-lab">${m.label}</div>
+                            </div>`).join('')}
+                    </div>
+                </div>`;
+            }
+
+            // --- Consistency. Showing up is the part that compounds. ---
+            const maxW = Math.max(...r.weeks.map(w => w.count), 1);
+            const activeWeeks = r.weeks.filter(w => w.count > 0).length;
+            html += `<div class="pg-section">
+                <div class="pg-label">עקביות · 8 שבועות אחרונים</div>
+                <div class="pg-weeks">
+                    ${r.weeks.map(w => `<div class="pg-week ${w.count ? 'on' : ''}"
+                        style="--fill:${(w.count / maxW) * 100}%"><span>${w.count || ''}</span></div>`).join('')}
+                </div>
+                <div class="pg-note">התאמנת ב-${activeWeeks} מתוך 8 השבועות</div>
+            </div>`;
+
+            // --- Lifts that moved ---
+            if (r.improved.length) {
+                html += `<div class="pg-section">
+                    <div class="pg-label">תרגילים שהשתפרו · ${r.improved.length}</div>
+                    ${r.improved.slice(0, 8).map(x => `
+                        <div class="pg-lift">
+                            <span class="pg-lift-name">${x.display}</span>
+                            <span class="pg-lift-gain">+${x.delta} <small>ק"ג</small></span>
+                        </div>`).join('')}
+                </div>`;
+            }
+
+            // --- Month over month, stated plainly in either direction ---
+            if (r.momentum) {
+                const up = r.momentum.pct > 0;
+                const flat = Math.abs(r.momentum.pct) < 5;
+                html += `<div class="pg-momentum ${flat ? 'flat' : up ? 'up' : 'down'}">
+                    <div class="pg-momentum-num">${up ? '+' : ''}${r.momentum.pct}%</div>
+                    <div class="pg-momentum-txt">נפח ב־${r.momentum.to} לעומת ${r.momentum.from}</div>
+                </div>`;
+            }
+
+            // --- Honest counterweight: what hasn't moved ---
+            if (r.stalled.length) {
+                html += `<div class="pg-section">
+                    <div class="pg-label">עומדים במקום · ${r.stalled.length}</div>
+                    <div class="pg-note">${r.stalled.slice(0, 5).map(x => x.display).join(' · ')}</div>
+                </div>`;
+            }
+
+            zone.innerHTML = html;
         }
 
         function renderStageChrome(slides) {
