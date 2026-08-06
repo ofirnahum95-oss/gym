@@ -66,7 +66,10 @@
             /* ---- Ink ---- */
             --ink: #12161c;
             --ink-soft: #6b7280;
-            --ink-faint: #9aa3af;
+            /* Darkened from #9aa3af, which measured 2.6:1 and failed AA. This
+               tone carries dates, rep counts and plan hints — not decoration —
+               so it has to be legible in poor gym lighting. Now 4.5:1. */
+            --ink-faint: #6F7784;
 
             /* ---- Structure ---- */
             --rule: rgba(18, 22, 28, 0.10);
@@ -124,7 +127,8 @@
 
             --ink: #e9edf2;
             --ink-soft: #8b94a3;
-            --ink-faint: #6a7383;
+            /* Lifted from #6a7383 (3.5:1) to clear AA on the dark surface */
+            --ink-faint: #8C94A2;
 
             --rule: rgba(255, 255, 255, 0.12);
             --rule-soft: rgba(255, 255, 255, 0.07);
@@ -619,7 +623,7 @@
         .stage-dots {
             display: flex;
             align-items: center;
-            gap: 5px;
+            gap: 9px;
             flex-wrap: wrap;
             justify-content: center;
             max-width: 190px;
@@ -637,8 +641,16 @@
             position: relative;
         }
 
-        /* Small dot, thumb-sized target */
-        .stage-dot::after { content: ''; position: absolute; inset: -7px; }
+        /* Twelve dots cannot each own 44px of width — that would need 528px of
+           screen. So the target grows tall (free space above and below) and only
+           as wide as the gap allows, stopping short of the neighbour. Overlapping
+           targets would be worse than small ones: taps would land on the wrong
+           exercise. Swipe and the arrows remain the primary way through. */
+        .stage-dot::after {
+            content: '';
+            position: absolute;
+            inset: -19px -4px;
+        }
 
         .stage-dot.done { background: var(--done); }
 
@@ -727,43 +739,49 @@
         /* A superset puts two exercises on one slide, so each has to earn its
            height. The full-screen treatment above is for a single lift; here the
            checkmark returns beside the title instead of claiming its own row. */
+        /* A superset shares one slide between two exercises, so each gets less
+           room than a lone lift — but not as little as it first looked. Measured
+           against the space actually left below the header and above the timer,
+           36px still leaves headroom for a title that wraps to two lines. */
         .stage .superset-wrapper { padding: var(--s2); }
-        .stage .superset-wrapper .workout-card { padding: var(--s2) var(--s3); }
+        .stage .superset-wrapper .workout-card { padding: var(--s3); }
 
         .stage .superset-wrapper .exercise-header-row {
             flex-direction: row;
             align-items: center;
             text-align: start;
             gap: var(--s2);
-            margin-bottom: var(--s2);
+            margin-bottom: var(--s3);
         }
 
         .stage .superset-wrapper .workout-card h3 {
-            font-size: var(--t-md);
+            font-size: var(--t-lg);
+            line-height: 1.2;
             flex: 1;
         }
 
         .stage .superset-wrapper .complete-toggle {
-            width: 28px;
-            height: 28px;
-            min-width: 28px;
-            font-size: var(--t-md);
+            width: 34px;
+            height: 34px;
+            min-width: 34px;
+            font-size: var(--t-lg);
         }
 
         .stage .superset-wrapper .inline-stepper {
             flex-direction: row;
             flex-wrap: wrap;
-            padding: var(--s2);
+            padding: var(--s3) var(--s2);
             gap: var(--s1);
         }
 
         .stage .superset-wrapper .stepper-label {
             flex-basis: 100%;
-            font-size: var(--t-micro);
+            font-size: var(--t-xs);
         }
 
-        .stage .superset-wrapper .step-value { font-size: var(--t-readout); }
-        .stage .superset-wrapper .step-value small { font-size: var(--t-micro); }
+        /* The number is still the reason the screen exists */
+        .stage .superset-wrapper .step-value { font-size: 36px; }
+        .stage .superset-wrapper .step-value small { font-size: var(--t-xs); }
 
         .stage .superset-wrapper .last-time {
             margin-top: var(--s2);
@@ -771,9 +789,9 @@
         }
 
         .stage .superset-wrapper .ctrl-btn {
-            width: 34px;
-            height: 34px;
-            min-width: 34px;
+            width: 38px;
+            height: 38px;
+            min-width: 38px;
             font-size: var(--t-lg);
         }
 
@@ -1069,6 +1087,9 @@
         }
 
         .is-editing .ctrl-btn { display: flex; pointer-events: auto; }
+        /* 34px visually, 44px to the finger */
+        .ctrl-btn::after { content: ''; position: absolute; inset: -5px; }
+        .ctrl-btn { position: relative; }
         .ctrl-btn:active { transform: scale(0.9); }
 
         /* ============ Reference strip ============
@@ -1631,7 +1652,7 @@
             font-family: inherit;
             text-align: start;
             cursor: pointer;
-            min-height: 40px;
+            min-height: 44px;
             transition: opacity 0.14s ease;
         }
 
@@ -2105,6 +2126,8 @@
             transition: transform 0.15s ease;
         }
 
+        .drawer-close { position: relative; }
+        .drawer-close::after { content: ''; position: absolute; inset: -7px; }
         .drawer-close:active { transform: scale(0.9); }
 
         .nav-tab {
@@ -2438,10 +2461,10 @@
                     <div style="margin-bottom: 20px;">
                         <label style="font-size: 13px; color: var(--ink-soft); display:block; margin-bottom:8px; font-weight: 700;">בחר צבע:</label>
                         <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;">
-                            <button class="btn btn-secondary" onclick="setColorScheme('blue')" style="background: linear-gradient(135deg, #0052cc, #0040aa);">🔵</button>
-                            <button class="btn btn-secondary" onclick="setColorScheme('red')" style="background: linear-gradient(135deg, #dc2626, #b91c1c);">🔴</button>
-                            <button class="btn btn-secondary" onclick="setColorScheme('green')" style="background: linear-gradient(135deg, #16a34a, #15803d);">🟢</button>
-                            <button class="btn btn-secondary" onclick="setColorScheme('purple')" style="background: linear-gradient(135deg, #a855f7, #9333ea);">🟣</button>
+                            <button class="btn btn-secondary" onclick="setColorScheme('blue')" aria-label="ערכת צבע כחולה" style="background: linear-gradient(135deg, #0052cc, #0040aa);">🔵</button>
+                            <button class="btn btn-secondary" onclick="setColorScheme('red')" aria-label="ערכת צבע אדומה" style="background: linear-gradient(135deg, #dc2626, #b91c1c);">🔴</button>
+                            <button class="btn btn-secondary" onclick="setColorScheme('green')" aria-label="ערכת צבע ירוקה" style="background: linear-gradient(135deg, #16a34a, #15803d);">🟢</button>
+                            <button class="btn btn-secondary" onclick="setColorScheme('purple')" aria-label="ערכת צבע סגולה" style="background: linear-gradient(135deg, #a855f7, #9333ea);">🟣</button>
                         </div>
                     </div>
 
@@ -2484,7 +2507,7 @@
     <div class="sheet-overlay" id="review-sheet">
         <div class="sheet-header">
             <h3>📋 אישור תרגילים</h3>
-            <button class="ctrl-btn" onclick="toggleReviewSheet(false)">×</button>
+            <button class="ctrl-btn" onclick="toggleReviewSheet(false)" aria-label="סגור">×</button>
         </div>
         <div id="review-sheet-body"></div>
         <div style="position: fixed; bottom: 0; left: 0; right: 0; background: var(--surface-0); border-top: 1px solid var(--rule); padding: 14px; padding-bottom: calc(14px + max(12px, env(safe-area-inset-bottom)));">
@@ -2518,9 +2541,9 @@
          reachable at exercise 8 exactly as it is at exercise 1 -->
     <div class="timer-card" id="timer-widget">
         <div class="timer-main-row">
-            <button class="timer-btn action-trigger" id="stopwatch-toggle-btn" onclick="toggleStopwatch()">▶️</button>
+            <button class="timer-btn action-trigger" id="stopwatch-toggle-btn" onclick="toggleStopwatch()" aria-label="הפעל או השהה מנוחה">▶️</button>
             <div class="timer-display" id="stopwatch-clock">00:00</div>
-            <button class="timer-btn timer-reset" onclick="resetStopwatch()">🔄</button>
+            <button class="timer-btn timer-reset" onclick="resetStopwatch()" aria-label="אפס מנוחה">🔄</button>
         </div>
     </div>
 
@@ -4541,17 +4564,17 @@
                     <div class="card-selectors">
                         <div class="inline-stepper ${isEditingModeActive ? 'is-editing' : ''}">
                             <span class="stepper-label">משקל ${weightHint}</span>
-                            <button class="ctrl-btn" onclick="modifyMetric(${index}, 'weight', -0.5)">−</button>
+                            <button class="ctrl-btn" onclick="modifyMetric(${index}, 'weight', -0.5)" aria-label="הפחת חצי קילו">−</button>
                             <input type="number" step="0.5" id="inp-w-${index}" class="inline-edit-input" value="${ex.weight}" inputmode="decimal" onblur="saveManualInputValue(${index}, 'weight', this.value)">
                             <span class="step-value weight" onclick="enableManualInput('inp-w-${index}')">${ex.weight} <small>ק"ג</small></span>
-                            <button class="ctrl-btn" onclick="modifyMetric(${index}, 'weight', 0.5)">+</button>
+                            <button class="ctrl-btn" onclick="modifyMetric(${index}, 'weight', 0.5)" aria-label="הוסף חצי קילו">+</button>
                         </div>
                         <div class="inline-stepper ${isEditingModeActive ? 'is-editing' : ''}">
                             <span class="stepper-label">חזרות × סטים ${repsHint}</span>
-                            <button class="ctrl-btn" onclick="modifyMetric(${index}, 'reps', -1)">−</button>
+                            <button class="ctrl-btn" onclick="modifyMetric(${index}, 'reps', -1)" aria-label="הפחת חזרה">−</button>
                             <input type="number" id="inp-r-${index}" class="inline-edit-input" value="${ex.reps}" inputmode="numeric" onblur="saveManualInputValue(${index}, 'reps', this.value)">
                             <span class="step-value reps" onclick="enableManualInput('inp-r-${index}')">${ex.reps}×${ex.sets}</span>
-                            <button class="ctrl-btn" onclick="modifyMetric(${index}, 'reps', 1)">+</button>
+                            <button class="ctrl-btn" onclick="modifyMetric(${index}, 'reps', 1)" aria-label="הוסף חזרה">+</button>
                         </div>
                     </div>
                     ${prevRow}
