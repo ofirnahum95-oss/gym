@@ -1267,14 +1267,6 @@
             font-variant-numeric: tabular-nums;
         }
 
-        #muscle-group-browser {
-            background: var(--surface-1) !important;
-            border: 1px solid var(--rule) !important;
-            border-radius: var(--r-md) !important;
-            box-shadow: var(--shadow-2);
-        }
-
-        #muscle-group-list > div { color: var(--ink); }
 
         /* ============ Analytics overview ============
            Rows, not cards. A card per exercise would be twelve boxes competing
@@ -1556,7 +1548,18 @@
             padding: var(--s2) 0;
             border-bottom: 1px solid var(--rule-soft);
             font-size: var(--t-sm);
+            width: 100%;
+            background: none;
+            border-inline: none;
+            border-top: none;
+            font-family: inherit;
+            text-align: start;
+            cursor: pointer;
+            min-height: 40px;
+            transition: opacity 0.14s ease;
         }
+
+        .pg-lift:active { opacity: 0.55; }
 
         .pg-lift:last-child { border-bottom: none; }
 
@@ -1575,7 +1578,109 @@
             flex-shrink: 0;
         }
 
+        .pg-lift-move {
+            display: flex;
+            align-items: baseline;
+            gap: var(--s1);
+            flex-shrink: 0;
+            font-family: var(--mono);
+            font-variant-numeric: tabular-nums;
+        }
+
+        .pg-from {
+            color: var(--ink-faint);
+            font-size: var(--t-xs);
+        }
+
+        /* RTL: the arrow points from the old value towards the new one */
+        .pg-arrow {
+            color: var(--ink-faint);
+            font-size: var(--t-xs);
+        }
+
+        .pg-to {
+            color: var(--ink);
+            font-weight: 700;
+            font-size: var(--t-sm);
+        }
+
+        .pg-lift-gain {
+            font-family: var(--mono);
+            font-weight: 700;
+            color: var(--done);
+            font-variant-numeric: tabular-nums;
+            flex-shrink: 0;
+            font-size: var(--t-xs);
+            margin-inline-start: var(--s1);
+        }
+
         .pg-lift-gain small { font-size: var(--t-micro); opacity: 0.7; }
+
+        /* --- Muscle group balance --- */
+
+        .pg-group {
+            padding: var(--s2) 0;
+            border-bottom: 1px solid var(--rule-soft);
+        }
+
+        .pg-group:last-child { border-bottom: none; }
+
+        .pg-group-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            gap: var(--s2);
+            margin-bottom: var(--s1);
+        }
+
+        .pg-group-name {
+            font-size: var(--t-sm);
+            font-weight: 600;
+            color: var(--ink);
+        }
+
+        .pg-group-sets {
+            font-family: var(--mono);
+            font-size: var(--t-xs);
+            color: var(--ink-faint);
+            font-variant-numeric: tabular-nums;
+            flex-shrink: 0;
+        }
+
+        .pg-group-track {
+            height: 5px;
+            background: var(--surface-sunk);
+            border-radius: var(--r-pill);
+            overflow: hidden;
+            margin-bottom: var(--s1);
+        }
+
+        .pg-group-fill {
+            height: 100%;
+            background: var(--accent);
+            border-radius: var(--r-pill);
+            transform-origin: inline-start;
+            animation: fill-grow 0.5s var(--ease-out) both;
+        }
+
+        /* Scales rather than animating width — compositor only */
+        @keyframes fill-grow {
+            from { transform: scaleX(0); }
+            to   { transform: scaleX(1); }
+        }
+
+        .pg-group-note {
+            font-size: var(--t-micro);
+            color: var(--ink-soft);
+            font-family: var(--mono);
+            font-variant-numeric: tabular-nums;
+        }
+
+        /* Nothing moving here — worth noticing, not worth alarming about */
+        .pg-group-note.idle { color: var(--ink-faint); }
+
+        /* No gain yet — state it plainly rather than showing a zero */
+        .pg-hero-num.quiet { color: var(--ink); }
 
         /* --- Month over month --- */
 
@@ -2165,67 +2270,6 @@
                 </div>
 
                 <!-- VIEW 2: PROGRESS ANALYTICS -->
-                <div id="view-analytics" class="tab-view">
-                    <div class="view-title">📈 מדדי התקדמות</div>
-
-                    <!-- BROWSE: the landing state, already full of answers -->
-                    <div id="analytics-browse">
-                        <div class="metrics-row ov-summary" id="analytics-summary" style="display:none;">
-                            <div class="metric-tile">
-                                <div>בעלייה</div>
-                                <div class="val rising" id="sum-rising">0</div>
-                            </div>
-                            <div class="metric-tile">
-                                <div>תקועים</div>
-                                <div class="val stalled" id="sum-stalled">0</div>
-                            </div>
-                            <div class="metric-tile">
-                                <div>תרגילים</div>
-                                <div class="val" id="sum-total">0</div>
-                            </div>
-                        </div>
-
-                        <div class="ov-tools">
-                            <input type="text" id="analytics-picker" placeholder="סנן לפי שם..."
-                                   oninput="filterOverview(this.value)" style="flex:1; margin-bottom:0;">
-                            <button class="btn btn-secondary" onclick="toggleMuscleGroupBrowser()"
-                                    style="width:auto; padding:0 16px; margin:0; flex-shrink:0;"
-                                    title="עיון לפי קבוצת שריר">📋</button>
-                        </div>
-
-                        <div id="muscle-group-browser" style="display:none; max-height:280px; overflow-y:auto; margin-bottom:12px; position:relative; z-index:10;">
-                            <div id="muscle-group-list"></div>
-                        </div>
-
-                        <div id="analytics-overview"></div>
-                    </div>
-
-                    <!-- DETAIL: one exercise, opened from the list -->
-                    <div id="analytics-detail" style="display:none;">
-                        <button class="ov-back" onclick="closeExerciseDetail()">‹ לכל התרגילים</button>
-                        <div class="view-title" id="detail-title" style="font-size:var(--t-lg);"></div>
-
-                        <div id="analytics-panel">
-                            <div class="metrics-row">
-                                <div class="metric-tile">
-                                    <div>משקל שיא</div>
-                                    <div class="val" id="meta-pr">0</div>
-                                </div>
-                                <div class="metric-tile">
-                                    <div>סך סטים</div>
-                                    <div class="val" id="meta-count">0</div>
-                                </div>
-                            </div>
-
-                            <div class="graph-container" id="graph-wrapper"></div>
-
-                            <h4 style="margin-bottom:10px; color:var(--ink-faint); font-size:var(--t-micro); letter-spacing:.06em; text-transform:uppercase;">היסטוריה</h4>
-                            <div id="analytics-logs"></div>
-                        </div>
-                        <div id="analytics-empty" class="empty-state" style="display:none;"></div>
-                    </div>
-                </div>
-
                 <!-- VIEW 3: ADD NEW DATA -->
                 <div id="view-add" class="tab-view">
                     <div class="view-title">📝 קליטת אימונים</div>
@@ -2247,8 +2291,35 @@
                 <!-- VIEW 4: SETTINGS & CHANGES -->
                 <!-- VIEW: PROGRESS -->
                 <div id="view-progress" class="tab-view">
-                    <div class="view-title">🌱 ההתקדמות שלי</div>
-                    <div id="progress-body"></div>
+                    <div id="progress-main">
+                        <div class="view-title">🌱 ההתקדמות שלי</div>
+                        <div id="progress-body"></div>
+                    </div>
+
+                    <!-- One exercise in depth, opened from any lift row above -->
+                    <div id="analytics-detail" style="display:none;">
+                        <button class="ov-back" onclick="closeExerciseDetail()">‹ חזרה</button>
+                        <div class="view-title" id="detail-title" style="font-size:var(--t-lg);"></div>
+
+                        <div id="analytics-panel">
+                            <div class="metrics-row">
+                                <div class="metric-tile">
+                                    <div>משקל שיא</div>
+                                    <div class="val" id="meta-pr">0</div>
+                                </div>
+                                <div class="metric-tile">
+                                    <div>אימונים</div>
+                                    <div class="val" id="meta-count">0</div>
+                                </div>
+                            </div>
+
+                            <div class="graph-container" id="graph-wrapper"></div>
+
+                            <h4 style="margin-bottom:10px; color:var(--ink-faint); font-size:var(--t-micro); letter-spacing:.06em; text-transform:uppercase;">היסטוריה</h4>
+                            <div id="analytics-logs"></div>
+                        </div>
+                        <div id="analytics-empty" class="empty-state" style="display:none;"></div>
+                    </div>
                 </div>
 
                 <!-- VIEW: SESSION LOG -->
@@ -2385,7 +2456,6 @@
             <button class="drawer-close" onclick="closeNavDrawer()" aria-label="סגור תפריט">×</button>
         </div>
         <button class="nav-tab active" data-tab-id="view-workout" onclick="switchTab('view-workout', this)"><icon>🏋️‍♂️</icon>אימון</button>
-        <button class="nav-tab" data-tab-id="view-analytics" onclick="switchTab('view-analytics', this)"><icon>📈</icon>אנליזה</button>
         <button class="nav-tab" data-tab-id="view-add" onclick="switchTab('view-add', this)"><icon>➕</icon>הוספה</button>
         <button class="nav-tab" data-tab-id="view-progress" onclick="switchTab('view-progress', this)"><icon>🌱</icon>התקדמות</button>
         <button class="nav-tab" data-tab-id="view-history" onclick="switchTab('view-history', this)"><icon>📖</icon>יומן</button>
@@ -3092,6 +3162,7 @@
 
             sessionLog.push(...recovered);
             invalidateIndexes();
+            endSessionClock();   // that session is over; don't carry its clock forward
             const count = recovered.reduce((n, s) => n + s.entries.length, 0);
             console.log(`🛟 Recovered ${recovered.length} unfinished workout(s), ${count} exercises`);
             displayNativeToast(`🛟 שוחזר אימון שלא נסגר · ${count} תרגילים נרשמו ביומן`);
@@ -3229,6 +3300,9 @@
             } else {
                 delete targetExercise.completedOn;
             }
+
+            // First tick of the day starts the session clock
+            if (nowTicked) beginSessionClock();
 
             // Repaint this one card before anything else happens
             if (!paintCompletion(exerciseIndex, nowTicked)) {
@@ -3604,6 +3678,178 @@
         // session, not the last three months. This works entirely from what was
         // actually logged — flat stretches show up as flat.
 
+        // Weight gained on each lift within a window. Separate from the overview's
+        // lifetime delta on purpose: "up 2 kg on bench" is about recent work, and
+        // a gain from a year ago would drown that out.
+        function buildWeightGains(withinDays) {
+            const cutoff = Date.now() - withinDays * 86400000;
+            const { clusterOf, exerciseMap } = computeExerciseClusters();
+            const series = new Map();
+
+            const add = (name, iso, weight, performed) => {
+                const root = clusterOf[normalizeExerciseName((name || '').trim())];
+                if (!root) return;
+                const t = new Date(iso).getTime();
+                if (!Number.isFinite(t) || typeof weight !== 'number') return;
+                if (!series.has(root)) series.set(root, new Map());
+                const day = dayKeyOf(iso);
+                const seen = series.get(root).get(day);
+                if (!seen || performed) series.get(root).set(day, { t, weight, performed });
+            };
+
+            stateWorkouts.forEach(w => w.exercises?.forEach(ex => add(ex.name, w.date, ex.weight, false)));
+            sessionLog.forEach(s => s.entries?.forEach(e => add(e.name, s.date, e.weight, true)));
+
+            const gains = [];
+            series.forEach((days, root) => {
+                const all = Array.from(days.values()).sort((a, b) => a.t - b.t);
+                const inWindow = all.filter(p => p.t >= cutoff);
+                if (inWindow.length === 0) return;
+
+                // Compare against the last reading before the window where one
+                // exists, so a rise that began just before it still counts. With
+                // no earlier reading, two points inside the window are needed.
+                const before = all.filter(p => p.t < cutoff).pop();
+                if (!before && inWindow.length < 2) return;
+
+                const start = before || inWindow[0];
+                const end = inWindow[inWindow.length - 1];
+                const gain = end.weight - start.weight;
+                if (gain <= 0) return;
+
+                gains.push({
+                    display: exerciseMap.get(root) || root,
+                    from: start.weight,
+                    to: end.weight,
+                    gain: Math.round(gain * 100) / 100,
+                    lastSeen: end.t
+                });
+            });
+
+            gains.sort((a, b) => b.gain - a.gain);
+            return gains;
+        }
+
+        // ============ ESTIMATED 1RM ============
+        // Comparing raw load breaks when the rep range changes: is 60×10 better
+        // or worse than 70×5? Epley's formula normalises both to a single number
+        // so progress stays visible across programme changes.
+        //
+        // It is an estimate, and it drifts at high rep counts — above about 12
+        // reps the model overstates. Treated as a trend line, not a true max.
+        function estimate1RM(weight, reps) {
+            if (!weight || !reps || reps < 1) return 0;
+            if (reps === 1) return weight;
+            if (reps > 15) return 0;          // beyond the formula's useful range
+            return weight * (1 + reps / 30);
+        }
+
+        function round1RM(v) {
+            return Math.round(v * 10) / 10;
+        }
+
+        // Best estimated max per lift, within a window, plus where it started
+        function build1RMProgress(withinDays) {
+            const cutoff = Date.now() - withinDays * 86400000;
+            const { clusterOf, exerciseMap } = computeExerciseClusters();
+            const series = new Map();
+
+            const add = (name, iso, weight, reps, performed) => {
+                const root = clusterOf[normalizeExerciseName((name || '').trim())];
+                if (!root) return;
+                const t = new Date(iso).getTime();
+                const e = estimate1RM(weight, reps);
+                if (!Number.isFinite(t) || !e) return;
+                if (!series.has(root)) series.set(root, new Map());
+                const day = dayKeyOf(iso);
+                const seen = series.get(root).get(day);
+                // Keep the best effort of the day; a logged session outranks a plan
+                if (!seen || performed || e > seen.e) series.get(root).set(day, { t, e, weight, reps, performed });
+            };
+
+            stateWorkouts.forEach(w => w.exercises?.forEach(ex => add(ex.name, w.date, ex.weight, ex.reps, false)));
+            sessionLog.forEach(s => s.entries?.forEach(en => add(en.name, s.date, en.weight, en.reps, true)));
+
+            const rows = [];
+            series.forEach((days, root) => {
+                const all = Array.from(days.values()).sort((a, b) => a.t - b.t);
+                const inWindow = all.filter(p => p.t >= cutoff);
+                if (!inWindow.length) return;
+
+                const before = all.filter(p => p.t < cutoff).pop();
+                if (!before && inWindow.length < 2) return;
+
+                const start = before || inWindow[0];
+                const latest = inWindow[inWindow.length - 1];
+                const best = inWindow.reduce((b, p) => p.e > b.e ? p : b, inWindow[0]);
+                const gain = latest.e - start.e;
+
+                rows.push({
+                    display: exerciseMap.get(root) || root,
+                    from: round1RM(start.e),
+                    to: round1RM(latest.e),
+                    best: round1RM(best.e),
+                    gain: round1RM(gain),
+                    pct: start.e ? Math.round((gain / start.e) * 100) : 0,
+                    latestRaw: `${latest.weight}×${latest.reps}`,
+                    lastSeen: latest.t
+                });
+            });
+
+            rows.sort((a, b) => b.gain - a.gain);
+            return rows;
+        }
+
+        // ============ MUSCLE GROUP BALANCE ============
+        // The one report here that changes a decision rather than just reporting:
+        // it shows which parts of the body are moving and which are being left
+        // behind, so you know what to raise with your trainer.
+        function buildGroupBalance(withinDays) {
+            const cutoff = Date.now() - withinDays * 86400000;
+            const { clusterOf, exerciseMap } = computeExerciseClusters();
+
+            const groups = {};
+            const ensure = (key) => {
+                if (!groups[key]) groups[key] = { key, label: MUSCLE_GROUPS[key].label,
+                    emoji: MUSCLE_GROUPS[key].emoji, sets: 0, volume: 0, lifts: new Set(), gaining: new Set() };
+                return groups[key];
+            };
+
+            // What was actually performed in the window
+            sessionLog.forEach(s => {
+                if (new Date(s.date).getTime() < cutoff) return;
+                s.entries?.forEach(e => {
+                    const root = clusterOf[normalizeExerciseName((e.name || '').trim())];
+                    const display = exerciseMap.get(root) || e.name;
+                    const g = ensure(categorizeExercise(display));
+                    g.sets += e.sets || 0;
+                    g.volume += (e.weight || 0) * (e.reps || 0) * (e.sets || 0);
+                    g.lifts.add(root || display);
+                });
+            });
+
+            // Which of those lifts are actually going up
+            buildWeightGains(withinDays).forEach(gain => {
+                const g = groups[categorizeExercise(gain.display)];
+                if (g) g.gaining.add(gain.display);
+            });
+
+            const list = Object.values(groups).map(g => ({
+                ...g,
+                lifts: g.lifts.size,
+                gaining: g.gaining.size
+            })).filter(g => g.sets > 0);
+
+            const maxSets = Math.max(...list.map(g => g.sets), 1);
+            list.forEach(g => {
+                g.share = Math.round((g.sets / maxSets) * 100);
+                g.movingPct = g.lifts ? Math.round((g.gaining / g.lifts) * 100) : 0;
+            });
+
+            list.sort((a, b) => b.sets - a.sets);
+            return list;
+        }
+
         function monthKey(iso) {
             const d = new Date(iso);
             return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
@@ -3677,9 +3923,17 @@
             const weeksTraining = Math.max(1,
                 Math.round((Date.now() - new Date(first.date).getTime()) / (7 * 86400000)));
 
+            // The headline: real weight added, over the last two months
+            const gains = buildWeightGains(60);
+            const totalGain = gains.reduce((n, g) => n + g.gain, 0);
+
+            const strength = build1RMProgress(60).filter(x => x.gain > 0);
+            const balance = buildGroupBalance(60);
+
             return {
                 sessions: sorted.length, totalVolume, totalSets,
-                months, improved, stalled, weeks, momentum, weeksTraining
+                months, improved, stalled, weeks, momentum, weeksTraining,
+                gains, totalGain, strength, balance
             };
         }
 
@@ -3705,19 +3959,69 @@
 
             let html = '';
 
-            // --- What has accumulated. The number you can't feel day to day. ---
-            html += `
-                <div class="pg-hero">
-                    <div class="pg-hero-num">${compactNumber(r.totalVolume)}</div>
-                    <div class="pg-hero-unit">ק"ג הורמו בסך הכל</div>
-                    <div class="pg-hero-sub">${r.sessions} אימונים · ${r.totalSets} סטים · ${r.weeksTraining} שבועות</div>
-                </div>`;
+            // --- The headline you can actually feel: weight added to the bar ---
+            if (r.gains.length) {
+                html += `
+                    <div class="pg-hero">
+                        <div class="pg-hero-num">+${r.totalGain % 1 ? r.totalGain.toFixed(1) : r.totalGain}</div>
+                        <div class="pg-hero-unit">ק"ג נוספו למוט בחודשיים האחרונים</div>
+                        <div class="pg-hero-sub">ב-${r.gains.length} תרגילים · ${r.sessions} אימונים</div>
+                    </div>`;
+            } else {
+                html += `
+                    <div class="pg-hero">
+                        <div class="pg-hero-num quiet">${r.sessions}</div>
+                        <div class="pg-hero-unit">אימונים נרשמו</div>
+                        <div class="pg-hero-sub">עוד לא נרשמה עליית משקל בחודשיים האחרונים</div>
+                    </div>`;
+            }
 
-            // --- Volume per month ---
+            // --- Strength normalised across rep ranges ---
+            if (r.strength.length) {
+                html += `<div class="pg-section">
+                    <div class="pg-label">כוח משוער · חודשיים אחרונים</div>
+                    <div class="pg-note" style="margin-bottom:var(--s3);">
+                        אומדן המשקל המרבי לחזרה אחת. מאפשר להשוות גם כשטווח החזרות משתנה.
+                    </div>
+                    ${r.strength.slice(0, 8).map(x => `
+                        <button class="pg-lift" onclick="openExerciseDetail(rootOf('${x.display.replace(/'/g, "\\'")}'))">
+                            <span class="pg-lift-name">${x.display}</span>
+                            <span class="pg-lift-move">
+                                <span class="pg-from">${x.from}</span>
+                                <span class="pg-arrow">←</span>
+                                <span class="pg-to">${x.to}</span>
+                                <span class="pg-lift-gain">+${x.pct}%</span>
+                            </span>
+                        </button>`).join('')}
+                </div>`;
+            }
+
+            // --- Where the body is and isn't moving ---
+            if (r.balance.length) {
+                html += `<div class="pg-section">
+                    <div class="pg-label">איזון לפי קבוצת שריר · חודשיים</div>
+                    ${r.balance.map(g => `
+                        <div class="pg-group">
+                            <div class="pg-group-head">
+                                <span class="pg-group-name">${g.emoji} ${g.label}</span>
+                                <span class="pg-group-sets">${g.sets} סטים</span>
+                            </div>
+                            <div class="pg-group-track">
+                                <div class="pg-group-fill" style="width:${g.share}%"></div>
+                            </div>
+                            <div class="pg-group-note ${g.gaining === 0 ? 'idle' : ''}">
+                                ${g.gaining} מתוך ${g.lifts} תרגילים בעלייה
+                            </div>
+                        </div>`).join('')}
+                </div>`;
+            }
+
+            // --- Volume kept, but secondary: it catches progress that weight
+            //     alone misses, like extra reps at the same load ---
             if (r.months.length >= 2) {
                 const max = Math.max(...r.months.map(m => m.volume)) || 1;
                 html += `<div class="pg-section">
-                    <div class="pg-label">נפח לפי חודש</div>
+                    <div class="pg-label">סך העבודה לפי חודש</div>
                     <div class="pg-bars">
                         ${r.months.map(m => `
                             <div class="pg-bar-col">
@@ -3743,15 +4047,20 @@
                 <div class="pg-note">התאמנת ב-${activeWeeks} מתוך 8 השבועות</div>
             </div>`;
 
-            // --- Lifts that moved ---
-            if (r.improved.length) {
+            // --- Where the weight actually went up, and by how much ---
+            if (r.gains.length) {
                 html += `<div class="pg-section">
-                    <div class="pg-label">תרגילים שהשתפרו · ${r.improved.length}</div>
-                    ${r.improved.slice(0, 8).map(x => `
-                        <div class="pg-lift">
+                    <div class="pg-label">עלית במשקל · חודשיים אחרונים</div>
+                    ${r.gains.map(x => `
+                        <button class="pg-lift" onclick="openExerciseDetail(rootOf('${x.display.replace(/'/g, "\\'")}'))">
                             <span class="pg-lift-name">${x.display}</span>
-                            <span class="pg-lift-gain">+${x.delta} <small>ק"ג</small></span>
-                        </div>`).join('')}
+                            <span class="pg-lift-move">
+                                <span class="pg-from">${x.from}</span>
+                                <span class="pg-arrow">←</span>
+                                <span class="pg-to">${x.to}</span>
+                                <span class="pg-lift-gain">+${x.gain}</span>
+                            </span>
+                        </button>`).join('')}
                 </div>`;
             }
 
@@ -3765,11 +4074,11 @@
                 </div>`;
             }
 
-            // --- Honest counterweight: what hasn't moved ---
+            // --- Honest counterweight. Named quietly, not as a scoreboard. ---
             if (r.stalled.length) {
                 html += `<div class="pg-section">
-                    <div class="pg-label">עומדים במקום · ${r.stalled.length}</div>
-                    <div class="pg-note">${r.stalled.slice(0, 5).map(x => x.display).join(' · ')}</div>
+                    <div class="pg-label">עוד לא זזו</div>
+                    <div class="pg-note">${r.stalled.slice(0, 6).map(x => x.display).join(' · ')}</div>
                 </div>`;
             }
 
@@ -3881,6 +4190,29 @@
         }
 
         // Wipe every completion tick — for starting the same programme again
+        // ============ SESSION CLOCK ============
+        // Distinct from the rest timer, which resets after every set and so could
+        // never measure a workout — that is why logged durations were always 0.
+        // This starts on the first tick of the day and runs until you finish.
+        function sessionClockStart() {
+            try { return parseInt(localStorage.getItem('fitpro-session-start'), 10) || 0; }
+            catch (e) { return 0; }
+        }
+
+        function beginSessionClock() {
+            if (sessionClockStart()) return;
+            try { localStorage.setItem('fitpro-session-start', String(Date.now())); } catch (e) {}
+        }
+
+        function endSessionClock() {
+            const started = sessionClockStart();
+            try { localStorage.removeItem('fitpro-session-start'); } catch (e) {}
+            if (!started) return 0;
+            const secs = Math.round((Date.now() - started) / 1000);
+            // A workout running past 6 hours means the clock was left going
+            return secs > 0 && secs < 21600 ? secs : 0;
+        }
+
         // ============ SESSION LOG ============
         // The programme (stateWorkouts) says what to do; a session records what was
         // actually done, once, on a date. Sessions are append-only — editing the
@@ -3938,7 +4270,7 @@
                 : `לסיים ולשמור את האימון? (${done} תרגילים)`;
             if (!confirm(question)) return;
 
-            const session = makeSessionFromWorkout(active, getStopwatchElapsed());
+            const session = makeSessionFromWorkout(active, endSessionClock());
             if (!session) return;
 
             sessionLog.push(session);
@@ -4058,6 +4390,7 @@
             if (!confirm(`לנקות ${done} סימוני תרגילים? הנתונים עצמם לא ישתנו.`)) return;
 
             active.exercises.forEach(ex => { ex.completed = false; delete ex.completedOn; });
+            endSessionClock();
             triggerHaptic([10, 30, 10]);
 
             renderWeeklyWorkoutDashboard();
@@ -4460,9 +4793,6 @@
             return { clusterOf, exerciseMap };
         }
 
-        function getUniqueExercises() {
-            return computeExerciseClusters().exerciseMap;
-        }
 
         // ============ MUSCLE GROUP CATEGORIZATION ============
         const MUSCLE_GROUPS = {
@@ -4487,84 +4817,10 @@
         }
 
         // ============ MUSCLE GROUP BROWSER (hierarchical dropdown) ============
-        let currentGroupExerciseList = []; // [[root, display], ...] for the currently open group
 
-        function toggleMuscleGroupBrowser() {
-            const browser = document.getElementById('muscle-group-browser');
 
-            if (browser.style.display === 'none') {
-                renderMuscleGroupList();
-                browser.style.display = 'block';
-            } else {
-                browser.style.display = 'none';
-            }
-        }
 
-        function renderMuscleGroupList() {
-            const container = document.getElementById('muscle-group-list');
-            const exerciseMap = getUniqueExercises();
 
-            const groupCounts = {};
-            exerciseMap.forEach((display) => {
-                const g = categorizeExercise(display);
-                groupCounts[g] = (groupCounts[g] || 0) + 1;
-            });
-
-            const groupsToShow = Object.keys(MUSCLE_GROUPS).filter(k => groupCounts[k] > 0);
-
-            if (groupsToShow.length === 0) {
-                container.innerHTML = '<div style="padding:16px; text-align:center; color:var(--ink-soft); font-size:13px;">אין תרגילים עדיין</div>';
-                return;
-            }
-
-            container.innerHTML = groupsToShow.map(key => {
-                const g = MUSCLE_GROUPS[key];
-                return `
-                    <div onclick="browseMuscleGroup('${key}')" 
-                         style="padding:14px; border-bottom:1px solid rgba(0,0,0,0.04); cursor:pointer; display:flex; justify-content:space-between; align-items:center; font-size:14px; font-weight:700; transition: background 0.15s;"
-                         onmouseover="this.style.background='rgba(0,82,204,0.05)'" onmouseout="this.style.background='transparent'">
-                        <span>${g.emoji} ${g.label}</span>
-                        <span style="color:var(--ink-soft); font-weight:400; font-size:12px;">${groupCounts[key]} תרגילים ‹</span>
-                    </div>
-                `;
-            }).join('');
-        }
-
-        function browseMuscleGroup(groupKey) {
-            const container = document.getElementById('muscle-group-list');
-            const exerciseMap = getUniqueExercises();
-            const group = MUSCLE_GROUPS[groupKey];
-
-            currentGroupExerciseList = Array.from(exerciseMap.entries())
-                .filter(([root, display]) => categorizeExercise(display) === groupKey);
-
-            let html = `
-                <div onclick="renderMuscleGroupList()" style="padding:12px 14px; border-bottom:1px solid rgba(0,0,0,0.08); cursor:pointer; font-size:13px; color:var(--accent); font-weight:700;">
-                    › חזרה לקבוצות שריר
-                </div>
-                <div style="padding:10px 14px; font-size:12px; color:var(--ink-soft); font-weight:700;">${group.emoji} ${group.label}</div>
-            `;
-
-            if (currentGroupExerciseList.length === 0) {
-                html += '<div style="padding:16px; text-align:center; color:var(--ink-soft); font-size:13px;">אין תרגילים בקבוצה זו</div>';
-            } else {
-                html += currentGroupExerciseList.map(([root, display], i) => `
-                    <div onclick="selectMuscleGroupExercise(${i})" 
-                         style="padding:14px; border-bottom:1px solid rgba(0,0,0,0.04); cursor:pointer; font-size:14px; transition: background 0.15s;"
-                         onmouseover="this.style.background='rgba(0,82,204,0.05)'" onmouseout="this.style.background='transparent'">
-                        ${display}
-                    </div>
-                `).join('');
-            }
-
-            container.innerHTML = html;
-        }
-
-        function selectMuscleGroupExercise(index) {
-            const [root] = currentGroupExerciseList[index];
-            document.getElementById('muscle-group-browser').style.display = 'none';
-            openExerciseDetail(root);
-        }
 
         let analyticsSelectedIndex = -1;
 
@@ -4683,102 +4939,35 @@
             return rows;
         }
 
-        let overviewFilter = '';
 
-        function renderAnalyticsOverview() {
-            const zone = document.getElementById('analytics-overview');
-            const summary = document.getElementById('analytics-summary');
-            if (!zone) return;
 
-            const all = buildExerciseOverview();
-
-            if (all.length === 0) {
-                if (summary) summary.style.display = 'none';
-                zone.innerHTML = `<div class="empty-state">
-                    <div class="empty-state-icon">📈</div>
-                    <div class="empty-state-title">אין עדיין נתונים</div>
-                    <div class="empty-state-subtitle">אחרי אימון או שניים תופיע כאן תמונת ההתקדמות</div>
-                </div>`;
-                return;
-            }
-
-            // Counts describe the whole picture, not the filtered slice
-            if (summary) {
-                summary.style.display = 'grid';
-                const n = s => all.filter(r => r.state === s).length;
-                document.getElementById('sum-total').textContent = all.length;
-                document.getElementById('sum-rising').textContent = n('rising');
-                document.getElementById('sum-stalled').textContent = n('stalled');
-            }
-
-            const q = overviewFilter.trim().toLowerCase();
-            const rows = q ? all.filter(r => r.display.toLowerCase().includes(q)) : all;
-
-            if (rows.length === 0) {
-                zone.innerHTML = `<div class="empty-state">
-                    <div class="empty-state-subtitle">לא נמצא תרגיל בשם "${overviewFilter}"</div>
-                </div>`;
-                return;
-            }
-
-            const heads = {
-                stalled: { label: 'דורש תשומת לב', note: 'ללא שיפור' },
-                rising:  { label: 'בעלייה',        note: '' },
-                new:     { label: 'מעט נתונים',    note: 'צריך עוד אימונים' }
-            };
-
-            let html = '';
-            let current = null;
-            rows.forEach(r => {
-                if (r.state !== current) {
-                    current = r.state;
-                    html += `<div class="ov-head ${r.state}">${heads[r.state].label}</div>`;
-                }
-
-                const spark = sparklineFor(r.display);
-                const sign = r.delta > 0 ? '+' : '';
-                const detail = r.state === 'new'
-                    ? `${r.readings} מדידות`
-                    : r.delta !== 0
-                        ? `${r.readings} מדידות · ${sign}${r.delta} ק"ג`
-                        : `${r.readings} מדידות · ללא שינוי`;
-
-                html += `
-                    <button class="ov-row" onclick="openExerciseDetail('${r.root}')">
-                        <span class="ov-main">
-                            <span class="ov-name">${r.display}</span>
-                            <span class="ov-detail">${detail}</span>
-                        </span>
-                        ${spark}
-                        <span class="ov-value">${r.latest.weight}</span>
-                    </button>`;
-            });
-
-            zone.innerHTML = html;
-        }
-
-        function filterOverview(value) {
-            overviewFilter = value || '';
-            renderAnalyticsOverview();
+        // Rows carry a display name; the detail view needs the cluster key
+        function rootOf(display) {
+            const { clusterOf } = computeExerciseClusters();
+            return clusterOf[normalizeExerciseName((display || '').trim())] || '';
         }
 
         function openExerciseDetail(root) {
+            if (!root) return;
             triggerHaptic(8);
-            document.getElementById('analytics-browse').style.display = 'none';
+            document.getElementById('progress-main').style.display = 'none';
             document.getElementById('analytics-detail').style.display = 'block';
 
             const { exerciseMap } = computeExerciseClusters();
             document.getElementById('detail-title').textContent = exerciseMap.get(root) || root;
 
             runExerciseAnalytics(root);
-            document.querySelector('.content-area').scrollTop = 0;
+            const scroller = document.querySelector('.content-area');
+            if (scroller) scroller.scrollTop = 0;
         }
 
         function closeExerciseDetail() {
+            const detail = document.getElementById('analytics-detail');
+            const main = document.getElementById('progress-main');
+            if (!detail || !main) return;
             triggerHaptic(8);
-            document.getElementById('analytics-detail').style.display = 'none';
-            document.getElementById('analytics-browse').style.display = 'block';
-            renderAnalyticsOverview();
+            detail.style.display = 'none';
+            main.style.display = 'block';
         }
 
         function runExerciseAnalytics(normalizedName) {
