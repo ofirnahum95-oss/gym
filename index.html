@@ -5,9 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <!-- "default" keeps the status bar as its own strip with dark text, which is
+         legible over this light surface. "black-translucent" pushes the app under
+         the clock and forces white text — unreadable here, and the usual cause of
+         a pale band appearing around the notch. -->
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="FitPro">
-    <meta name="theme-color" content="#0052cc">
+    <!-- Matches the app surface, so the system chrome blends into it rather
+         than framing the page in another colour. Dark mode gets its own. -->
+    <meta name="theme-color" content="#eef0f3" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#0f1216" media="(prefers-color-scheme: dark)">
     <meta name="format-detection" content="telephone=no, date=no, address=no, email=no">
     <meta name="color-scheme" content="light dark">
     <title>FitPro - ניטור אימונים</title>
@@ -153,6 +160,10 @@
             overscroll-behavior: none;
             -webkit-user-select: none;
             user-select: none;
+            /* html sits beneath the safe-area insets. Leaving it unpainted is
+               what shows the browser's white default around the notch and the
+               home indicator. */
+            background: var(--surface-0);
         }
 
         body {
@@ -173,6 +184,8 @@
         .app-viewport {
             position: fixed;
             inset: 0;
+            /* Reach into the inset areas so the app's own surface fills them */
+            background: var(--surface-0);
             display: flex;
             flex-direction: column;
             overflow: hidden;
@@ -3678,38 +3691,62 @@
         // session, not the last three months. This works entirely from what was
         // actually logged — flat stretches show up as flat.
 
+        // One pass over every record, shared by all the reports. Each of them used
+        // to walk the whole history separately; on the Progress screen that meant
+        // scanning the same data four times over.
+        let readingsCache = null;
+
+        function allReadings() {
+            if (readingsCache) return readingsCache;
+
+            const { clusterOf, exerciseMap } = computeExerciseClusters();
+            const series = new Map();
+
+            const add = (name, iso, weight, reps, sets, performed) => {
+                const root = clusterOf[normalizeExerciseName((name || '').trim())];
+                if (!root) return;
+                const t = new Date(iso).getTime();
+                if (!Number.isFinite(t)) return;
+                if (!series.has(root)) series.set(root, new Map());
+                const day = dayKeyOf(iso);
+                const seen = series.get(root).get(day);
+                // A logged session outranks a prescription for the same day
+                if (!seen || performed) {
+                    series.get(root).set(day, { t, weight, reps, sets, performed });
+                }
+            };
+
+            stateWorkouts.forEach(w =>
+                w.exercises?.forEach(ex => add(ex.name, w.date, ex.weight, ex.reps, ex.sets, false)));
+            sessionLog.forEach(sn =>
+                sn.entries?.forEach(e => add(e.name, sn.date, e.weight, e.reps, e.sets, true)));
+
+            const out = new Map();
+            series.forEach((days, root) => {
+                out.set(root, {
+                    display: exerciseMap.get(root) || root,
+                    points: Array.from(days.values()).sort((a, b) => a.t - b.t)
+                });
+            });
+
+            readingsCache = out;
+            return out;
+        }
+
         // Weight gained on each lift within a window. Separate from the overview's
         // lifetime delta on purpose: "up 2 kg on bench" is about recent work, and
         // a gain from a year ago would drown that out.
         function buildWeightGains(withinDays) {
             const cutoff = Date.now() - withinDays * 86400000;
-            const { clusterOf, exerciseMap } = computeExerciseClusters();
-            const series = new Map();
-
-            const add = (name, iso, weight, performed) => {
-                const root = clusterOf[normalizeExerciseName((name || '').trim())];
-                if (!root) return;
-                const t = new Date(iso).getTime();
-                if (!Number.isFinite(t) || typeof weight !== 'number') return;
-                if (!series.has(root)) series.set(root, new Map());
-                const day = dayKeyOf(iso);
-                const seen = series.get(root).get(day);
-                if (!seen || performed) series.get(root).set(day, { t, weight, performed });
-            };
-
-            stateWorkouts.forEach(w => w.exercises?.forEach(ex => add(ex.name, w.date, ex.weight, false)));
-            sessionLog.forEach(s => s.entries?.forEach(e => add(e.name, s.date, e.weight, true)));
-
             const gains = [];
-            series.forEach((days, root) => {
-                const all = Array.from(days.values()).sort((a, b) => a.t - b.t);
-                const inWindow = all.filter(p => p.t >= cutoff);
+
+            allReadings().forEach(({ display, points }) => {
+                const inWindow = points.filter(p => p.t >= cutoff);
                 if (inWindow.length === 0) return;
 
                 // Compare against the last reading before the window where one
-                // exists, so a rise that began just before it still counts. With
-                // no earlier reading, two points inside the window are needed.
-                const before = all.filter(p => p.t < cutoff).pop();
+                // exists, so a rise that began just before it still counts.
+                const before = points.filter(p => p.t < cutoff).pop();
                 if (!before && inWindow.length < 2) return;
 
                 const start = before || inWindow[0];
@@ -3718,7 +3755,7 @@
                 if (gain <= 0) return;
 
                 gains.push({
-                    display: exerciseMap.get(root) || root,
+                    display,
                     from: start.weight,
                     to: end.weight,
                     gain: Math.round(gain * 100) / 100,
@@ -3751,32 +3788,19 @@
         // Best estimated max per lift, within a window, plus where it started
         function build1RMProgress(withinDays) {
             const cutoff = Date.now() - withinDays * 86400000;
-            const { clusterOf, exerciseMap } = computeExerciseClusters();
-            const series = new Map();
-
-            const add = (name, iso, weight, reps, performed) => {
-                const root = clusterOf[normalizeExerciseName((name || '').trim())];
-                if (!root) return;
-                const t = new Date(iso).getTime();
-                const e = estimate1RM(weight, reps);
-                if (!Number.isFinite(t) || !e) return;
-                if (!series.has(root)) series.set(root, new Map());
-                const day = dayKeyOf(iso);
-                const seen = series.get(root).get(day);
-                // Keep the best effort of the day; a logged session outranks a plan
-                if (!seen || performed || e > seen.e) series.get(root).set(day, { t, e, weight, reps, performed });
-            };
-
-            stateWorkouts.forEach(w => w.exercises?.forEach(ex => add(ex.name, w.date, ex.weight, ex.reps, false)));
-            sessionLog.forEach(s => s.entries?.forEach(en => add(en.name, s.date, en.weight, en.reps, true)));
-
             const rows = [];
-            series.forEach((days, root) => {
-                const all = Array.from(days.values()).sort((a, b) => a.t - b.t);
-                const inWindow = all.filter(p => p.t >= cutoff);
+
+            allReadings().forEach(({ display, points }) => {
+                // Only readings the formula can speak to
+                const scored = points
+                    .map(p => ({ ...p, e: estimate1RM(p.weight, p.reps) }))
+                    .filter(p => p.e > 0);
+                if (!scored.length) return;
+
+                const inWindow = scored.filter(p => p.t >= cutoff);
                 if (!inWindow.length) return;
 
-                const before = all.filter(p => p.t < cutoff).pop();
+                const before = scored.filter(p => p.t < cutoff).pop();
                 if (!before && inWindow.length < 2) return;
 
                 const start = before || inWindow[0];
@@ -3785,7 +3809,7 @@
                 const gain = latest.e - start.e;
 
                 rows.push({
-                    display: exerciseMap.get(root) || root,
+                    display,
                     from: round1RM(start.e),
                     to: round1RM(latest.e),
                     best: round1RM(best.e),
@@ -3804,7 +3828,7 @@
         // The one report here that changes a decision rather than just reporting:
         // it shows which parts of the body are moving and which are being left
         // behind, so you know what to raise with your trainer.
-        function buildGroupBalance(withinDays) {
+        function buildGroupBalance(withinDays, knownGains) {
             const cutoff = Date.now() - withinDays * 86400000;
             const { clusterOf, exerciseMap } = computeExerciseClusters();
 
@@ -3828,8 +3852,9 @@
                 });
             });
 
-            // Which of those lifts are actually going up
-            buildWeightGains(withinDays).forEach(gain => {
+            // Which of those lifts are going up. Accepts a precomputed list so the
+            // caller doesn't pay for the same pass twice.
+            (knownGains || buildWeightGains(withinDays)).forEach(gain => {
                 const g = groups[categorizeExercise(gain.display)];
                 if (g) g.gaining.add(gain.display);
             });
@@ -3928,7 +3953,7 @@
             const totalGain = gains.reduce((n, g) => n + g.gain, 0);
 
             const strength = build1RMProgress(60).filter(x => x.gain > 0);
-            const balance = buildGroupBalance(60);
+            const balance = buildGroupBalance(60, gains);
 
             return {
                 sessions: sorted.length, totalVolume, totalSets,
@@ -4106,7 +4131,11 @@
         // the underlying records actually change.
         let indexesStale = true;
 
-        function invalidateIndexes() { indexesStale = true; }
+        function invalidateIndexes() {
+            indexesStale = true;
+            clusterCache = null;
+            readingsCache = null;
+        }
 
         function ensureIndexes() {
             if (!indexesStale) return;
@@ -4748,7 +4777,22 @@
             return clusterOf;
         }
 
+        // The clustering walks every record and runs edit-distance across all
+        // distinct names. Nothing on the Progress screen changes those records,
+        // so recomputing it per report was pure waste — it is cached against the
+        // same invalidation flag the render indexes use.
+        let clusterCache = null;
+
         function computeExerciseClusters() {
+            // Independent of indexesStale on purpose: the Progress screen never
+            // renders the workout list, so tying the cache to that flag would
+            // leave it permanently cold there.
+            if (clusterCache) return clusterCache;
+            clusterCache = computeExerciseClustersUncached();
+            return clusterCache;
+        }
+
+        function computeExerciseClustersUncached() {
             // rawMap: strictly-normalized name -> { display, count }
             const rawMap = new Map();
 
@@ -4880,35 +4924,13 @@
         // a single pass so the page can answer them without any input.
 
         function buildExerciseOverview() {
-            const { clusterOf, exerciseMap } = computeExerciseClusters();
-            const series = new Map();   // root -> Map(dayKey -> {t, weight, reps, sets, performed})
-
-            const add = (name, iso, weight, reps, sets, performed) => {
-                const root = clusterOf[normalizeExerciseName((name || '').trim())];
-                if (!root) return;
-                const t = new Date(iso).getTime();
-                if (!Number.isFinite(t)) return;
-                if (!series.has(root)) series.set(root, new Map());
-                const day = dayKeyOf(iso);
-                const existing = series.get(root).get(day);
-                // A logged session outranks a prescription for the same day
-                if (!existing || performed) {
-                    series.get(root).set(day, { t, weight, reps, sets, performed });
-                }
-            };
-
-            stateWorkouts.forEach(w =>
-                w.exercises?.forEach(ex => add(ex.name, w.date, ex.weight, ex.reps, ex.sets, false)));
-            sessionLog.forEach(s =>
-                s.entries?.forEach(e => add(e.name, s.date, e.weight, e.reps, e.sets, true)));
-
             const rows = [];
-            series.forEach((days, root) => {
-                const pts = Array.from(days.values()).sort((a, b) => a.t - b.t);
-                if (!pts.length) return;
 
-                const latest = pts[pts.length - 1];
-                const first = pts[0];
+            allReadings().forEach(({ display, points }) => {
+                if (!points.length) return;
+
+                const latest = points[points.length - 1];
+                const first = points[0];
 
                 // Volume captures progress that weight alone misses — more reps at
                 // the same load is still progress.
@@ -4917,15 +4939,14 @@
                 const volDelta = vol(latest) - vol(first);
 
                 let state;
-                if (pts.length < 3) state = 'new';
+                if (points.length < 3) state = 'new';
                 else if (delta > 0 || volDelta > 0) state = 'rising';
                 else state = 'stalled';
 
                 rows.push({
-                    root,
-                    display: exerciseMap.get(root) || root,
-                    group: categorizeExercise(exerciseMap.get(root) || root),
-                    readings: pts.length,
+                    display,
+                    group: categorizeExercise(display),
+                    readings: points.length,
                     latest,
                     delta,
                     lastSeen: latest.t,
