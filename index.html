@@ -101,6 +101,14 @@
             --safe-top: env(safe-area-inset-top);
             --safe-bottom: env(safe-area-inset-bottom);
 
+            /* The floating rest timer overlays the page, so content has to
+               reserve room for it: 40px control + 16px padding + 2px border,
+               plus the gap it sits above the edge. Derived here once so the
+               reservation can't drift from the element's real size. */
+            --timer-h: 58px;
+            --timer-gap: var(--s3);
+            --timer-clearance: calc(var(--timer-h) + var(--timer-gap) + var(--s3));
+
             --mono: 'Roboto Mono', ui-monospace, monospace;
             --sans: 'Rubik', system-ui, -apple-system, 'Segoe UI', sans-serif;
 
@@ -210,6 +218,13 @@
             width: 100%;
             padding: 0 var(--s4);
             padding-bottom: calc(var(--s6) + max(var(--s1), var(--safe-bottom)));
+        }
+
+        /* The workout screen is the only one the timer floats over. A superset
+           slide is twice the height of a single exercise, so without this the
+           pill sits on top of the second lift. */
+        #view-workout {
+            padding-bottom: var(--timer-clearance);
         }
 
         /* ============ Launch splash ============ */
@@ -431,7 +446,7 @@
         .timer-card {
             position: fixed;
             inset-inline: 0;
-            bottom: calc(var(--s3) + max(var(--s1), var(--safe-bottom)));
+            bottom: calc(var(--timer-gap) + max(var(--s1), var(--safe-bottom)));
             z-index: 900;
             width: max-content;
             max-width: calc(100vw - var(--s6));
@@ -709,10 +724,58 @@
         .stage .last-time-arrow,
         .stage .spark { margin-inline-start: var(--s2); }
 
-        .stage .superset-wrapper { padding: var(--s3); }
-        .stage .superset-wrapper .workout-card { padding: var(--s3) var(--s2); }
+        /* A superset puts two exercises on one slide, so each has to earn its
+           height. The full-screen treatment above is for a single lift; here the
+           checkmark returns beside the title instead of claiming its own row. */
+        .stage .superset-wrapper { padding: var(--s2); }
+        .stage .superset-wrapper .workout-card { padding: var(--s2) var(--s3); }
+
+        .stage .superset-wrapper .exercise-header-row {
+            flex-direction: row;
+            align-items: center;
+            text-align: start;
+            gap: var(--s2);
+            margin-bottom: var(--s2);
+        }
+
+        .stage .superset-wrapper .workout-card h3 {
+            font-size: var(--t-md);
+            flex: 1;
+        }
+
+        .stage .superset-wrapper .complete-toggle {
+            width: 28px;
+            height: 28px;
+            min-width: 28px;
+            font-size: var(--t-md);
+        }
+
+        .stage .superset-wrapper .inline-stepper {
+            flex-direction: row;
+            flex-wrap: wrap;
+            padding: var(--s2);
+            gap: var(--s1);
+        }
+
+        .stage .superset-wrapper .stepper-label {
+            flex-basis: 100%;
+            font-size: var(--t-micro);
+        }
+
         .stage .superset-wrapper .step-value { font-size: var(--t-readout); }
-        .stage .superset-wrapper .exercise-header-row { margin-bottom: var(--s3); }
+        .stage .superset-wrapper .step-value small { font-size: var(--t-micro); }
+
+        .stage .superset-wrapper .last-time {
+            margin-top: var(--s2);
+            padding-top: var(--s2);
+        }
+
+        .stage .superset-wrapper .ctrl-btn {
+            width: 34px;
+            height: 34px;
+            min-width: 34px;
+            font-size: var(--t-lg);
+        }
 
         /* ============ Depth & motion ============
            Every animation below moves only transform and opacity. Those are
