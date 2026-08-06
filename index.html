@@ -1713,6 +1713,47 @@
 
         .pg-lift-gain small { font-size: var(--t-micro); opacity: 0.7; }
 
+        /* Lists of lifts are just rows — a box around each would put six framed
+           panels on one screen, all competing. Boxes are kept for the two
+           sections that actually contain graphics. */
+        .pg-list {
+            padding: var(--s4) 0 var(--s2);
+            border-bottom: 1px solid var(--rule-soft);
+            margin-bottom: var(--s2);
+        }
+
+        .pg-list:last-child { border-bottom: none; }
+        .pg-list .pg-note { margin-bottom: var(--s2); }
+
+        /* Long lists stay collapsed until asked for */
+        .pg-hidden { display: none; }
+        .pg-list.open .pg-hidden { display: block; }
+
+        .pg-more {
+            background: none;
+            border: none;
+            color: var(--accent);
+            font-family: inherit;
+            font-size: var(--t-xs);
+            font-weight: 600;
+            cursor: pointer;
+            padding: var(--s2) 0;
+            width: 100%;
+            text-align: start;
+            min-height: 44px;
+        }
+
+        /* The month-over-month figure now rides with the headline */
+        .pg-hero-mom {
+            display: inline-block;
+            margin-inline-start: var(--s2);
+            font-weight: 700;
+        }
+
+        .pg-hero-mom.up   { color: var(--done); }
+        .pg-hero-mom.down { color: var(--ink-soft); }
+        .pg-hero-mom.flat { color: var(--ink-faint); }
+
         /* --- Muscle group balance --- */
 
         .pg-group {
@@ -1778,37 +1819,6 @@
 
         /* No gain yet — state it plainly rather than showing a zero */
         .pg-hero-num.quiet { color: var(--ink); }
-
-        /* --- Month over month --- */
-
-        .pg-momentum {
-            text-align: center;
-            padding: var(--s4);
-            border-radius: var(--r-lg);
-            margin-bottom: var(--s2);
-            background: var(--surface-1);
-            border: 1px solid var(--rule);
-            box-shadow: var(--shadow-1), var(--lift);
-        }
-
-        .pg-momentum-num {
-            font-family: var(--mono);
-            font-size: var(--t-readout);
-            font-weight: 700;
-            letter-spacing: -0.03em;
-            font-variant-numeric: tabular-nums;
-            color: var(--ink);
-        }
-
-        .pg-momentum.up .pg-momentum-num   { color: var(--done); }
-        .pg-momentum.down .pg-momentum-num { color: var(--ink-soft); }
-        .pg-momentum.flat .pg-momentum-num { color: var(--ink-soft); }
-
-        .pg-momentum-txt {
-            font-size: var(--t-xs);
-            color: var(--ink-faint);
-            margin-top: var(--s1);
-        }
 
         /* ============ Session log ============ */
 
@@ -3977,33 +3987,31 @@
 
             const sorted = [...sessionLog].sort((a, b) => new Date(a.date) - new Date(b.date));
 
-            // --- Cumulative work, month by month ---
+            // Volume per month, kept only for the month-over-month figure that
+            // now sits in the headline — the standalone chart it once fed was
+            // removed because raw volume said little on its own.
             const byMonth = new Map();
             sorted.forEach(s => {
                 const k = monthKey(s.date);
-                if (!byMonth.has(k)) byMonth.set(k, { sessions: 0, volume: 0, exercises: 0 });
-                const m = byMonth.get(k);
-                m.sessions += 1;
-                m.volume += sessionVolume(s);
-                m.exercises += s.entries.length;
+                if (!byMonth.has(k)) byMonth.set(k, { volume: 0 });
+                byMonth.get(k).volume += sessionVolume(s);
             });
             const months = Array.from(byMonth.entries())
-                .map(([key, v]) => ({ key, label: monthLabel(key), ...v }))
-                .slice(-6);
+                .map(([key, v]) => ({ key, label: monthLabel(key), ...v }));
 
-            // --- Lifetime totals ---
-            const totalVolume = sorted.reduce((n, s) => n + sessionVolume(s), 0);
-            const totalSets = sorted.reduce((n, s) =>
-                n + s.entries.reduce((k, e) => k + (e.sets || 0), 0), 0);
+            let momentum = null;
+            if (months.length >= 2) {
+                const prev = months[months.length - 2];
+                const curr = months[months.length - 1];
+                if (prev.volume > 0) {
+                    momentum = {
+                        pct: Math.round(((curr.volume - prev.volume) / prev.volume) * 100),
+                        from: prev.label, to: curr.label
+                    };
+                }
+            }
 
-            // --- Which lifts have actually moved, and by how much ---
-            const overview = buildExerciseOverview();
-            const improved = overview
-                .filter(r => r.delta > 0)
-                .sort((a, b) => b.delta - a.delta);
-            const stalled = overview.filter(r => r.state === 'stalled');
-
-            // --- Consistency: sessions per week over the last eight ---
+            // Consistency: sessions per week over the last eight
             const weeks = [];
             const now = new Date();
             for (let w = 7; w >= 0; w--) {
@@ -4017,42 +4025,19 @@
                 });
             }
 
-            // --- Month-over-month, only once there is something to compare ---
-            let momentum = null;
-            if (months.length >= 2) {
-                const prev = months[months.length - 2];
-                const curr = months[months.length - 1];
-                if (prev.volume > 0) {
-                    momentum = {
-                        pct: Math.round(((curr.volume - prev.volume) / prev.volume) * 100),
-                        from: prev.label, to: curr.label
-                    };
-                }
-            }
-
-            const first = sorted[0];
-            const weeksTraining = Math.max(1,
-                Math.round((Date.now() - new Date(first.date).getTime()) / (7 * 86400000)));
-
-            // The headline: real weight added, over the last two months
             const gains = buildWeightGains(60);
             const totalGain = gains.reduce((n, g) => n + g.gain, 0);
-
             const strength = build1RMProgress(60).filter(x => x.gain > 0);
             const balance = buildGroupBalance(60, gains);
+            const stalled = buildExerciseOverview().filter(r => r.state === 'stalled');
 
             return {
-                sessions: sorted.length, totalVolume, totalSets,
-                months, improved, stalled, weeks, momentum, weeksTraining,
-                gains, totalGain, strength, balance
+                sessions: sorted.length,
+                weeks, momentum,
+                gains, totalGain, strength, balance, stalled
             };
         }
 
-        function compactNumber(n) {
-            if (n >= 1000000) return (n / 1000000).toFixed(1).replace(/\.0$/, '') + 'M';
-            if (n >= 1000) return Math.round(n / 1000) + 'k';
-            return String(Math.round(n));
-        }
 
         function renderProgress() {
             const zone = document.getElementById('progress-body');
@@ -4068,46 +4053,77 @@
                 return;
             }
 
+            // Order follows the question, not the order these were built:
+            // headline → the detail behind it → context → what to act on.
             let html = '';
 
-            // --- The headline you can actually feel: weight added to the bar ---
+            const liftRow = (name, from, to, badge) => `
+                <button class="pg-lift" onclick="openExerciseDetail(rootOf('${name.replace(/'/g, "\\'")}'))">
+                    <span class="pg-lift-name">${name}</span>
+                    <span class="pg-lift-move">
+                        <span class="pg-from">${from}</span>
+                        <span class="pg-arrow">←</span>
+                        <span class="pg-to">${to}</span>
+                        <span class="pg-lift-gain">${badge}</span>
+                    </span>
+                </button>`;
+
+            // --- 1. Headline, with the month-over-month figure folded in ---
+            const mom = r.momentum;
+            const momText = mom
+                ? `<span class="pg-hero-mom ${mom.pct > 0 ? 'up' : Math.abs(mom.pct) < 5 ? 'flat' : 'down'}">${mom.pct > 0 ? '+' : ''}${mom.pct}% נפח מ־${mom.from}</span>`
+                : '';
+
             if (r.gains.length) {
                 html += `
                     <div class="pg-hero">
                         <div class="pg-hero-num">+${r.totalGain % 1 ? r.totalGain.toFixed(1) : r.totalGain}</div>
                         <div class="pg-hero-unit">ק"ג נוספו למוט בחודשיים האחרונים</div>
-                        <div class="pg-hero-sub">ב-${r.gains.length} תרגילים · ${r.sessions} אימונים</div>
+                        <div class="pg-hero-sub">ב-${r.gains.length} תרגילים · ${r.sessions} אימונים ${momText}</div>
                     </div>`;
             } else {
                 html += `
                     <div class="pg-hero">
                         <div class="pg-hero-num quiet">${r.sessions}</div>
                         <div class="pg-hero-unit">אימונים נרשמו</div>
-                        <div class="pg-hero-sub">עוד לא נרשמה עליית משקל בחודשיים האחרונים</div>
+                        <div class="pg-hero-sub">עוד לא נרשמה עליית משקל בחודשיים ${momText}</div>
                     </div>`;
             }
 
-            // --- Strength normalised across rep ranges ---
-            if (r.strength.length) {
-                html += `<div class="pg-section">
-                    <div class="pg-label">כוח משוער · חודשיים אחרונים</div>
-                    <div class="pg-note" style="margin-bottom:var(--s3);">
-                        אומדן המשקל המרבי לחזרה אחת. מאפשר להשוות גם כשטווח החזרות משתנה.
-                    </div>
-                    ${r.strength.slice(0, 8).map(x => `
-                        <button class="pg-lift" onclick="openExerciseDetail(rootOf('${x.display.replace(/'/g, "\\'")}'))">
-                            <span class="pg-lift-name">${x.display}</span>
-                            <span class="pg-lift-move">
-                                <span class="pg-from">${x.from}</span>
-                                <span class="pg-arrow">←</span>
-                                <span class="pg-to">${x.to}</span>
-                                <span class="pg-lift-gain">+${x.pct}%</span>
-                            </span>
-                        </button>`).join('')}
+            // --- 2. The detail behind that number, immediately after it ---
+            if (r.gains.length) {
+                const show = r.gains.slice(0, 6);
+                const rest = r.gains.length - show.length;
+                html += `<div class="pg-list">
+                    <div class="pg-label">עלית במשקל</div>
+                    ${show.map(x => liftRow(x.display, x.from, x.to, '+' + x.gain)).join('')}
+                    ${rest > 0 ? `<button class="pg-more" onclick="this.closest('.pg-list').classList.add('open'); this.remove();">עוד ${rest} תרגילים</button>
+                    <div class="pg-hidden">${r.gains.slice(6).map(x => liftRow(x.display, x.from, x.to, '+' + x.gain)).join('')}</div>` : ''}
                 </div>`;
             }
 
-            // --- Where the body is and isn't moving ---
+            // --- 3. Strength, which reads the same rows through a different lens ---
+            if (r.strength.length) {
+                html += `<div class="pg-list">
+                    <div class="pg-label">כוח משוער</div>
+                    <div class="pg-note">אומדן המשקל המרבי לחזרה אחת — מאפשר להשוות גם כשטווח החזרות משתנה.</div>
+                    ${r.strength.slice(0, 6).map(x => liftRow(x.display, x.from, x.to, '+' + x.pct + '%')).join('')}
+                </div>`;
+            }
+
+            // --- 4. Context: showing up is the part that compounds ---
+            const maxW = Math.max(...r.weeks.map(w => w.count), 1);
+            const activeWeeks = r.weeks.filter(w => w.count > 0).length;
+            html += `<div class="pg-section">
+                <div class="pg-label">עקביות · 8 שבועות אחרונים</div>
+                <div class="pg-weeks">
+                    ${r.weeks.map(w => `<div class="pg-week ${w.count ? 'on' : ''}"
+                        style="--fill:${(w.count / maxW) * 100}%"><span>${w.count || ''}</span></div>`).join('')}
+                </div>
+                <div class="pg-note">התאמנת ב-${activeWeeks} מתוך 8 השבועות</div>
+            </div>`;
+
+            // --- 5. Balance: the part that changes what you do next ---
             if (r.balance.length) {
                 html += `<div class="pg-section">
                     <div class="pg-label">איזון לפי קבוצת שריר · חודשיים</div>
@@ -4127,67 +4143,9 @@
                 </div>`;
             }
 
-            // --- Volume kept, but secondary: it catches progress that weight
-            //     alone misses, like extra reps at the same load ---
-            if (r.months.length >= 2) {
-                const max = Math.max(...r.months.map(m => m.volume)) || 1;
-                html += `<div class="pg-section">
-                    <div class="pg-label">סך העבודה לפי חודש</div>
-                    <div class="pg-bars">
-                        ${r.months.map(m => `
-                            <div class="pg-bar-col">
-                                <div class="pg-bar-track">
-                                    <div class="pg-bar" style="height:${Math.max(3, (m.volume / max) * 100)}%"></div>
-                                </div>
-                                <div class="pg-bar-val">${compactNumber(m.volume)}</div>
-                                <div class="pg-bar-lab">${m.label}</div>
-                            </div>`).join('')}
-                    </div>
-                </div>`;
-            }
-
-            // --- Consistency. Showing up is the part that compounds. ---
-            const maxW = Math.max(...r.weeks.map(w => w.count), 1);
-            const activeWeeks = r.weeks.filter(w => w.count > 0).length;
-            html += `<div class="pg-section">
-                <div class="pg-label">עקביות · 8 שבועות אחרונים</div>
-                <div class="pg-weeks">
-                    ${r.weeks.map(w => `<div class="pg-week ${w.count ? 'on' : ''}"
-                        style="--fill:${(w.count / maxW) * 100}%"><span>${w.count || ''}</span></div>`).join('')}
-                </div>
-                <div class="pg-note">התאמנת ב-${activeWeeks} מתוך 8 השבועות</div>
-            </div>`;
-
-            // --- Where the weight actually went up, and by how much ---
-            if (r.gains.length) {
-                html += `<div class="pg-section">
-                    <div class="pg-label">עלית במשקל · חודשיים אחרונים</div>
-                    ${r.gains.map(x => `
-                        <button class="pg-lift" onclick="openExerciseDetail(rootOf('${x.display.replace(/'/g, "\\'")}'))">
-                            <span class="pg-lift-name">${x.display}</span>
-                            <span class="pg-lift-move">
-                                <span class="pg-from">${x.from}</span>
-                                <span class="pg-arrow">←</span>
-                                <span class="pg-to">${x.to}</span>
-                                <span class="pg-lift-gain">+${x.gain}</span>
-                            </span>
-                        </button>`).join('')}
-                </div>`;
-            }
-
-            // --- Month over month, stated plainly in either direction ---
-            if (r.momentum) {
-                const up = r.momentum.pct > 0;
-                const flat = Math.abs(r.momentum.pct) < 5;
-                html += `<div class="pg-momentum ${flat ? 'flat' : up ? 'up' : 'down'}">
-                    <div class="pg-momentum-num">${up ? '+' : ''}${r.momentum.pct}%</div>
-                    <div class="pg-momentum-txt">נפח ב־${r.momentum.to} לעומת ${r.momentum.from}</div>
-                </div>`;
-            }
-
-            // --- Honest counterweight. Named quietly, not as a scoreboard. ---
+            // --- 6. Honest counterweight, last and quiet ---
             if (r.stalled.length) {
-                html += `<div class="pg-section">
+                html += `<div class="pg-list">
                     <div class="pg-label">עוד לא זזו</div>
                     <div class="pg-note">${r.stalled.slice(0, 6).map(x => x.display).join(' · ')}</div>
                 </div>`;
@@ -4948,16 +4906,7 @@
 
         // ============ MUSCLE GROUP BROWSER (hierarchical dropdown) ============
 
-
-
-
-
         let analyticsSelectedIndex = -1;
-
-
-
-
-
 
         // Collects one data point per day for an exercise, merging two sources:
         // imported programmes (the best record of the past) and session logs
@@ -5045,8 +4994,6 @@
             rows.sort((a, b) => (order[a.state] - order[b.state]) || (b.lastSeen - a.lastSeen));
             return rows;
         }
-
-
 
         // Rows carry a display name; the detail view needs the cluster key
         function rootOf(display) {
