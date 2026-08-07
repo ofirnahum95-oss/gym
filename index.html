@@ -2,7 +2,11 @@
 <html dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
+    <!-- Pinch-zoom stays enabled. Installed to the home screen there is no
+         browser chrome to fall back on, so blocking it would leave anyone who
+         needs larger text with no way out. Accidental zoom is handled by
+         touch-action and 16px inputs, which don't remove the option. -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
     <!-- "default" keeps the status bar as its own strip with dark text, which is
@@ -33,13 +37,15 @@
 
         :root {
             /* ---- Type scale ---- */
-            --t-readout: 28px;   /* the number you came for */
-            --t-xl:      22px;   /* volume, metric values */
-            --t-lg:      19px;   /* view titles */
-            --t-md:      15px;   /* body, exercise names */
-            --t-sm:      13px;   /* secondary */
-            --t-xs:      11px;   /* meta, references */
-            --t-micro:    9px;   /* uppercase eyebrows */
+            /* In rem so the reader's OS text-size setting scales them. At the
+               default 16px root these resolve to 28/22/19/15/13/11/9px. */
+            --t-readout: 1.75rem;    /* the number you came for */
+            --t-xl:      1.375rem;   /* volume, metric values */
+            --t-lg:      1.1875rem;  /* view titles */
+            --t-md:      0.9375rem;  /* body, exercise names */
+            --t-sm:      0.8125rem;  /* secondary */
+            --t-xs:      0.6875rem;  /* meta, references */
+            --t-micro:   0.5625rem;  /* uppercase eyebrows */
 
             /* ---- Space scale (4px base) ---- */
             --s1:  4px;
@@ -708,7 +714,7 @@
 
         /* This is the number you came to read */
         .stage .step-value {
-            font-size: 44px;
+            font-size: clamp(2rem, 2.75rem, 3.25rem);   /* 32 – 44 – 52px */
             width: 100%;
         }
 
@@ -780,7 +786,7 @@
         }
 
         /* The number is still the reason the screen exists */
-        .stage .superset-wrapper .step-value { font-size: 36px; }
+        .stage .superset-wrapper .step-value { font-size: clamp(1.75rem, 2.25rem, 2.75rem); } /* 28 – 36 – 44px */
         .stage .superset-wrapper .step-value small { font-size: var(--t-xs); }
 
         .stage .superset-wrapper .last-time {
@@ -1164,7 +1170,7 @@
         .plan-delta {
             font-style: normal;
             font-family: var(--mono);
-            font-size: var(--t-micro);
+            font-size: var(--t-xs);
             font-weight: 600;
             color: var(--accent);
             opacity: 0.75;
@@ -1447,7 +1453,7 @@
         }
 
         .ov-detail {
-            font-size: var(--t-micro);
+            font-size: var(--t-xs);
             color: var(--ink-faint);
             font-family: var(--mono);
             font-variant-numeric: tabular-nums;
@@ -1491,7 +1497,7 @@
 
         .pg-hero-num {
             font-family: var(--mono);
-            font-size: 52px;
+            font-size: clamp(2.25rem, 3.25rem, 4rem);   /* 36 – 52 – 64px */
             font-weight: 700;
             letter-spacing: -0.04em;
             line-height: 1;
@@ -1581,7 +1587,7 @@
 
         .pg-bar-val {
             font-family: var(--mono);
-            font-size: var(--t-micro);
+            font-size: var(--t-xs);
             font-weight: 600;
             color: var(--ink);
             margin-top: var(--s1);
@@ -1738,7 +1744,7 @@
             display: flex;
             flex-wrap: wrap;
             gap: var(--s3);
-            font-size: var(--t-micro);
+            font-size: var(--t-xs);
             color: var(--ink-soft);
             font-family: var(--mono);
             font-variant-numeric: tabular-nums;
@@ -1764,7 +1770,8 @@
             display: flex;
             align-items: flex-end;
             gap: var(--s2);
-            height: 110px;
+            /* min-height, not height: the labels beneath grow with the OS setting */
+            min-height: 110px;
             margin-bottom: var(--s2);
         }
 
@@ -1936,7 +1943,7 @@
         }
 
         .pg-group-note {
-            font-size: var(--t-micro);
+            font-size: var(--t-xs);
             color: var(--ink-soft);
             font-family: var(--mono);
             font-variant-numeric: tabular-nums;
@@ -2028,6 +2035,26 @@
         /* Beat the prescription — on weight, reps or sets. Carries an arrow as
            well as colour so it doesn't depend on distinguishing green. */
         .session-fig.beat { color: var(--done); }
+
+        /* A session led by the trainer opens each block — worth telling apart
+           from the ones you did alone. */
+        .trainer-tag {
+            font-style: normal;
+            font-family: var(--mono);
+            font-size: var(--t-micro);
+            font-weight: 700;
+            letter-spacing: 0.06em;
+            color: var(--accent);
+            background: var(--accent-wash);
+            border-radius: var(--r-sm);
+            padding: 2px 6px;
+            margin-inline-start: var(--s2);
+            vertical-align: middle;
+        }
+
+        .session-card.with-trainer {
+            border-color: color-mix(in srgb, var(--accent) 30%, transparent);
+        }
 
         .session-fig b {
             font-weight: 700;
@@ -3416,6 +3443,45 @@
             return true;
         }
 
+        // Programmes imported before this behaviour existed have no session for
+        // the day the trainer ran them, so every block looks one workout short.
+        // Reconstruct them once, from the plan itself.
+        function backfillTrainerSessions() {
+            const added = [];
+
+            stateWorkouts.forEach(w => {
+                if (!w.id || !w.exercises || !w.exercises.length) return;
+
+                const exists = sessionLog.some(sn =>
+                    sn.workoutId === w.id && dayKeyOf(sn.date) === dayKeyOf(w.date));
+                if (exists) return;
+
+                added.push({
+                    id: 'sess-tr-' + new Date(w.date).getTime(),
+                    date: w.date,
+                    workoutId: w.id,
+                    durationSec: 0,
+                    withTrainer: true,
+                    backfilled: true,
+                    entries: w.exercises.map(ex => {
+                        const p = planOf(ex);
+                        return {
+                            name: ex.name,
+                            weight: p.weight, reps: p.reps, sets: p.sets,
+                            planWeight: p.weight, planReps: p.reps, planSets: p.sets
+                        };
+                    })
+                });
+            });
+
+            if (!added.length) return false;
+
+            sessionLog.push(...added);
+            invalidateIndexes();
+            console.log(`📗 Recorded ${added.length} trainer session(s) from imported programmes`);
+            return true;
+        }
+
         function toggleReviewSheet(show) {
             document.getElementById('review-sheet').classList.toggle('active', show);
             if (show) {
@@ -4666,9 +4732,9 @@
                     </div>`;
                 }).join('');
 
-                return `<div class="session-card">
+                return `<div class="session-card${s.withTrainer ? ' with-trainer' : ''}">
                     <div class="session-head">
-                        <span class="session-date">${formatSessionDate(s.date)}</span>
+                        <span class="session-date">${formatSessionDate(s.date)}${s.withTrainer ? ' <em class="trainer-tag">עם המאמן</em>' : ''}</span>
                         <span class="session-meta">${s.entries.length} תרגילים${dur ? ' · ' + dur : ''}</span>
                     </div>
                     <div class="session-volume">${vol.toLocaleString()} <small>ק"ג נפח</small></div>
@@ -4972,6 +5038,7 @@
 
         async function commitParsedWorkout() {
             const newId = 'wk-' + Date.now();
+            const now = new Date().toISOString();
 
             // Anything corrected in the review sheet IS the prescription, so the
             // plan snapshot is taken from the confirmed values.
@@ -4983,12 +5050,42 @@
 
             stateWorkouts.push({ 
                 id: newId, 
-                date: new Date().toISOString(), 
+                date: now, 
                 exercises: temporaryStagedWorkout 
             });
 
             // Pin it explicitly rather than inferring it from array order
             activeWorkoutId = newId;
+
+            // Importing a programme means the trainer just took you through it.
+            // That session happened, so it belongs in the journal and in every
+            // count derived from it — otherwise the first workout of each block
+            // is invisible and the weekly tally is short.
+            const alreadyToday = sessionLog.some(s =>
+                s.workoutId === newId || (s.withTrainer && dayKeyOf(s.date) === dayKeyOf(now)));
+
+            if (!alreadyToday && temporaryStagedWorkout.length) {
+                sessionLog.push({
+                    id: 'sess-' + Date.now(),
+                    date: now,
+                    workoutId: newId,
+                    durationSec: 0,
+                    withTrainer: true,
+                    entries: temporaryStagedWorkout.map(ex => ({
+                        name: ex.name,
+                        weight: ex.weight,
+                        reps: ex.reps,
+                        sets: ex.sets,
+                        // Performed exactly as prescribed — that is what the
+                        // session with the trainer establishes
+                        planWeight: ex.weight,
+                        planReps: ex.reps,
+                        planSets: ex.sets
+                    }))
+                });
+                invalidateIndexes();
+                syncToCloud('/sessions', sessionLog);
+            }
             
             const synced = await syncToCloud('/workouts', stateWorkouts);
             toggleReviewSheet(false);
@@ -5864,7 +5961,11 @@
 
             // Sessions must be loaded first so recovery can avoid duplicating
             // a workout that was already recorded properly.
-            if (recoverUnfinishedWorkout()) {
+            let changed = recoverUnfinishedWorkout();
+            // Runs after recovery so it can see any session that was just restored
+            if (backfillTrainerSessions()) changed = true;
+
+            if (changed) {
                 syncToCloud('/sessions', sessionLog);
                 syncToCloud('/workouts', stateWorkouts);
                 renderWeeklyWorkoutDashboard();
