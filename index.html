@@ -82,9 +82,9 @@
             --rule-soft: rgba(18, 22, 28, 0.06);
 
             /* ---- Signal ---- */
-            --accent: #0b5fff;
+            --accent: #12a150;
             --accent-ink: #ffffff;
-            --accent-wash: rgba(11, 95, 255, 0.08);
+            --accent-wash: rgba(18, 161, 80, 0.10);
             --done: #12a150;
             --alert: #e5484d;
             --superset: #6d5efc;
@@ -152,11 +152,6 @@
             /* In the dark the light comes from within the surface, not above */
             --lift: inset 0 1px 0 rgba(255, 255, 255, 0.06);
         }
-
-        :root[data-color="red"]    { --accent: #e5484d; --accent-wash: rgba(229, 72, 77, 0.10); }
-        :root[data-color="green"]  { --accent: #12a150; --accent-wash: rgba(18, 161, 80, 0.10); }
-        :root[data-color="purple"] { --accent: #8e4ec6; --accent-wash: rgba(142, 78, 198, 0.10); }
-        :root[data-color="orange"] { --accent: #e5761a; --accent-wash: rgba(229, 118, 26, 0.10); }
 
         /* ============ Reset & shell ============ */
 
@@ -540,6 +535,72 @@
         .timer-btn.timer-reset { opacity: 0.7; }
 
         /* ============ The rail ============ */
+
+        /* ============ Coach-update card ============
+           The app's whole reason to exist: it knows the coach's plan, so it can
+           tell you exactly what changed and hand you a ready message. Calm, not
+           shouty — a standing invitation, styled in accent, never alarm. */
+        .coach-card {
+            background: linear-gradient(145deg,
+                        color-mix(in srgb, var(--accent) 10%, var(--surface-1)),
+                        var(--surface-1));
+            border: 1px solid color-mix(in srgb, var(--accent) 32%, transparent);
+            border-radius: var(--r-lg);
+            padding: var(--s3) var(--s4);
+            margin-bottom: var(--s4);
+            box-shadow: var(--shadow-1), var(--lift);
+            animation: coach-card-in 0.4s var(--ease-out) both;
+        }
+
+        @keyframes coach-card-in {
+            from { opacity: 0; transform: translateY(-6px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        .coach-card-top {
+            display: flex;
+            align-items: center;
+            gap: var(--s3);
+            margin-bottom: var(--s3);
+        }
+
+        .coach-card-icon {
+            flex-shrink: 0;
+            width: 38px;
+            height: 38px;
+            display: grid;
+            place-items: center;
+            font-size: 1.15rem;
+            border-radius: var(--r-md);
+            background: var(--accent-wash);
+        }
+
+        .coach-card-copy { min-width: 0; }
+
+        .coach-card-title {
+            font-weight: 700;
+            font-size: var(--t-md);
+            color: var(--ink);
+            line-height: 1.2;
+        }
+
+        .coach-card-sub {
+            font-size: var(--t-xs);
+            color: var(--ink-soft);
+            margin-top: 2px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .coach-card-actions {
+            display: flex;
+            gap: var(--s2);
+        }
+
+        .coach-card-actions .btn { margin: 0; }
+        .coach-card-actions .coach-send { flex: 2; }
+        .coach-card-actions .coach-copy { flex: 1; }
 
         #weekly-workout-container {
             position: relative;
@@ -1038,7 +1099,17 @@
         }
 
         .step-value:active { background: var(--accent-wash); }
-        .is-editing .step-value { width: auto; cursor: pointer; }
+        /* In edit mode the number is a live target: tap to type a value straight
+           in (fast for a first entry), or use ± to nudge. The dashed underline
+           makes the typing affordance discoverable instead of hidden. */
+        .is-editing .step-value {
+            width: auto;
+            cursor: pointer;
+            box-shadow: inset 0 -2px 0 color-mix(in srgb, var(--accent) 38%, transparent);
+        }
+        .is-editing .step-value:active {
+            box-shadow: inset 0 -2px 0 var(--accent);
+        }
 
         /* Colour encodes ownership:
            accent = the number you change · ink = the plan your trainer set */
@@ -1350,6 +1421,45 @@
         @keyframes graph-draw {
             from { stroke-dashoffset: 100; }
             to   { stroke-dashoffset: 0; }
+        }
+
+        /* The prescribed weight, trailing behind the performed line as a ghost.
+           Dashed and faint so it reads as a reference, never competes. */
+        .graph-plan {
+            fill: none;
+            stroke: var(--ink-faint);
+            stroke-width: 1.75;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            stroke-dasharray: 4 5;
+            opacity: 0.75;
+            animation: graph-area-in 0.6s ease both;
+        }
+
+        .graph-legend {
+            display: flex;
+            justify-content: center;
+            gap: var(--s4);
+            margin-top: var(--s2);
+        }
+
+        .graph-legend span {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-family: var(--mono);
+            font-size: var(--t-micro);
+            color: var(--ink-faint);
+        }
+
+        .graph-legend i {
+            width: 16px;
+            height: 0;
+            border-top: 2px solid var(--accent);
+        }
+
+        .graph-legend i.plan {
+            border-top: 2px dashed var(--ink-faint);
         }
 
         .graph-area {
@@ -2619,6 +2729,9 @@
                         </div>
                     </div>
 
+                    <!-- The signature loop: what changed vs the coach's plan, one tap to send -->
+                    <div id="coach-update-card" class="coach-card" style="display:none;"></div>
+
                     <div class="workout-progress" id="workout-progress" style="display:none;">
                         <div class="workout-progress-bar"><span id="workout-progress-fill"></span></div>
                         <div class="workout-progress-text" id="workout-progress-text">0/0</div>
@@ -2722,25 +2835,7 @@
                         <button class="btn btn-secondary" onclick="toggleDarkMode()" style="margin-bottom: 10px;">🌙 מצב כהה</button>
                     </div>
 
-                    <div style="margin-bottom: 20px;">
-                        <label style="font-size: 13px; color: var(--ink-soft); display:block; margin-bottom:8px; font-weight: 700;">בחר צבע:</label>
-                        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;">
-                            <button class="btn btn-secondary" onclick="setColorScheme('blue')" aria-label="ערכת צבע כחולה" style="background: linear-gradient(135deg, #0052cc, #0040aa);">🔵</button>
-                            <button class="btn btn-secondary" onclick="setColorScheme('red')" aria-label="ערכת צבע אדומה" style="background: linear-gradient(135deg, #dc2626, #b91c1c);">🔴</button>
-                            <button class="btn btn-secondary" onclick="setColorScheme('green')" aria-label="ערכת צבע ירוקה" style="background: linear-gradient(135deg, #16a34a, #15803d);">🟢</button>
-                            <button class="btn btn-secondary" onclick="setColorScheme('purple')" aria-label="ערכת צבע סגולה" style="background: linear-gradient(135deg, #a855f7, #9333ea);">🟣</button>
-                        </div>
-                    </div>
-
                     <hr style="border: 0; border-top: 1px solid rgba(0,0,0,0.08); margin-bottom: 20px;">
-                    
-                    <div style="margin-bottom: 20px;">
-                        <label style="font-size: 13px; color: var(--ink-soft); display:block; margin-bottom:8px; font-weight: 700;">Claude API Key:</label>
-                        <input type="password" id="local-key-store" placeholder="אופציונלי...">
-                        <button class="btn btn-secondary" onclick="commitKey()">💾 שמור</button>
-                    </div>
-
-                    <hr style="border: 0; border-top: 1px solid var(--rule-soft); margin-bottom: 20px;">
 
                     <div style="margin-bottom: 20px;">
                         <h4 style="margin-bottom: 10px;">⏱️ סטופר</h4>
@@ -3789,6 +3884,7 @@
             if (!painted) renderWeeklyWorkoutDashboard();
 
             rebuildChangesSummaryReport();
+            renderCoachUpdateCard();
             queueSync('/workouts', () => stateWorkouts);
         }
 
@@ -4217,21 +4313,37 @@
                 // The step has to be recent to be worth reporting
                 if (end.t < cutoff) return;
 
-                const gain = end.weight - prev.weight;
-                if (gain <= 0) return;
+                const wGain = end.weight - prev.weight;
+                const rGain = (end.reps || 0) - (prev.reps || 0);
 
-                gains.push({
-                    display,
-                    from: prev.weight,
-                    to: end.weight,
-                    gain: Math.round(gain * 100) / 100,
-                    lastSeen: end.t,
-                    // Kept for the headline, which sums the recent steps
-                    since: prev.t
-                });
+                // A heavier top set is the headline kind of progress. But adding
+                // reps at the same weight is progress too — it used to be invisible
+                // here, so surface it as its own row and give rep gains their credit.
+                if (wGain > 0) {
+                    const kg = Math.round(wGain * 100) / 100;
+                    gains.push({
+                        type: 'weight', display,
+                        from: prev.weight, to: end.weight,
+                        fromLabel: `${prev.weight}`, toLabel: `${end.weight}`,
+                        badge: `+${kg}`,
+                        gain: kg, lastSeen: end.t, since: prev.t
+                    });
+                } else if (wGain === 0 && rGain > 0) {
+                    gains.push({
+                        type: 'reps', display,
+                        from: prev.reps, to: end.reps,
+                        fromLabel: `${prev.reps}`, toLabel: `${end.reps}`,
+                        badge: `+${rGain}<small> חז׳</small>`,
+                        gain: rGain, lastSeen: end.t, since: prev.t
+                    });
+                }
             });
 
-            gains.sort((a, b) => b.gain - a.gain);
+            // Weight gains lead (the kg story); rep gains follow, each by magnitude
+            gains.sort((a, b) => {
+                if (a.type !== b.type) return a.type === 'weight' ? -1 : 1;
+                return b.gain - a.gain;
+            });
             return gains;
         }
 
@@ -4341,7 +4453,10 @@
             }
 
             const gains = buildWeightGains(windowDays);
-            const totalGain = gains.reduce((n, g) => n + g.gain, 0);
+            // The kg headline counts only weight gains — rep-only rows still show
+            // in the list below, but they don't add kilos to the total.
+            const weightGains = gains.filter(g => g.type === 'weight');
+            const totalGain = weightGains.reduce((n, g) => n + g.gain, 0);
             const balance = buildGroupBalance(windowDays, gains);
             const stalled = buildExerciseOverview().filter(r => r.state === 'stalled');
             const adherence = buildAdherence(windowDays);
@@ -4350,7 +4465,7 @@
             return {
                 sessions: sorted.length,
                 weeks, momentum, windowDays,
-                gains, totalGain, balance, stalled,
+                gains, totalGain, weightGainCount: weightGains.length, balance, stalled,
                 adherence, blocks
             };
         }
@@ -4521,12 +4636,12 @@
                 ? `<span class="pg-hero-mom ${momDir}">${momCaret} ${mom.pct > 0 ? '+' : ''}${mom.pct}% נפח מ־${mom.from}</span>`
                 : '';
 
-            if (r.gains.length) {
+            if (r.weightGainCount) {
                 html += `
                     <div class="pg-hero">
                         <div class="pg-hero-num">+${r.totalGain % 1 ? r.totalGain.toFixed(1) : r.totalGain}</div>
                         <div class="pg-hero-unit">ק"ג נוספו בעלייה האחרונה</div>
-                        <div class="pg-hero-sub">ב-${r.gains.length} תרגילים · ${r.sessions} אימונים ${momText}</div>
+                        <div class="pg-hero-sub">ב-${r.weightGainCount} תרגילים · ${r.sessions} אימונים ${momText}</div>
                     </div>`;
             } else {
                 html += `
@@ -4543,9 +4658,9 @@
                 const rest = r.gains.length - show.length;
                 html += `<div class="pg-list">
                     <div class="pg-label">עלית לעומת הפעם הקודמת</div>
-                    ${show.map(x => liftRow(x.display, x.from, x.to, '+' + x.gain)).join('')}
+                    ${show.map(x => liftRow(x.display, x.fromLabel, x.toLabel, x.badge)).join('')}
                     ${rest > 0 ? `<button class="pg-more" onclick="this.closest('.pg-list').classList.add('open'); this.remove();">עוד ${rest} תרגילים</button>
-                    <div class="pg-hidden">${r.gains.slice(6).map(x => liftRow(x.display, x.from, x.to, '+' + x.gain)).join('')}</div>` : ''}
+                    <div class="pg-hidden">${r.gains.slice(6).map(x => liftRow(x.display, x.fromLabel, x.toLabel, x.badge)).join('')}</div>` : ''}
                 </div>`;
             }
 
@@ -4690,6 +4805,7 @@
                     <div class="empty-state-subtitle">הדבק את התוכנית מהמאמן בלשונית הוספה</div>
                 </div>`;
                 renderWorkoutProgress();
+                renderCoachUpdateCard();
                 return;
             }
 
@@ -4720,6 +4836,7 @@
             if (modeBtn) modeBtn.textContent = stage ? '☰ הכל' : '▣ אחד';
 
             renderWorkoutProgress();
+            renderCoachUpdateCard();
         }
 
         // Session progress — pairs with the rail down the left of the list
@@ -5468,7 +5585,8 @@
                     if (!matches(ex.name)) return;
                     const k = dayKeyOf(w.date);
                     if (!byDay.has(k)) {
-                        byDay.set(k, { timestamp: t, weight: ex.weight, reps: ex.reps, sets: ex.sets, performed: false });
+                        byDay.set(k, { timestamp: t, weight: ex.weight, reps: ex.reps, sets: ex.sets,
+                            planWeight: (ex.plan?.weight ?? ex.weight), performed: false });
                     }
                 });
             });
@@ -5479,7 +5597,9 @@
                 s.entries?.forEach(e => {
                     if (!matches(e.name)) return;
                     byDay.set(dayKeyOf(s.date), {
-                        timestamp: t, weight: e.weight, reps: e.reps, sets: e.sets, performed: true
+                        timestamp: t, weight: e.weight, reps: e.reps, sets: e.sets,
+                        // What the coach prescribed for that session, when recorded
+                        planWeight: (e.planWeight ?? null), performed: true
                     });
                 });
             });
@@ -5586,6 +5706,7 @@
                 const d = new Date(r.timestamp);
                 dataPoints.push({
                     weight: r.weight,
+                    planWeight: r.planWeight,
                     label: d.toLocaleDateString('he-IL', { day: 'numeric', month: 'short' }),
                     timestamp: r.timestamp
                 });
@@ -5627,13 +5748,21 @@
             const padBottom = 26;   // room for the date axis
 
             const weights = points.map(p => p.weight);
+            // The plan (prescribed) weights ride behind the performed line as a
+            // ghost, so the whole thesis of the app is one glance: where you
+            // followed the programme and where you diverged. Fold them into the
+            // domain so the ghost can't fall outside the plot.
+            const planVals = points.map(p => Number(p.planWeight)).filter(v => Number.isFinite(v) && v > 0);
+            const domain = weights.concat(planVals);
             const maxV = Math.max(...weights);
             const minV = Math.min(...weights);
-            const range = (maxV - minV) || maxV * 0.1 || 1;
+            const dMax = Math.max(...domain);
+            const dMin = Math.min(...domain);
+            const range = (dMax - dMin) || dMax * 0.1 || 1;
             // Headroom above the peak; a floor a little under the trough so small
             // week-to-week moves are actually visible instead of hugging the base.
-            const top = maxV + range * 0.25;
-            const bottom = Math.max(0, minV - range * 0.35);
+            const top = dMax + range * 0.25;
+            const bottom = Math.max(0, dMin - range * 0.35);
             const span = (top - bottom) || 1;
 
             const plotW = W - padX * 2;
@@ -5650,6 +5779,19 @@
             const areaPath = `M ${coords[0][0].toFixed(1)},${baseY.toFixed(1)} `
                            + 'L ' + coords.map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(' L ')
                            + ` L ${coords[lastIdx][0].toFixed(1)},${baseY.toFixed(1)} Z`;
+
+            // The plan ghost: connect points that carry a prescribed weight, and
+            // break the line across any gap rather than inventing a value.
+            let planPath = '', open = false, hasPlan = false;
+            points.forEach((p, i) => {
+                const pw = Number(p.planWeight);
+                if (Number.isFinite(pw) && pw > 0) {
+                    planPath += (open ? ' L ' : ' M ') + `${xAt(i).toFixed(1)},${yAt(pw).toFixed(1)}`;
+                    open = true; hasPlan = true;
+                } else {
+                    open = false;
+                }
+            });
 
             // Reference lines: floor, midpoint, peak — each with its weight on the axis
             let grid = '';
@@ -5686,6 +5828,10 @@
                 labels += `<text class="graph-val peak" x="${xAt(maxIdx).toFixed(1)}" y="${(yAt(maxV) - 12).toFixed(1)}" text-anchor="middle">${maxV}</text>`;
             }
 
+            const legend = hasPlan
+                ? `<div class="graph-legend"><span><i></i>ביצוע</span><span><i class="plan"></i>תוכנית</span></div>`
+                : '';
+
             container.innerHTML =
                 `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" style="display:block; direction:ltr; max-width:100%;">
                     <defs>
@@ -5696,11 +5842,12 @@
                     </defs>
                     ${grid}
                     <path class="graph-area" d="${areaPath}" fill="url(#pgAreaGrad)" />
+                    ${hasPlan ? `<path class="graph-plan" d="${planPath.trim()}" pathLength="100" />` : ''}
                     <path class="graph-line" d="${linePath}" pathLength="100" />
                     ${dots}
                     ${labels}
                     ${ticks}
-                </svg>`;
+                </svg>${legend}`;
         }
 
         function rebuildChangesSummaryReport() {
@@ -5740,6 +5887,41 @@
                 box.innerHTML = `<div style="background: var(--accent-wash); border-radius: var(--r-md); padding: 14px; font-size: 13px; line-height: 1.8; white-space: pre-wrap; word-wrap: break-word; -webkit-user-select: text; user-select: text;">${esc(txt).replace(/\n/g, '<br>')}</div>`;
             }
             return txt;
+        }
+
+        // The coach-update card on the workout screen — the same report that lives
+        // in settings, surfaced where the loop actually closes. It reuses the exact
+        // build/share functions, so on-screen preview and message never drift.
+        function renderCoachUpdateCard() {
+            const card = document.getElementById('coach-update-card');
+            if (!card) return;
+
+            const active = getActiveWorkout();
+            const changed = (active?.exercises || []).filter(deviatesFromPlan);
+
+            if (!changed.length) {
+                card.style.display = 'none';
+                card.innerHTML = '';
+                return;
+            }
+
+            const preview = changed.slice(0, 3).map(e => esc(e.name)).join(' · ');
+            const more = changed.length > 3 ? ` +${changed.length - 3}` : '';
+            const title = changed.length === 1 ? 'עדכון אחד מוכן למאמן' : `${changed.length} עדכונים מוכנים למאמן`;
+
+            card.style.display = 'block';
+            card.innerHTML = `
+                <div class="coach-card-top">
+                    <div class="coach-card-icon">💬</div>
+                    <div class="coach-card-copy">
+                        <div class="coach-card-title">${title}</div>
+                        <div class="coach-card-sub">${preview}${more}</div>
+                    </div>
+                </div>
+                <div class="coach-card-actions">
+                    <button class="btn btn-success coach-send" onclick="triggerWhatsAppShare()">שלח ב-WhatsApp</button>
+                    <button class="btn btn-secondary coach-copy" onclick="triggerClipboardCopy()">העתק</button>
+                </div>`;
         }
 
         function toggleReportingButtons(active) {
@@ -5940,15 +6122,6 @@
             setTimeout(() => t.remove(), 2400);
         }
 
-        function commitKey() {
-            const val = document.getElementById('local-key-store').value;
-            if (val) { 
-                localStorage.setItem('claude-key', val); 
-                displayNativeToast('💾 מפתח נשמר');
-                setTimeout(() => switchTab('view-workout', document.querySelectorAll('.nav-tab')[0]), 500);
-            }
-        }
-
         function exportDataAsJSON() {
             try {
                 const dataStr = JSON.stringify(stateWorkouts, null, 2);
@@ -5996,14 +6169,6 @@
             displayNativeToast(isDark ? '🌙 מצב כהה הופעל' : '☀️ מצב בהיר הופעל');
         }
 
-        function setColorScheme(color) {
-            triggerHaptic(10);
-            document.documentElement.setAttribute('data-color', color);
-            localStorage.setItem('fitpro-color', color);
-            displayNativeToast(`🎨 צבע שונה ל-${color}`);
-        }
-
-
         function animateWeightUpdate(element, oldValue, newValue) {
             if (element) {
                 element.classList.add('updating');
@@ -6019,12 +6184,6 @@
             // Load dark mode preference
             if (localStorage.getItem('fitpro-darkMode') === 'true') {
                 document.body.classList.add('dark-mode');
-            }
-
-            // Load color scheme preference
-            const savedColor = localStorage.getItem('fitpro-color');
-            if (savedColor) {
-                document.documentElement.setAttribute('data-color', savedColor);
             }
         }
 
@@ -6221,9 +6380,6 @@
                     setAuthMessage('חסר מפתח API — עדכן את FIREBASE_API_KEY בקוד');
                 }
             }
-            
-            const localK = localStorage.getItem('claude-key');
-            if (localK) document.getElementById('local-key-store').value = localK;
             
             // Resume a rest timer that was running before the app was closed
             restoreStopwatch();
