@@ -4036,25 +4036,29 @@
             const gains = [];
 
             allReadings().forEach(({ display, points }) => {
-                const inWindow = points.filter(p => p.t >= cutoff);
-                if (inWindow.length === 0) return;
+                // Compare the latest session with the one immediately before it,
+                // not with where the window happens to begin. "Up 2.5 kg" should
+                // mean the step you just took, not a total accumulated over two
+                // months — that number stops being actionable.
+                if (points.length < 2) return;
 
-                // Compare against the last reading before the window where one
-                // exists, so a rise that began just before it still counts.
-                const before = points.filter(p => p.t < cutoff).pop();
-                if (!before && inWindow.length < 2) return;
+                const end = points[points.length - 1];
+                const prev = points[points.length - 2];
 
-                const start = before || inWindow[0];
-                const end = inWindow[inWindow.length - 1];
-                const gain = end.weight - start.weight;
+                // The step has to be recent to be worth reporting
+                if (end.t < cutoff) return;
+
+                const gain = end.weight - prev.weight;
                 if (gain <= 0) return;
 
                 gains.push({
                     display,
-                    from: start.weight,
+                    from: prev.weight,
                     to: end.weight,
                     gain: Math.round(gain * 100) / 100,
-                    lastSeen: end.t
+                    lastSeen: end.t,
+                    // Kept for the headline, which sums the recent steps
+                    since: prev.t
                 });
             });
 
@@ -4346,7 +4350,7 @@
                 html += `
                     <div class="pg-hero">
                         <div class="pg-hero-num">+${r.totalGain % 1 ? r.totalGain.toFixed(1) : r.totalGain}</div>
-                        <div class="pg-hero-unit">ק"ג נוספו למוט</div>
+                        <div class="pg-hero-unit">ק"ג נוספו בעלייה האחרונה</div>
                         <div class="pg-hero-sub">ב-${r.gains.length} תרגילים · ${r.sessions} אימונים ${momText}</div>
                     </div>`;
             } else {
@@ -4363,7 +4367,7 @@
                 const show = r.gains.slice(0, 6);
                 const rest = r.gains.length - show.length;
                 html += `<div class="pg-list">
-                    <div class="pg-label">עלית במשקל</div>
+                    <div class="pg-label">עלית לעומת הפעם הקודמת</div>
                     ${show.map(x => liftRow(x.display, x.from, x.to, '+' + x.gain)).join('')}
                     ${rest > 0 ? `<button class="pg-more" onclick="this.closest('.pg-list').classList.add('open'); this.remove();">עוד ${rest} תרגילים</button>
                     <div class="pg-hidden">${r.gains.slice(6).map(x => liftRow(x.display, x.from, x.to, '+' + x.gain)).join('')}</div>` : ''}
