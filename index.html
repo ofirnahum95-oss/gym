@@ -3958,11 +3958,12 @@
                 if (!root) return;
                 const t = new Date(iso).getTime();
                 if (!Number.isFinite(t)) return;
-                const v = workVolume(weight, reps, sets);
-                if (!v) return;
+                // Keep any real reading — a bodyweight set (weight 0) still counts
+                // if it has reps, since more reps is progress on its own.
+                if (!(weight > 0 || reps > 0 || sets > 0)) return;
                 if (!series.has(root)) series.set(root, new Map());
                 // One reading per day; a logged session overwrites a plan the same day
-                series.get(root).set(dayKeyOf(iso), { t, v });
+                series.get(root).set(dayKeyOf(iso), { t, weight, reps, sets });
             };
 
             stateWorkouts.forEach(w => w.exercises?.forEach(ex => add(ex.name, w.date, ex.weight, ex.reps, ex.sets)));
@@ -3971,10 +3972,29 @@
             sessionTrendIndex = new Map();
             series.forEach((days, root) => {
                 const pts = Array.from(days.entries())
-                    .map(([dayKey, o]) => ({ dayKey, t: o.t, v: o.v }))
+                    .map(([dayKey, o]) => ({ dayKey, t: o.t, weight: o.weight, reps: o.reps, sets: o.sets }))
                     .sort((a, b) => a.t - b.t);
                 sessionTrendIndex.set(root, pts);
             });
+        }
+
+        // What counts as progress: ANY increase is an improvement — heavier, more
+        // reps, or more sets — even when another metric drops. Lifting more weight
+        // for fewer reps is up, not down. Only when nothing rose and something fell
+        // is it a decline. Metrics missing on either side are ignored, not treated
+        // as zero, so a blank field can't fake a trend.
+        function effortTrend(cur, prev) {
+            const cmp = (a, b) => {
+                a = Number(a); b = Number(b);
+                if (!Number.isFinite(a) || !Number.isFinite(b)) return 0;
+                return a > b ? 1 : a < b ? -1 : 0;
+            };
+            const w = cmp(cur.weight, prev.weight);
+            const r = cmp(cur.reps, prev.reps);
+            const s = cmp(cur.sets, prev.sets);
+            if (w > 0 || r > 0 || s > 0) return 'up';
+            if (w < 0 || r < 0 || s < 0) return 'down';
+            return 'same';
         }
 
         // Direction for one exercise in one session, vs the previous day it was done.
@@ -3987,9 +4007,7 @@
             const dk = dayKeyOf(sessionISO);
             const idx = pts.findIndex(p => p.dayKey === dk);
             if (idx <= 0) return null;   // first ever reading, or not found
-            const cur = pts[idx].v, prev = pts[idx - 1].v;
-            if (!cur || !prev) return null;
-            return cur > prev ? 'up' : cur < prev ? 'down' : 'same';
+            return effortTrend(entry, pts[idx - 1]);
         }
 
         function sparklineFor(exerciseName) {
@@ -4946,15 +4964,10 @@
         }
 
         // Compares today's effort with the previous session on the same lift.
-        // Falls back to load when either record has no rep/set data.
+        // Any increase — weight, reps or sets — reads as up, even if another
+        // metric drops (heavier for fewer reps still counts as progress).
         function trendAgainst(ex, prev) {
-            const now = workVolume(ex.weight, ex.reps, ex.sets);
-            const then = workVolume(prev.weight, prev.reps, prev.sets);
-            if (now && then) {
-                return now > then ? 'up' : now < then ? 'down' : 'same';
-            }
-            return ex.weight > prev.weight ? 'up'
-                 : ex.weight < prev.weight ? 'down' : 'same';
+            return effortTrend(ex, prev);
         }
 
         function generateInlineExerciseRow(ex, index) {
