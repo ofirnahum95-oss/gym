@@ -4360,7 +4360,9 @@
         // Every logged entry carries what the trainer prescribed alongside what
         // was actually done. No commercial tracker can compute this — they have
         // no plan to compare against. It answers "am I doing the programme, or
-        // drifting from it?"
+        // drifting from it?" Classification uses the same rule as the trend
+        // arrows: exceeding the plan on ANY axis — weight, reps or sets — counts
+        // as meeting it, even when another axis falls short.
         function buildAdherence(withinDays) {
             const cutoff = Date.now() - withinDays * 86400000;
             let above = 0, on = 0, below = 0, unknown = 0;
@@ -4371,15 +4373,17 @@
                 s.entries?.forEach(e => {
                     if (e.planWeight == null || e.planReps == null) { unknown++; return; }
 
-                    const did = workVolume(e.weight, e.reps, e.sets);
-                    const asked = workVolume(e.planWeight, e.planReps, e.planSets || e.sets);
-                    if (!asked) { unknown++; return; }
+                    const plan = { weight: e.planWeight, reps: e.planReps, sets: e.planSets ?? e.sets };
+                    const dir = effortTrend(e, plan);
 
-                    const ratio = did / asked;
-                    if (ratio > 1.02) above++;
-                    else if (ratio >= 0.98) on++;
-                    else {
+                    if (dir === 'up') above++;          // beat the plan on some axis
+                    else if (dir === 'same') on++;      // matched it exactly
+                    else {                              // fell short with nothing to offset
                         below++;
+                        // Rank the shortfall by how far the volume fell — worst first.
+                        // A 'down' verdict means no axis rose, so volume is always < asked.
+                        const asked = workVolume(plan.weight, plan.reps, plan.sets);
+                        const ratio = asked ? workVolume(e.weight, e.reps, e.sets) / asked : 1;
                         const cur = shortfalls.get(e.name) || { name: e.name, times: 0, worst: 1 };
                         cur.times++;
                         cur.worst = Math.min(cur.worst, ratio);
