@@ -5082,6 +5082,11 @@
                 return;
             }
 
+            // Rebuild from the current log every render. A session added or synced
+            // after the indexes were last built would otherwise be missing from the
+            // trend index and show no marker at all — this keeps the newest session
+            // honest without waiting for a reload.
+            invalidateIndexes();
             ensureIndexes();
 
             // Newest first — the most recent session is what you want to see
@@ -6446,6 +6451,11 @@
             const loggedSessions = await syncFromCloud('/sessions');
             sessionLog = Array.isArray(loggedSessions) ? loggedSessions
                        : loggedSessions ? Object.values(loggedSessions) : [];
+
+            // The indexes above were built moments ago against an empty log. Now
+            // that the real sessions are in, mark them stale so the next render
+            // rebuilds — otherwise the newest sessions carry no trend.
+            invalidateIndexes();
 
             // Sessions must be loaded first so recovery can avoid duplicating
             // a workout that was already recorded properly.
