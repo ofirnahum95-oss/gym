@@ -2300,6 +2300,8 @@
            well as colour so it doesn't depend on distinguishing red from green. */
         .session-fig.up   { color: var(--done); }
         .session-fig.down { color: var(--alert); }
+        /* Held steady vs last time — a quiet '=' that doesn't tint the figure */
+        .session-fig .flat { color: var(--ink-faint); font-weight: 600; }
 
         /* A session led by the trainer opens each block — worth telling apart
            from the ones you did alone. */
@@ -5089,15 +5091,18 @@
                 const vol = Math.round(sessionVolume(s));
                 const dur = formatDuration(s.durationSec);
                 const rows = s.entries.map(e => {
-                    // Compare this exercise to the previous time it was done, so the
-                    // arrow works for trainer-led sessions too — not just ones where
-                    // you beat the prescription (which a trainer session never does).
+                    // Compare this exercise to the previous time it was done. When
+                    // you repeat the prescribed load unchanged the trend is 'same' —
+                    // show it as a neutral '=' rather than nothing, so a session
+                    // where you held steady still reads as tracked, not skipped.
                     const dir = trendForSessionEntry(e, s.date);
-                    const arrow = dir === 'up' ? ' <b>↑</b>' : dir === 'down' ? ' <b>↓</b>' : '';
+                    const mark = dir === 'up' ? ' <b>↑</b>'
+                               : dir === 'down' ? ' <b>↓</b>'
+                               : dir === 'same' ? ' <b class="flat">=</b>' : '';
                     const cls = dir === 'up' ? ' up' : dir === 'down' ? ' down' : '';
                     return `<div class="session-row">
                         <span class="session-ex">${esc(e.name)}</span>
-                        <span class="session-fig${cls}">${e.reps}×${e.sets} · ${e.weight}${arrow}</span>
+                        <span class="session-fig${cls}">${e.reps}×${e.sets} · ${e.weight}${mark}</span>
                     </div>`;
                 }).join('');
 
