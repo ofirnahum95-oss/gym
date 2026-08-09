@@ -536,71 +536,127 @@
 
         /* ============ The rail ============ */
 
-        /* ============ Coach-update card ============
-           The app's whole reason to exist: it knows the coach's plan, so it can
-           tell you exactly what changed and hand you a ready message. Calm, not
-           shouty — a standing invitation, styled in accent, never alarm. */
-        .coach-card {
-            background: linear-gradient(145deg,
-                        color-mix(in srgb, var(--accent) 10%, var(--surface-1)),
-                        var(--surface-1));
-            border: 1px solid color-mix(in srgb, var(--accent) 32%, transparent);
-            border-radius: var(--r-lg);
-            padding: var(--s3) var(--s4);
-            margin-bottom: var(--s4);
-            box-shadow: var(--shadow-1), var(--lift);
-            animation: coach-card-in 0.4s var(--ease-out) both;
+        /* ============ Coach-update FAB ============
+           The app's signature loop — what changed vs the coach's plan — kept out
+           of the way as a floating button that only opens on tap. It sits in the
+           corner so it never crowds the centred rest timer, and disappears
+           entirely when there's nothing to send. */
+        .coach-fab {
+            position: fixed;
+            inset-inline-end: var(--s4);
+            bottom: calc(var(--timer-gap) + max(var(--s1), var(--safe-bottom)));
+            z-index: 901;
+            transition: opacity 0.25s ease, transform 0.25s var(--ease-pop), visibility 0.25s;
         }
 
-        @keyframes coach-card-in {
-            from { opacity: 0; transform: translateY(-6px); }
-            to   { opacity: 1; transform: translateY(0); }
+        .coach-fab.hidden {
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(var(--s4)) scale(0.96);
+            pointer-events: none;
         }
 
-        .coach-card-top {
-            display: flex;
-            align-items: center;
-            gap: var(--s3);
-            margin-bottom: var(--s3);
-        }
-
-        .coach-card-icon {
-            flex-shrink: 0;
-            width: 38px;
-            height: 38px;
+        .coach-fab-btn {
+            position: relative;
+            width: 52px;
+            height: 52px;
+            border-radius: 50%;
+            border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
+            background: var(--accent);
+            color: var(--accent-ink);
+            font-size: 1.3rem;
             display: grid;
             place-items: center;
-            font-size: 1.15rem;
-            border-radius: var(--r-md);
-            background: var(--accent-wash);
+            box-shadow: var(--shadow-3), 0 0 0 3px var(--accent-wash);
+            cursor: pointer;
+            transition: transform 0.18s var(--ease-pop);
         }
 
-        .coach-card-copy { min-width: 0; }
+        .coach-fab-btn:active { transform: scale(0.92); }
 
-        .coach-card-title {
+        /* Count of exercises that differ from the plan, waiting to be sent */
+        .coach-fab-badge {
+            position: absolute;
+            top: -3px;
+            inset-inline-end: -3px;
+            min-width: 20px;
+            height: 20px;
+            padding: 0 5px;
+            border-radius: var(--r-pill);
+            background: var(--alert);
+            color: #fff;
+            font-family: var(--mono);
+            font-size: var(--t-micro);
+            font-weight: 700;
+            display: grid;
+            place-items: center;
+            border: 2px solid var(--surface-0);
+        }
+
+        /* The panel that unfolds above the button */
+        .coach-fab-panel {
+            position: absolute;
+            inset-inline-end: 0;
+            bottom: calc(100% + var(--s2));
+            width: min(300px, calc(100vw - var(--s6)));
+            background: var(--surface-1);
+            border: 1px solid var(--rule);
+            border-radius: var(--r-lg);
+            padding: var(--s4);
+            box-shadow: var(--shadow-3), var(--lift);
+            transform-origin: bottom center;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(6px) scale(0.96);
+            transition: opacity 0.2s ease, transform 0.2s var(--ease-pop), visibility 0.2s;
+        }
+
+        .coach-fab.open .coach-fab-panel {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0) scale(1);
+        }
+
+        /* When open, the button reads as "close" and drops its ring */
+        .coach-fab.open .coach-fab-btn {
+            background: var(--surface-2);
+            color: var(--ink);
+            box-shadow: var(--shadow-2);
+        }
+        .coach-fab.open .coach-fab-badge { display: none; }
+
+        .coach-fab-title {
             font-weight: 700;
             font-size: var(--t-md);
             color: var(--ink);
-            line-height: 1.2;
+            line-height: 1.25;
         }
 
-        .coach-card-sub {
+        .coach-fab-sub {
             font-size: var(--t-xs);
             color: var(--ink-soft);
-            margin-top: 2px;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
+            margin-top: 4px;
+            line-height: 1.4;
         }
 
-        .coach-card-actions {
+        .coach-fab-actions {
             display: flex;
             gap: var(--s2);
+            margin-top: var(--s3);
         }
 
-        .coach-card-actions .btn { margin: 0; }
-        .coach-card-actions .coach-send { flex: 2; }
-        .coach-card-actions .coach-copy { flex: 1; }
+        .coach-fab-actions .btn { margin: 0; }
+        .coach-fab-actions .coach-send { flex: 2; }
+        .coach-fab-actions .coach-copy { flex: 1; }
+
+        /* Invisible catcher so a tap anywhere else closes the panel */
+        .coach-fab-scrim {
+            position: fixed;
+            inset: 0;
+            z-index: -1;
+            display: none;
+        }
+        .coach-fab.open .coach-fab-scrim { display: block; }
 
         #weekly-workout-container {
             position: relative;
@@ -2729,8 +2785,6 @@
                         </div>
                     </div>
 
-                    <!-- The signature loop: what changed vs the coach's plan, one tap to send -->
-                    <div id="coach-update-card" class="coach-card" style="display:none;"></div>
 
                     <div class="workout-progress" id="workout-progress" style="display:none;">
                         <div class="workout-progress-bar"><span id="workout-progress-fill"></span></div>
@@ -2904,6 +2958,16 @@
             <div class="timer-display" id="stopwatch-clock">00:00</div>
             <button class="timer-btn timer-reset" onclick="resetStopwatch()" aria-label="אפס מנוחה">🔄</button>
         </div>
+    </div>
+
+    <!-- COACH-UPDATE FAB — the signature loop, tucked into a button that only
+         opens on tap so it never sits in the way -->
+    <div class="coach-fab hidden" id="coach-fab">
+        <div class="coach-fab-scrim" onclick="closeCoachFab()"></div>
+        <div class="coach-fab-panel" id="coach-fab-panel"></div>
+        <button class="coach-fab-btn" onclick="toggleCoachFab()" aria-label="עדכון למאמן">
+            💬<span class="coach-fab-badge" id="coach-fab-badge"></span>
+        </button>
     </div>
 
     <!-- NAVIGATION DRAWER -->
@@ -3314,6 +3378,7 @@
 
             // The rest timer belongs to the workout, not to analytics or settings
             syncTimerVisibility(tabId);
+            syncCoachFab(tabId);
 
             // Jump back to the top so the new view starts at its title
             const scroller = document.querySelector('.content-area');
@@ -4967,6 +5032,10 @@
 
             triggerHaptic([15, 30, 15, 30, 15]);
 
+            // Finishing the workout clears the rest clock — a fresh session should
+            // never open with the previous one's timer still on the bench.
+            resetStopwatch();
+
             invalidateIndexes();
             stageIndex = 0;
             renderWeeklyWorkoutDashboard();
@@ -5889,39 +5958,63 @@
             return txt;
         }
 
-        // The coach-update card on the workout screen — the same report that lives
-        // in settings, surfaced where the loop actually closes. It reuses the exact
-        // build/share functions, so on-screen preview and message never drift.
+        // The coach-update FAB — the same report that lives in settings, reachable
+        // from the workout screen but folded into a floating button that only opens
+        // on tap. Reuses the exact build/share functions, so preview and message
+        // never drift.
+        let coachChangeCount = 0;
+
         function renderCoachUpdateCard() {
-            const card = document.getElementById('coach-update-card');
-            if (!card) return;
+            const fab = document.getElementById('coach-fab');
+            const panel = document.getElementById('coach-fab-panel');
+            const badge = document.getElementById('coach-fab-badge');
+            if (!fab || !panel) return;
 
             const active = getActiveWorkout();
             const changed = (active?.exercises || []).filter(deviatesFromPlan);
+            coachChangeCount = changed.length;
 
             if (!changed.length) {
-                card.style.display = 'none';
-                card.innerHTML = '';
-                return;
+                panel.innerHTML = '';
+                if (badge) badge.textContent = '';
+                fab.classList.remove('open');
+            } else {
+                const preview = changed.slice(0, 3).map(e => esc(e.name)).join(' · ');
+                const more = changed.length > 3 ? ` +${changed.length - 3}` : '';
+                const title = changed.length === 1 ? 'עדכון אחד מוכן למאמן' : `${changed.length} עדכונים מוכנים למאמן`;
+                if (badge) badge.textContent = changed.length;
+                panel.innerHTML = `
+                    <div class="coach-fab-title">${title}</div>
+                    <div class="coach-fab-sub">${preview}${more}</div>
+                    <div class="coach-fab-actions">
+                        <button class="btn btn-success coach-send" onclick="triggerWhatsAppShare(); closeCoachFab();">שלח ב-WhatsApp</button>
+                        <button class="btn btn-secondary coach-copy" onclick="triggerClipboardCopy(); closeCoachFab();">העתק</button>
+                    </div>`;
             }
 
-            const preview = changed.slice(0, 3).map(e => esc(e.name)).join(' · ');
-            const more = changed.length > 3 ? ` +${changed.length - 3}` : '';
-            const title = changed.length === 1 ? 'עדכון אחד מוכן למאמן' : `${changed.length} עדכונים מוכנים למאמן`;
+            syncCoachFab();
+        }
 
-            card.style.display = 'block';
-            card.innerHTML = `
-                <div class="coach-card-top">
-                    <div class="coach-card-icon">💬</div>
-                    <div class="coach-card-copy">
-                        <div class="coach-card-title">${title}</div>
-                        <div class="coach-card-sub">${preview}${more}</div>
-                    </div>
-                </div>
-                <div class="coach-card-actions">
-                    <button class="btn btn-success coach-send" onclick="triggerWhatsAppShare()">שלח ב-WhatsApp</button>
-                    <button class="btn btn-secondary coach-copy" onclick="triggerClipboardCopy()">העתק</button>
-                </div>`;
+        // Show the button only on the workout screen, and only when something is
+        // actually waiting to be sent.
+        function syncCoachFab(tabId) {
+            const fab = document.getElementById('coach-fab');
+            if (!fab) return;
+            const onWorkout = (tabId
+                ? tabId === 'view-workout'
+                : document.getElementById('view-workout')?.classList.contains('active'));
+            const show = onWorkout && coachChangeCount > 0;
+            fab.classList.toggle('hidden', !show);
+            if (!show) fab.classList.remove('open');
+        }
+
+        function toggleCoachFab() {
+            triggerHaptic(8);
+            document.getElementById('coach-fab')?.classList.toggle('open');
+        }
+
+        function closeCoachFab() {
+            document.getElementById('coach-fab')?.classList.remove('open');
         }
 
         function toggleReportingButtons(active) {
