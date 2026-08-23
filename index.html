@@ -1710,515 +1710,138 @@
             margin-bottom: var(--s2);
         }
 
-        /* ============ Progress ============
-           Built to be readable, not motivating. Flat months look flat; stalled
-           lifts are named. A screen that only ever shows growth stops being
-           information and becomes pressure. */
+        /* ============ Progress — redesigned decision dashboard ============
+           The Progress tab answers four questions in this order:
+           1) Am I getting stronger?
+           2) Is the current programme actually progressing?
+           3) Is my training volume balanced across muscle groups?
+           4) What should I pay attention to next?
+        */
 
-        .pg-hero {
-            text-align: center;
-            padding: var(--s5) var(--s4) var(--s4);
-        }
+        .progress-dashboard { padding-bottom: var(--s5); }
 
-        .pg-hero-num {
-            font-family: var(--mono);
-            /* Was clamp(2.25rem, 3.25rem, 4rem) — three fixed rems make the middle
-               value win always, so it never actually scaled. A vw preferred value
-               lets it breathe between phone and tablet. */
-            font-size: clamp(2.75rem, 11vw, 4.25rem);
-            font-weight: 700;
-            letter-spacing: -0.04em;
-            line-height: 1;
-            color: var(--accent);   /* fallback if background-clip is unsupported */
-            font-variant-numeric: tabular-nums;
-            background: linear-gradient(180deg,
-                        var(--accent),
-                        color-mix(in srgb, var(--accent) 70%, #000 30%));
-            -webkit-background-clip: text;
-            background-clip: text;
-            -webkit-text-fill-color: transparent;
+        .pg-window {
+            display:flex; gap:4px; background:var(--surface-sunk);
+            border-radius:var(--r-pill); padding:3px; margin:var(--s3) 0 var(--s4);
         }
+        .pg-window-opt {
+            flex:1; background:none; border:0; border-radius:var(--r-pill);
+            font-family:inherit; font-size:var(--t-xs); font-weight:700;
+            color:var(--ink-soft); cursor:pointer; padding:9px 0; min-height:38px;
+        }
+        .pg-window-opt.on { background:var(--surface-1); color:var(--ink); box-shadow:var(--shadow-1); }
 
-        .pg-hero-unit {
-            font-size: var(--t-sm);
-            color: var(--ink-soft);
-            margin-top: var(--s2);
+        .pg-overview {
+            background:var(--ink); color:#fff; border-radius:var(--r-xl);
+            padding:20px; margin-bottom:var(--s3); box-shadow:var(--shadow-2);
         }
-
-        .pg-hero-sub {
-            font-family: var(--mono);
-            font-size: var(--t-xs);
-            color: var(--ink-faint);
-            margin-top: var(--s1);
-            font-variant-numeric: tabular-nums;
+        .pg-overview-eyebrow {
+            font-size:var(--t-micro); font-weight:700; letter-spacing:.08em;
+            color:rgba(255,255,255,.62); text-transform:uppercase; margin-bottom:8px;
         }
+        .pg-overview-title { font-size:var(--t-lg); font-weight:700; line-height:1.25; margin-bottom:16px; }
+        .pg-overview-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+        .pg-kpi { background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.08);
+            border-radius:12px; padding:11px 9px; min-width:0; }
+        .pg-kpi-label { font-size:10px; color:rgba(255,255,255,.62); margin-bottom:5px; }
+        .pg-kpi-value { font-family:var(--mono); font-size:20px; font-weight:700; font-variant-numeric:tabular-nums; }
+        .pg-kpi-value.up { color:#5ee58a; }
+        .pg-kpi-value.down { color:#ff8a8f; }
+        .pg-kpi-value.flat { color:#fff; }
+        .pg-kpi-sub { font-size:10px; color:rgba(255,255,255,.52); margin-top:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 
         .pg-section {
-            background: var(--surface-1);
-            border: 1px solid var(--rule);
-            border-radius: var(--r-lg);
-            padding: var(--s3) var(--s4) var(--s4);
-            margin-bottom: var(--s2);
-            box-shadow: var(--shadow-1), var(--lift);
+            background:var(--surface-1); border:1px solid var(--rule);
+            border-radius:var(--r-lg); padding:16px; margin-bottom:var(--s3);
+            box-shadow:var(--shadow-1),var(--lift);
         }
+        .pg-section-head { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:14px; }
+        .pg-section-title { font-size:var(--t-md); font-weight:700; color:var(--ink); }
+        .pg-section-sub { font-size:var(--t-xs); color:var(--ink-soft); line-height:1.45; margin-top:3px; }
+        .pg-section-stat { font-family:var(--mono); font-size:var(--t-sm); font-weight:700; white-space:nowrap; color:var(--accent); }
 
-        .pg-label {
-            font-size: var(--t-micro);
-            font-weight: 700;
-            letter-spacing: 0.08em;
-            text-transform: uppercase;
-            color: var(--ink-faint);
-            margin-bottom: var(--s3);
+        /* Trend chart */
+        .pg-trend-chart { position:relative; height:178px; margin:4px 0 8px; }
+        .pg-grid-line { position:absolute; inset-inline:0; height:1px; background:var(--rule-soft); }
+        .pg-grid-line.g1 { top:18%; } .pg-grid-line.g2 { top:50%; } .pg-grid-line.g3 { top:82%; }
+        .pg-chart-svg { position:absolute; inset:0; width:100%; height:100%; overflow:visible; }
+        .pg-chart-area { fill:var(--accent-wash); }
+        .pg-chart-line { fill:none; stroke:var(--accent); stroke-width:3; stroke-linecap:round; stroke-linejoin:round; }
+        .pg-chart-point { fill:var(--surface-1); stroke:var(--accent); stroke-width:2.5; }
+        .pg-chart-labels { display:flex; justify-content:space-between; gap:5px; font-family:var(--mono); font-size:9px; color:var(--ink-faint); }
+        .pg-chart-empty { height:178px; display:flex; align-items:center; justify-content:center; color:var(--ink-faint); font-size:var(--t-xs); }
+
+        /* Programme progression */
+        .pg-program-compare { display:flex; flex-direction:column; gap:10px; }
+        .pg-program-card { border:1px solid var(--rule-soft); border-radius:12px; padding:12px; background:var(--surface-0); }
+        .pg-program-head { display:flex; justify-content:space-between; gap:8px; align-items:center; margin-bottom:9px; }
+        .pg-program-name { font-weight:700; font-size:var(--t-sm); }
+        .pg-program-date { color:var(--ink-faint); font-size:10px; }
+        .pg-program-metrics { display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px; }
+        .pg-program-metric { background:var(--surface-1); border-radius:9px; padding:8px; }
+        .pg-program-metric label { display:block; font-size:9px; color:var(--ink-faint); margin-bottom:3px; }
+        .pg-program-metric strong { font-family:var(--mono); font-size:13px; font-variant-numeric:tabular-nums; }
+        .pg-program-delta { margin-top:8px; font-size:var(--t-xs); font-weight:700; }
+        .pg-program-delta.up { color:var(--done); }
+        .pg-program-delta.down { color:var(--alert); }
+        .pg-program-delta.flat { color:var(--ink-soft); }
+
+        .pg-carry { display:flex; align-items:center; gap:8px; margin-top:12px; padding:10px 12px;
+            border-radius:10px; background:var(--accent-wash); font-size:var(--t-xs); color:var(--ink-soft); }
+        .pg-carry strong { color:var(--ink); }
+
+        /* Muscle balance */
+        .pg-balance-list { display:flex; flex-direction:column; gap:12px; }
+        .pg-group { display:grid; grid-template-columns:78px 1fr 52px; align-items:center; gap:9px; }
+        .pg-group-name { font-size:var(--t-xs); font-weight:700; color:var(--ink); }
+        .pg-group-bars { position:relative; height:10px; background:var(--surface-sunk); border-radius:99px; overflow:hidden; }
+        .pg-group-fill { height:100%; border-radius:99px; background:var(--accent); transition:width .4s var(--ease-out); }
+        .pg-group-fill.low { background:var(--ink-faint); }
+        .pg-group-meta { font-family:var(--mono); font-size:10px; text-align:end; color:var(--ink-soft); }
+        .pg-group-change { grid-column:2 / 4; font-size:10px; color:var(--ink-faint); margin-top:-7px; }
+        .pg-group-change.up { color:var(--done); }
+        .pg-group-change.down { color:var(--alert); }
+        .pg-balance-insight { margin-top:14px; padding:11px 12px; border-radius:10px; background:var(--surface-sunk);
+            font-size:var(--t-xs); line-height:1.5; color:var(--ink-soft); }
+        .pg-balance-insight strong { color:var(--ink); }
+
+        /* Plan adherence */
+        .pg-adherence-score { display:flex; align-items:center; gap:14px; }
+        .pg-score-ring { width:70px; height:70px; border-radius:50%; display:grid; place-items:center; flex:none;
+            background:conic-gradient(var(--accent) var(--score), var(--surface-sunk) 0); position:relative; }
+        .pg-score-ring::after { content:''; position:absolute; inset:7px; border-radius:50%; background:var(--surface-1); }
+        .pg-score-ring span { position:relative; z-index:1; font-family:var(--mono); font-size:16px; font-weight:700; }
+        .pg-adherence-copy { flex:1; min-width:0; }
+        .pg-adherence-main { font-weight:700; font-size:var(--t-sm); }
+        .pg-adherence-sub { font-size:var(--t-xs); color:var(--ink-soft); margin-top:3px; line-height:1.45; }
+        .pg-adherence-bar { display:flex; height:9px; border-radius:99px; overflow:hidden; margin-top:13px; background:var(--surface-sunk); }
+        .pg-adherence-bar span { display:block; }
+        .pg-adherence-legend { display:flex; gap:14px; flex-wrap:wrap; margin-top:8px; font-size:10px; color:var(--ink-soft); }
+        .pg-adherence-legend i { display:inline-block; width:7px; height:7px; border-radius:50%; margin-inline-end:4px; }
+        .pg-adherence-legend .a { background:var(--done); } .pg-adherence-legend .b { background:var(--accent); } .pg-adherence-legend .c { background:var(--alert); }
+
+        /* Exercise movers */
+        .pg-lifts { display:flex; flex-direction:column; }
+        .pg-lift { display:grid; grid-template-columns:1fr auto; gap:10px; align-items:center; width:100%;
+            background:none; border:0; border-bottom:1px solid var(--rule-soft); padding:11px 0; text-align:start;
+            font-family:inherit; cursor:pointer; }
+        .pg-lift:last-child { border-bottom:0; }
+        .pg-lift-name { font-size:var(--t-sm); font-weight:600; color:var(--ink); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+        .pg-lift-detail { font-family:var(--mono); font-size:10px; color:var(--ink-faint); margin-top:2px; }
+        .pg-lift-move { display:flex; align-items:center; gap:5px; font-family:var(--mono); font-size:var(--t-xs); white-space:nowrap; }
+        .pg-from { color:var(--ink-faint); } .pg-arrow { color:var(--ink-faint); } .pg-to { color:var(--ink); font-weight:700; }
+        .pg-lift-gain { color:var(--done); font-weight:700; background:color-mix(in srgb,var(--done) 12%,transparent); padding:3px 7px; border-radius:99px; }
+
+        .pg-note { font-size:var(--t-xs); color:var(--ink-soft); line-height:1.5; }
+        .pg-empty-mini { padding:14px 0; color:var(--ink-faint); font-size:var(--t-xs); text-align:center; }
+        .pg-more { width:100%; min-height:40px; background:none; border:0; color:var(--accent); font-family:inherit; font-weight:700; cursor:pointer; }
+        .pg-hidden { display:none; } .pg-list.open .pg-hidden { display:block; }
+
+        @media (max-width:380px) {
+            .pg-overview-grid { grid-template-columns:1fr 1fr 1fr; gap:5px; }
+            .pg-kpi-value { font-size:17px; }
+            .pg-group { grid-template-columns:70px 1fr 46px; gap:6px; }
         }
-
-        .pg-note {
-            font-size: var(--t-xs);
-            color: var(--ink-soft);
-            line-height: 1.5;
-        }
-
-        /* --- Monthly volume --- */
-
-        .pg-bars {
-            display: flex;
-            align-items: flex-end;
-            gap: var(--s2);
-            height: 120px;
-        }
-
-        .pg-bar-col {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            height: 100%;
-            min-width: 0;
-        }
-
-        .pg-bar-track {
-            flex: 1;
-            width: 100%;
-            display: flex;
-            align-items: flex-end;
-        }
-
-        .pg-bar {
-            width: 100%;
-            background-color: var(--accent);
-            background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0));
-            border-radius: var(--r-sm) var(--r-sm) 2px 2px;
-            opacity: 0.85;
-            transform-origin: bottom;
-            animation: bar-rise 0.5s var(--ease-out) both;
-        }
-
-        /* Scales from the base — transform only, so no repaint */
-        @keyframes bar-rise {
-            from { transform: scaleY(0); opacity: 0; }
-            to   { transform: scaleY(1); opacity: 0.85; }
-        }
-
-        .pg-bar-col:last-child .pg-bar { opacity: 1; }
-
-        .pg-bar-val {
-            font-family: var(--mono);
-            font-size: var(--t-xs);
-            font-weight: 600;
-            color: var(--ink);
-            margin-top: var(--s1);
-            font-variant-numeric: tabular-nums;
-        }
-
-        .pg-bar-lab {
-            font-size: var(--t-micro);
-            color: var(--ink-faint);
-            margin-top: 1px;
-            white-space: nowrap;
-        }
-
-        /* --- Consistency --- */
-
-        .pg-weeks {
-            display: flex;
-            gap: var(--s1);
-            margin-bottom: var(--s2);
-        }
-
-        .pg-week {
-            flex: 1;
-            height: 40px;
-            border-radius: var(--r-sm);
-            background: var(--surface-sunk);
-            position: relative;
-            overflow: hidden;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .pg-week::before {
-            content: '';
-            position: absolute;
-            inset-inline: 0;
-            bottom: 0;
-            height: var(--fill, 0%);
-            background-color: var(--done);
-            background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.24), rgba(255, 255, 255, 0));
-            opacity: 0.92;
-        }
-
-        .pg-week span {
-            position: relative;
-            font-family: var(--mono);
-            font-size: var(--t-xs);
-            font-weight: 700;
-            color: #fff;
-        }
-
-        .pg-week:not(.on) span { color: var(--ink-faint); }
-
-        /* --- Lifts that moved --- */
-
-        .pg-lift {
-            display: flex;
-            justify-content: space-between;
-            align-items: baseline;
-            gap: var(--s3);
-            padding: var(--s2) 0;
-            border-bottom: 1px solid var(--rule-soft);
-            font-size: var(--t-sm);
-            width: 100%;
-            background: none;
-            border-inline: none;
-            border-top: none;
-            font-family: inherit;
-            text-align: start;
-            cursor: pointer;
-            min-height: 44px;
-            transition: opacity 0.14s ease;
-        }
-
-        .pg-lift:active { opacity: 0.55; }
-
-        .pg-lift:last-child { border-bottom: none; }
-
-        .pg-lift-name {
-            color: var(--ink-soft);
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
-
-        .pg-lift-gain {
-            font-family: var(--mono);
-            font-weight: 700;
-            color: var(--done);
-            font-variant-numeric: tabular-nums;
-            flex-shrink: 0;
-        }
-
-        .pg-lift-move {
-            display: flex;
-            align-items: baseline;
-            gap: var(--s1);
-            flex-shrink: 0;
-            font-family: var(--mono);
-            font-variant-numeric: tabular-nums;
-        }
-
-        .pg-from {
-            color: var(--ink-faint);
-            font-size: var(--t-xs);
-        }
-
-        /* RTL: the arrow points from the old value towards the new one */
-        .pg-arrow {
-            color: var(--ink-faint);
-            font-size: var(--t-xs);
-        }
-
-        .pg-to {
-            color: var(--ink);
-            font-weight: 700;
-            font-size: var(--t-sm);
-        }
-
-        .pg-lift-gain {
-            font-family: var(--mono);
-            font-weight: 700;
-            color: var(--done);
-            font-variant-numeric: tabular-nums;
-            flex-shrink: 0;
-            font-size: var(--t-xs);
-            margin-inline-start: var(--s2);
-            padding: 2px 7px;
-            border-radius: var(--r-pill);
-            background: color-mix(in srgb, var(--done) 13%, transparent);
-        }
-
-        .pg-lift-gain small { font-size: var(--t-micro); opacity: 0.7; }
-
-        /* --- Adherence to the plan --- */
-
-        .pg-bar-split {
-            display: flex;
-            height: 12px;
-            border-radius: var(--r-pill);
-            overflow: hidden;
-            background: var(--surface-sunk);
-            box-shadow: inset 0 1px 2px rgba(18, 22, 28, 0.10);
-            margin-bottom: var(--s3);
-        }
-
-        .pg-bar-split .seg {
-            display: block;
-            transform-origin: inline-start;
-            /* Top sheen reads as dimension without depending on gradient direction,
-               so it survives RTL. Hairline splits each colour from the next. */
-            background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0));
-            box-shadow: inset 1px 0 0 rgba(255, 255, 255, 0.28);
-            animation: fill-grow 0.5s var(--ease-out) both;
-        }
-
-        .seg.above { background-color: var(--done); }
-        .seg.on    { background-color: var(--accent); }
-        .seg.below { background-color: var(--alert); opacity: 0.8; }
-
-        .pg-legend {
-            display: flex;
-            flex-wrap: wrap;
-            gap: var(--s3);
-            font-size: var(--t-xs);
-            color: var(--ink-soft);
-            font-family: var(--mono);
-            font-variant-numeric: tabular-nums;
-        }
-
-        .pg-legend .dot {
-            display: inline-block;
-            width: 7px;
-            height: 7px;
-            border-radius: 2px;
-            margin-inline-end: 5px;
-        }
-
-        .dot.above { background: var(--done); }
-        .dot.on    { background: var(--accent); }
-        .dot.below { background: var(--alert); }
-        .dot.open  { background: var(--ink-faint); }
-        .dot.close { background: var(--accent); }
-
-        /* --- Block-to-block progression --- */
-
-        .pg-blocks {
-            display: flex;
-            align-items: flex-end;
-            gap: var(--s2);
-            /* min-height, not height: the labels beneath grow with the OS setting */
-            min-height: 110px;
-            margin-bottom: var(--s2);
-            /* A hairline the bars sit on, so opening heights read against a shared
-               floor rather than floating. */
-            border-bottom: 1px solid var(--rule-soft);
-            padding-bottom: var(--s1);
-        }
-
-        .pg-block {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            height: 100%;
-            min-width: 0;
-        }
-
-        /* Two bars per block: where it opened, where it closed. Reading the
-           opening bars left to right shows whether the floor is rising. */
-        .pg-block-bars {
-            flex: 1;
-            width: 100%;
-            display: flex;
-            align-items: flex-end;
-            justify-content: center;
-            gap: 2px;
-        }
-
-        .pg-block-open,
-        .pg-block-close {
-            width: 45%;
-            border-radius: var(--r-sm) var(--r-sm) 2px 2px;
-            transform-origin: bottom;
-            animation: bar-rise 0.5s var(--ease-out) both;
-        }
-
-        .pg-block-open  { background: var(--ink-faint); opacity: 0.55; }
-        .pg-block-close {
-            background-color: var(--accent);
-            background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0));
-        }
-
-        .pg-block-lab {
-            font-family: var(--mono);
-            font-size: var(--t-micro);
-            color: var(--ink-faint);
-            margin-top: var(--s1);
-            white-space: nowrap;
-        }
-
-        /* Window picker — every comparable tracker offers this; a fixed period
-           hides both recent momentum and the long arc. */
-        .pg-window {
-            display: flex;
-            gap: var(--s1);
-            background: var(--surface-sunk);
-            border-radius: var(--r-pill);
-            padding: 3px;
-            margin: var(--s3) 0 var(--s4);
-        }
-
-        .pg-window-opt {
-            flex: 1;
-            background: none;
-            border: none;
-            border-radius: var(--r-pill);
-            font-family: inherit;
-            font-size: var(--t-xs);
-            font-weight: 600;
-            color: var(--ink-soft);
-            cursor: pointer;
-            padding: var(--s2) 0;
-            min-height: 36px;
-            transition: background 0.18s ease, color 0.18s ease;
-        }
-
-        .pg-window-opt.on {
-            background: var(--surface-1);
-            color: var(--ink);
-            box-shadow: var(--shadow-1);
-        }
-
-        .pg-note b { font-weight: 700; color: var(--ink-soft); }
-
-        /* Lists of lifts are just rows — a box around each would put six framed
-           panels on one screen, all competing. Boxes are kept for the two
-           sections that actually contain graphics. */
-        .pg-list {
-            padding: var(--s4) 0 var(--s2);
-            border-bottom: 1px solid var(--rule-soft);
-            margin-bottom: var(--s2);
-        }
-
-        .pg-list:last-child { border-bottom: none; }
-        .pg-list .pg-note { margin-bottom: var(--s2); }
-
-        /* Long lists stay collapsed until asked for */
-        .pg-hidden { display: none; }
-        .pg-list.open .pg-hidden { display: block; }
-
-        .pg-more {
-            background: none;
-            border: none;
-            color: var(--accent);
-            font-family: inherit;
-            font-size: var(--t-xs);
-            font-weight: 600;
-            cursor: pointer;
-            padding: var(--s2) 0;
-            width: 100%;
-            text-align: start;
-            min-height: 44px;
-        }
-
-        /* The month-over-month figure now rides with the headline, as a chip */
-        .pg-hero-mom {
-            display: inline-flex;
-            align-items: center;
-            gap: 3px;
-            margin-inline-start: var(--s2);
-            padding: 2px 8px;
-            border-radius: var(--r-pill);
-            font-weight: 700;
-            letter-spacing: 0;
-        }
-
-        /* Only growth gets colour. A drop stays neutral on purpose — this screen
-           reports, it doesn't scold. */
-        .pg-hero-mom.up   { color: var(--done); background: color-mix(in srgb, var(--done) 14%, transparent); }
-        .pg-hero-mom.down { color: var(--ink-soft); background: var(--surface-sunk); }
-        .pg-hero-mom.flat { color: var(--ink-faint); background: var(--surface-sunk); }
-
-        /* --- Muscle group balance --- */
-
-        .pg-group {
-            padding: var(--s2) 0;
-            border-bottom: 1px solid var(--rule-soft);
-        }
-
-        .pg-group:last-child { border-bottom: none; }
-
-        .pg-group-head {
-            display: flex;
-            justify-content: space-between;
-            align-items: baseline;
-            gap: var(--s2);
-            margin-bottom: var(--s1);
-        }
-
-        .pg-group-name {
-            font-size: var(--t-sm);
-            font-weight: 600;
-            color: var(--ink);
-        }
-
-        .pg-group-sets {
-            font-family: var(--mono);
-            font-size: var(--t-xs);
-            color: var(--ink-faint);
-            font-variant-numeric: tabular-nums;
-            flex-shrink: 0;
-        }
-
-        .pg-group-track {
-            height: 6px;
-            background: var(--surface-sunk);
-            border-radius: var(--r-pill);
-            overflow: hidden;
-            box-shadow: inset 0 1px 1px rgba(18, 22, 28, 0.08);
-            margin-bottom: var(--s1);
-        }
-
-        .pg-group-fill {
-            height: 100%;
-            background-color: var(--accent);
-            background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.24), rgba(255, 255, 255, 0));
-            border-radius: var(--r-pill);
-            transform-origin: inline-start;
-            animation: fill-grow 0.5s var(--ease-out) both;
-        }
-
-        /* Scales rather than animating width — compositor only */
-        @keyframes fill-grow {
-            from { transform: scaleX(0); }
-            to   { transform: scaleX(1); }
-        }
-
-        .pg-group-note {
-            font-size: var(--t-xs);
-            color: var(--ink-soft);
-            font-family: var(--mono);
-            font-variant-numeric: tabular-nums;
-        }
-
-        /* Nothing moving here — worth noticing, not worth alarming about */
-        .pg-group-note.idle { color: var(--ink-faint); }
-
-        /* No gain yet — state it plainly rather than showing a zero */
-        .pg-hero-num.quiet {
-            color: var(--ink);
-            background: none;
-            -webkit-text-fill-color: var(--ink);
-        }
-
         /* ============ Session log ============ */
 
         .session-card {
@@ -2753,7 +2376,110 @@
                 transition-duration: 0.01ms !important;
             }
         }
-    </style>
+    
+        /* ============ PROGRESS 2.0 — Product-led dashboard ============ */
+        .pg2-dashboard { display:flex; flex-direction:column; gap:14px; padding-bottom:30px; }
+        .pg2-windowbar { display:flex; justify-content:space-between; align-items:end; gap:12px; padding:2px 0 4px; }
+        .pg2-windowbar h2 { margin:2px 0 0; font-size:clamp(24px,6vw,32px); letter-spacing:-.04em; }
+        .pg2-overline { display:block; font-size:10px; font-weight:800; letter-spacing:.08em; color:var(--ink-faint); text-transform:uppercase; }
+        .pg2-window { display:flex; padding:3px; background:var(--surface-sunk); border-radius:999px; gap:2px; }
+        .pg2-window button { border:0; background:transparent; color:var(--ink-faint); font:600 11px inherit; padding:7px 10px; border-radius:999px; cursor:pointer; }
+        .pg2-window button.on { background:var(--surface-1); color:var(--ink); box-shadow:var(--shadow-1); }
+        .pg2-hero { background:var(--ink); color:#fff; border-radius:22px; padding:20px; overflow:hidden; position:relative; box-shadow:var(--shadow-3); }
+        .pg2-hero:after { content:''; position:absolute; width:180px; height:180px; border-radius:50%; border:1px solid rgba(255,255,255,.08); inset-inline-end:-70px; top:-80px; box-shadow:0 0 0 30px rgba(255,255,255,.025),0 0 0 60px rgba(255,255,255,.018); }
+        .pg2-hero-copy h1 { font-size:clamp(28px,8vw,42px); line-height:1; margin:5px 0 8px; letter-spacing:-.055em; }
+        .pg2-hero-copy p { margin:0; color:rgba(255,255,255,.65); font-size:13px; }
+        .pg2-hero .pg2-overline { color:rgba(255,255,255,.48); }
+        .pg2-hero-kpis { display:grid; grid-template-columns:repeat(3,1fr); gap:7px; margin-top:20px; position:relative; z-index:1; }
+        .pg2-hero-kpis div { background:rgba(255,255,255,.07); border:1px solid rgba(255,255,255,.07); border-radius:13px; padding:10px; min-width:0; }
+        .pg2-hero-kpis strong { display:block; font:700 19px var(--mono); letter-spacing:-.04em; font-variant-numeric:tabular-nums; }
+        .pg2-hero-kpis strong.up { color:#66e89a; } .pg2-hero-kpis strong.down { color:#ff969a; } .pg2-hero-kpis strong.flat { color:#fff; }
+        .pg2-hero-kpis span { display:block; color:rgba(255,255,255,.48); font-size:9px; margin-top:3px; line-height:1.25; }
+        .pg2-card { background:var(--surface-1); border:1px solid var(--rule); border-radius:18px; padding:16px; box-shadow:var(--shadow-1),var(--lift); }
+        .pg2-card-head { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:14px; }
+        .pg2-card-head h3 { margin:3px 0 3px; font-size:17px; letter-spacing:-.025em; }
+        .pg2-card-head p { margin:0; color:var(--ink-soft); font-size:11px; line-height:1.45; max-width:440px; }
+        .pg2-head-stat { font:700 14px var(--mono); white-space:nowrap; color:var(--accent); padding-top:4px; }
+        .pg2-head-stat.up { color:var(--done); } .pg2-head-stat.down { color:var(--alert); }
+        .pg2-coach { display:flex; gap:12px; align-items:flex-start; background:var(--accent-wash); border-color:color-mix(in srgb,var(--accent) 18%,var(--rule)); }
+        .pg2-coach-icon { width:38px; height:38px; border-radius:12px; display:grid; place-items:center; background:var(--surface-1); flex:none; font-size:19px; }
+        .pg2-coach h3 { margin:3px 0 4px; font-size:15px; }
+        .pg2-coach p { margin:0; color:var(--ink-soft); font-size:12px; line-height:1.5; }
+        .pg2-chart { position:relative; height:190px; margin-top:3px; }
+        .pg2-chart-grid { position:absolute; inset:0; background:linear-gradient(to bottom, transparent 24.5%, var(--rule-soft) 25%, transparent 25.5%, transparent 49.5%, var(--rule-soft) 50%, transparent 50.5%, transparent 74.5%, var(--rule-soft) 75%, transparent 75.5%); }
+        .pg2-chart svg { position:absolute; inset:0; width:100%; height:100%; overflow:visible; }
+        .pg2-chart-area { fill:var(--accent-wash); }
+        .pg2-chart-line { fill:none; stroke:var(--accent); stroke-width:2.7; stroke-linecap:round; stroke-linejoin:round; }
+        .pg2-chart-point { fill:var(--surface-1); stroke:var(--accent); stroke-width:2.5; }
+        .pg2-chart-labels { display:grid; grid-template-columns:repeat(8,1fr); gap:4px; margin-top:6px; }
+        .pg2-chart-labels span { text-align:center; color:var(--ink-faint); font:9px var(--mono); }
+        .pg2-chart-labels b { display:block; color:var(--ink-soft); font-size:8px; margin-top:3px; font-weight:600; }
+        .pg2-programs { display:grid; grid-template-columns:repeat(2,1fr); gap:9px; }
+        .pg2-program-card { border:1px solid var(--rule-soft); border-radius:14px; padding:12px; background:var(--surface-0); }
+        .pg2-program-card.current { border-color:color-mix(in srgb,var(--accent) 30%,var(--rule)); background:color-mix(in srgb,var(--accent-wash) 45%,var(--surface-0)); }
+        .pg2-program-top { display:flex; justify-content:space-between; gap:8px; align-items:start; }
+        .pg2-program-name { font-weight:750; font-size:12px; }
+        .pg2-program-date { font-size:9px; color:var(--ink-faint); margin-top:3px; }
+        .pg2-program-badge { font:700 11px var(--mono); padding:4px 7px; border-radius:99px; background:var(--surface-1); }
+        .pg2-program-badge.up { color:var(--done); } .pg2-program-badge.down { color:var(--alert); }
+        .pg2-program-flow { display:grid; grid-template-columns:1fr 20px 1fr; align-items:center; margin-top:11px; }
+        .pg2-program-flow div:not(.pg2-flow-arrow) { background:var(--surface-1); border-radius:9px; padding:8px; }
+        .pg2-program-flow span { display:block; font-size:8px; color:var(--ink-faint); } .pg2-program-flow strong { display:block; margin-top:2px; font:700 14px var(--mono); }
+        .pg2-flow-arrow { text-align:center; color:var(--ink-faint); }
+        .pg2-program-bottom { display:flex; justify-content:space-between; gap:8px; align-items:center; margin-top:8px; font-size:9px; color:var(--ink-faint); }
+        .pg2-program-bottom strong { font-size:9px; } .pg2-program-bottom .up { color:var(--done); } .pg2-program-bottom .down { color:var(--alert); }
+        .pg2-callout { display:flex; gap:9px; align-items:flex-start; padding:11px 12px; margin-top:10px; border-radius:12px; background:var(--surface-sunk); }
+        .pg2-callout.positive { background:color-mix(in srgb,var(--done) 8%,var(--surface-sunk)); }
+        .pg2-callout-icon { width:25px; height:25px; display:grid; place-items:center; border-radius:8px; background:var(--surface-1); flex:none; }
+        .pg2-callout strong,.pg2-callout span { display:block; } .pg2-callout strong { font-size:11px; } .pg2-callout span { margin-top:2px; color:var(--ink-soft); font-size:10px; line-height:1.45; }
+        .pg2-muscle-layout { display:grid; grid-template-columns:1fr 155px; gap:14px; align-items:center; }
+        .pg2-muscles { display:flex; flex-direction:column; gap:8px; }
+        .pg2-muscle-row { display:grid; grid-template-columns:25px 1fr 82px; gap:8px; align-items:center; width:100%; border:0; background:transparent; padding:5px 0; text-align:start; cursor:pointer; font-family:inherit; }
+        .pg2-muscle-row:hover .pg2-muscle-name { color:var(--accent); }
+        .pg2-muscle-emoji { font-size:15px; text-align:center; }
+        .pg2-muscle-main { min-width:0; } .pg2-muscle-name { display:block; font-size:11px; font-weight:700; margin-bottom:5px; }
+        .pg2-muscle-track { display:block; height:7px; background:var(--surface-sunk); border-radius:99px; overflow:hidden; }
+        .pg2-muscle-track i { display:block; height:100%; background:var(--accent); border-radius:99px; transition:width .35s var(--ease-out); }
+        .pg2-muscle-row.attention .pg2-muscle-track i { background:var(--alert); }
+        .pg2-muscle-stats { text-align:end; } .pg2-muscle-stats strong { display:block; font:700 12px var(--mono); } .pg2-muscle-stats small { display:block; color:var(--ink-faint); font-size:8px; line-height:1.3; margin-top:2px; }
+        .pg2-body-map-wrap { border-inline-start:1px solid var(--rule-soft); padding-inline-start:12px; }
+        .pg2-body-map { width:120px; height:190px; display:block; margin:0 auto 7px; }
+        .body-head,.body-torso,.body-arms,.body-chest,.body-core,.body-legs,.body-shoulders { fill:var(--accent); stroke:var(--surface-1); stroke-width:3; transition:opacity .25s ease; }
+        .body-head { opacity:.18; } .body-torso { opacity:.2; } .body-arms{opacity:.2;} .body-chest{opacity:.2;} .body-core{opacity:.2;} .body-legs{opacity:.2;} .body-shoulders{opacity:.2;}
+        .pg2-body-legend { text-align:center; } .pg2-body-title { display:block; font-size:8px; color:var(--ink-faint); margin-bottom:5px; }
+        .pg2-body-legend > div { display:flex; flex-wrap:wrap; justify-content:center; gap:3px; }
+        .pg2-body-chip { border:1px solid var(--rule-soft); background:var(--surface-0); color:var(--ink-soft); border-radius:99px; padding:4px 6px; font:600 8px inherit; cursor:pointer; }
+        .pg2-body-chip.selected { color:var(--accent); border-color:color-mix(in srgb,var(--accent) 35%,var(--rule)); background:var(--accent-wash); }
+        .pg2-adherence-top { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+        .pg2-adherence-top > div:first-child strong { display:block; font:700 32px var(--mono); letter-spacing:-.05em; margin-top:2px; }
+        .pg2-adherence-top > div:first-child > span:last-child { display:block; color:var(--ink-soft); font-size:10px; }
+        .pg2-adherence-score { width:54px; height:54px; border-radius:50%; display:grid; place-items:center; font:700 12px var(--mono); background:var(--surface-sunk); border:5px solid var(--rule); }
+        .pg2-adherence-score.good { border-color:var(--done); color:var(--done); } .pg2-adherence-score.mid { border-color:var(--accent); color:var(--accent); } .pg2-adherence-score.low { border-color:var(--alert); color:var(--alert); }
+        .pg2-adherence-bar { display:flex; height:10px; border-radius:99px; overflow:hidden; margin-top:14px; background:var(--surface-sunk); gap:1px; }
+        .pg2-adherence-bar i:nth-child(1){background:var(--done)} .pg2-adherence-bar i:nth-child(2){background:var(--accent)} .pg2-adherence-bar i:nth-child(3){background:var(--alert)}
+        .pg2-adherence-legend { display:flex; gap:12px; flex-wrap:wrap; margin-top:7px; color:var(--ink-faint); font-size:9px; }
+        .pg2-adherence-note { margin-top:10px; background:color-mix(in srgb,var(--alert) 7%,var(--surface-sunk)); border-radius:9px; padding:9px; color:var(--ink-soft); font-size:10px; }
+        .pg2-movers,.pg2-stalled-list { display:flex; flex-direction:column; }
+        .pg2-mover { display:grid; grid-template-columns:30px 1fr auto; gap:9px; align-items:center; width:100%; padding:10px 0; border:0; border-bottom:1px solid var(--rule-soft); background:transparent; text-align:start; font-family:inherit; cursor:pointer; }
+        .pg2-mover:last-child { border-bottom:0; } .pg2-mover-icon { width:30px; height:30px; border-radius:9px; display:grid; place-items:center; background:var(--surface-sunk); }
+        .pg2-mover strong { display:block; font-size:11px; } .pg2-mover small { display:block; color:var(--ink-faint); font-size:8px; margin-top:2px; }
+        .pg2-mover-values { display:flex; align-items:center; gap:5px; font:10px var(--mono); white-space:nowrap; } .pg2-mover-values b:last-of-type { font-weight:800; } .pg2-mover-values em { color:var(--ink-faint); font-style:normal; } .pg2-mover-values mark { background:color-mix(in srgb,var(--done) 11%,transparent); color:var(--done); border-radius:99px; padding:3px 6px; font:700 9px var(--mono); }
+        .pg2-stalled { display:grid; grid-template-columns:25px 1fr auto 15px; gap:8px; align-items:center; padding:10px 0; border:0; border-bottom:1px solid var(--rule-soft); background:transparent; text-align:start; font-family:inherit; cursor:pointer; }
+        .pg2-stalled:last-child { border-bottom:0; } .pg2-stalled strong { font-size:11px; } .pg2-stalled small { color:var(--ink-faint); font-size:9px; } .pg2-stalled i { color:var(--ink-faint); font-style:normal; font-size:18px; }
+        .pg2-empty { padding:20px 8px; text-align:center; color:var(--ink-faint); font-size:11px; }
+        @media (max-width:520px){
+            .pg2-windowbar{align-items:flex-start; flex-direction:column;}
+            .pg2-window{width:100%;}.pg2-window button{flex:1;}
+            .pg2-programs{grid-template-columns:1fr;}
+            .pg2-muscle-layout{grid-template-columns:1fr;}.pg2-body-map-wrap{border-inline-start:0;border-top:1px solid var(--rule-soft);padding-inline-start:0;padding-top:12px;}
+            .pg2-body-map{width:110px;height:165px;}
+            .pg2-chart{height:165px;}.pg2-chart-labels span:nth-child(2n){display:none;}
+            .pg2-hero-kpis strong{font-size:16px;}.pg2-hero-kpis span{font-size:8px;}
+            .pg2-card{padding:14px;}
+            .pg2-mover{grid-template-columns:28px 1fr;}.pg2-mover-values{grid-column:2;justify-content:flex-start;}
+        }
+
+</style>
 </head>
 <body>
 
@@ -4479,64 +4205,64 @@
         function buildProgressReport(windowDays = 60) {
             if (!sessionLog.length) return null;
 
-            const sorted = [...sessionLog].sort((a, b) => new Date(a.date) - new Date(b.date));
+            const sorted = [...sessionLog].sort((a,b) => new Date(a.date)-new Date(b.date));
+            const cutoff = Date.now() - windowDays * 86400000;
+            const recent = sorted.filter(s => new Date(s.date).getTime() >= cutoff);
 
-            // Volume per month, kept only for the month-over-month figure that
-            // now sits in the headline — the standalone chart it once fed was
-            // removed because raw volume said little on its own.
-            const byMonth = new Map();
-            sorted.forEach(s => {
-                const k = monthKey(s.date);
-                if (!byMonth.has(k)) byMonth.set(k, { volume: 0 });
-                byMonth.get(k).volume += sessionVolume(s);
-            });
-            const months = Array.from(byMonth.entries())
-                .map(([key, v]) => ({ key, label: monthLabel(key), ...v }));
-
-            let momentum = null;
-            if (months.length >= 2) {
-                const prev = months[months.length - 2];
-                const curr = months[months.length - 1];
-                if (prev.volume > 0) {
-                    momentum = {
-                        pct: Math.round(((curr.volume - prev.volume) / prev.volume) * 100),
-                        from: prev.label, to: curr.label
-                    };
-                }
-            }
-
-            // Consistency: sessions per week over the last eight
+            // Weekly training volume — this is the primary trend chart because it
+            // changes whenever a real workout is logged and is comparable week-to-week.
             const weeks = [];
             const now = new Date();
-            for (let w = 7; w >= 0; w--) {
-                const end = new Date(now); end.setDate(end.getDate() - w * 7);
-                const start = new Date(end); start.setDate(start.getDate() - 7);
+            for (let i = 7; i >= 0; i--) {
+                const end = new Date(now);
+                end.setHours(23,59,59,999);
+                end.setDate(end.getDate() - i * 7);
+                const start = new Date(end);
+                start.setDate(start.getDate() - 7);
+                const items = sorted.filter(s => {
+                    const t = new Date(s.date);
+                    return t > start && t <= end;
+                });
                 weeks.push({
-                    count: sorted.filter(s => {
-                        const t = new Date(s.date);
-                        return t > start && t <= end;
-                    }).length
+                    count: items.length,
+                    volume: items.reduce((sum,s) => sum + sessionVolume(s), 0),
+                    label: `${start.getDate()}/${start.getMonth()+1}`
                 });
             }
 
+            const prevWeeks = weeks.slice(0,4);
+            const lastWeeks = weeks.slice(4);
+            const prevVol = prevWeeks.reduce((n,w)=>n+w.volume,0);
+            const lastVol = lastWeeks.reduce((n,w)=>n+w.volume,0);
+            const volumeTrend = prevVol ? Math.round(((lastVol-prevVol)/prevVol)*100) : 0;
+
             const gains = buildWeightGains(windowDays);
-            // The kg headline counts only weight gains — rep-only rows still show
-            // in the list below, but they don't add kilos to the total.
-            const weightGains = gains.filter(g => g.type === 'weight');
-            const totalGain = weightGains.reduce((n, g) => n + g.gain, 0);
-            const balance = buildGroupBalance(windowDays, gains);
-            const stalled = buildExerciseOverview().filter(r => r.state === 'stalled');
+            const weightGains = gains.filter(g=>g.type==='weight');
+            const repGains = gains.filter(g=>g.type==='reps');
+            const totalGain = weightGains.reduce((n,g)=>n+g.gain,0);
+
             const adherence = buildAdherence(windowDays);
             const blocks = buildBlockProgress();
+            const balance = buildGroupBalance(windowDays, gains);
+            const stalled = buildExerciseOverview().filter(r=>r.state==='stalled');
 
             return {
-                sessions: sorted.length,
-                weeks, momentum, windowDays,
-                gains, totalGain, weightGainCount: weightGains.length, balance, stalled,
-                adherence, blocks
+                sessions: recent.length,
+                allSessions: sorted.length,
+                weeks,
+                volumeTrend,
+                prevVol,
+                lastVol,
+                gains,
+                weightGains,
+                repGains,
+                totalGain,
+                adherence,
+                blocks,
+                balance,
+                stalled
             };
         }
-
 
         // ============ ADHERENCE ============
         // Every logged entry carries what the trainer prescribed alongside what
@@ -4669,163 +4395,218 @@
                 zone.innerHTML = `<div class="empty-state">
                     <div class="empty-state-icon">🌱</div>
                     <div class="empty-state-title">עוד אין מספיק נתונים</div>
-                    <div class="empty-state-subtitle">סיים כמה אימונים והתמונה תתחיל להצטייר</div>
+                    <div class="empty-state-subtitle">אחרי כמה אימונים, כאן תראה מגמות, שיפור, איזון והמלצות.</div>
                 </div>`;
                 return;
             }
 
-            // Order follows the question, not the order these were built:
-            // headline → the detail behind it → context → what to act on.
-            let html = `
-                <div class="pg-window">
-                    ${[30, 90, 365].map(d => `
-                        <button class="pg-window-opt ${progressWindow === d ? 'on' : ''}"
-                                onclick="setProgressWindow(${d})"
-                                aria-label="הצג נתונים של ${windowLabel(d)}">${windowLabel(d)}</button>`).join('')}
-                </div>`;
+            const fmtVol = v => {
+                if (!v) return '0';
+                return v >= 1000 ? `${(v/1000).toFixed(v >= 10000 ? 0 : 1)}k` : Math.round(v).toLocaleString();
+            };
+            const trendClass = r.volumeTrend > 5 ? 'up' : r.volumeTrend < -5 ? 'down' : 'flat';
+            const trendText = r.volumeTrend > 5 ? `↑ ${r.volumeTrend}%` : r.volumeTrend < -5 ? `↓ ${Math.abs(r.volumeTrend)}%` : '→ יציב';
 
-            const liftRow = (name, from, to, badge) => `
-                <button class="pg-lift" onclick="openExerciseDetail(rootOf('${escAttr(name)}'))">
-                    <span class="pg-lift-name">${esc(name)}</span>
-                    <span class="pg-lift-move">
-                        <span class="pg-from">${from}</span>
-                        <span class="pg-arrow">←</span>
-                        <span class="pg-to">${to}</span>
-                        <span class="pg-lift-gain">${badge}</span>
-                    </span>
+            // Consistency: unique workout days / target of 3 sessions per week.
+            const recentDays = new Set(r.sessions ? sessionLog.filter(s => new Date(s.date).getTime() >= Date.now() - progressWindow*86400000).map(s => dayKeyOf(s.date)) : []);
+            const targetWeeks = Math.max(1, Math.ceil(progressWindow / 7));
+            const consistency = Math.min(100, Math.round((recentDays.size / (targetWeeks * 3)) * 100));
+            const consistencyLabel = consistency >= 85 ? 'מצוין' : consistency >= 65 ? 'טוב' : consistency >= 45 ? 'לא עקבי' : 'כדאי לבנות שגרה';
+
+            // Primary chart: weekly volume. A null/zero week remains visible so the trend is honest.
+            const vals = r.weeks.map(w => w.volume || 0);
+            const max = Math.max(...vals, 1);
+            const min = Math.min(...vals);
+            const span = Math.max(max-min, max*0.18, 1);
+            const points = vals.map((v,i) => {
+                const x = vals.length===1 ? 50 : (i/(vals.length-1))*100;
+                const y = 84 - ((v-min)/span)*68;
+                return [x,y];
+            });
+            const pointStr = points.map(p=>`${p[0].toFixed(2)},${p[1].toFixed(2)}`).join(' ');
+            const areaStr = `0,100 ${pointStr} 100,100`;
+            const pointDots = points.map((p,i)=>`<circle class="pg2-chart-point" cx="${p[0]}%" cy="${p[1]}%" r="3.2"><title>${r.weeks[i].label}: ${fmtVol(r.weeks[i].volume)} kg</title></circle>`).join('');
+
+            // Program/block comparison. Keep the underlying model, but explain it as a user-facing story.
+            const blocks = r.blocks?.blocks || [];
+            const recentBlocks = blocks.slice(-4);
+            const programCards = recentBlocks.map((b,i) => {
+                const pct = b.withinGain;
+                const cls = pct > 3 ? 'up' : pct < -3 ? 'down' : 'flat';
+                const isCurrent = i === recentBlocks.length - 1;
+                const label = isCurrent ? 'התוכנית הנוכחית' : `תוכנית ${blocks.length - recentBlocks.length + i + 1}`;
+                const delta = pct > 0 ? `↑ ${pct}% נפח בתוך התוכנית` : pct < 0 ? `↓ ${Math.abs(pct)}% נפח בתוך התוכנית` : '→ נפח יציב';
+                const date = `${new Date(b.start).getDate()}.${new Date(b.start).getMonth()+1} – ${new Date(b.end).getDate()}.${new Date(b.end).getMonth()+1}`;
+                return `<div class="pg2-program-card ${isCurrent?'current':''}">
+                    <div class="pg2-program-top">
+                        <div>
+                            <div class="pg2-program-name">${label}</div>
+                            <div class="pg2-program-date">${date} · ${b.sessions} אימונים</div>
+                        </div>
+                        <div class="pg2-program-badge ${cls}">${pct > 0 ? '+' : ''}${pct}%</div>
+                    </div>
+                    <div class="pg2-program-flow">
+                        <div><span>התחלה</span><strong>${fmtVol(b.openingVolume)}</strong></div>
+                        <div class="pg2-flow-arrow">←</div>
+                        <div><span>סיום</span><strong>${fmtVol(b.closingVolume)}</strong></div>
+                    </div>
+                    <div class="pg2-program-bottom"><span>${b.exercises} תרגילים</span><strong class="${cls}">${delta}</strong></div>
+                </div>`;
+            }).join('');
+
+            let carry = '';
+            if (blocks.length >= 2) {
+                const comparisons = blocks.slice(1).filter(b=>Number.isFinite(b.carryPct));
+                if (comparisons.length) {
+                    const good = comparisons.filter(b=>b.carryPct >= -3).length;
+                    const carryPct = Math.round(comparisons.reduce((n,b)=>n+b.carryPct,0)/comparisons.length);
+                    carry = `<div class="pg2-callout ${good === comparisons.length ? 'positive' : ''}">
+                        <div class="pg2-callout-icon">${good === comparisons.length ? '✓' : '↗'}</div>
+                        <div><strong>${good}/${comparisons.length} מעברים שמרו על הבסיס</strong><span>במעבר לתוכנית הבאה התחלת בממוצע ${carryPct >= 0 ? '+' : ''}${carryPct}% מהנפח של התוכנית הקודמת.</span></div>
+                    </div>`;
+                }
+            }
+
+            // Muscle balance: share is based on all performed sets, while movement shows progression.
+            const totalSets = r.balance.reduce((n,g)=>n+g.sets,0) || 1;
+            const balanceRows = r.balance.map(g => {
+                const pct = Math.round((g.sets/totalSets)*100);
+                const status = g.movingPct >= 60 ? 'up' : g.movingPct < 30 ? 'attention' : 'steady';
+                return `<button class="pg2-muscle-row ${status}" onclick="window.__progressMuscle='${g.key}'; renderProgress();">
+                    <span class="pg2-muscle-emoji">${g.emoji}</span>
+                    <span class="pg2-muscle-main"><span class="pg2-muscle-name">${g.label}</span><span class="pg2-muscle-track"><i style="width:${Math.max(3,pct)}%"></i></span></span>
+                    <span class="pg2-muscle-stats"><strong>${pct}%</strong><small>${g.sets} סטים · ${g.movingPct}% משתפרים</small></span>
                 </button>`;
+            }).join('');
 
-            // --- 1. Headline, with the month-over-month figure folded in ---
-            const mom = r.momentum;
-            const momDir = mom ? (mom.pct > 0 ? 'up' : Math.abs(mom.pct) < 5 ? 'flat' : 'down') : '';
-            const momCaret = momDir === 'up' ? '↑' : momDir === 'down' ? '↓' : '·';
-            const momText = mom
-                ? `<span class="pg-hero-mom ${momDir}">${momCaret} ${mom.pct > 0 ? '+' : ''}${mom.pct}% נפח מ־${mom.from}</span>`
-                : '';
-
-            if (r.weightGainCount) {
-                html += `
-                    <div class="pg-hero">
-                        <div class="pg-hero-num">+${r.totalGain % 1 ? r.totalGain.toFixed(1) : r.totalGain}</div>
-                        <div class="pg-hero-unit">ק"ג נוספו בעלייה האחרונה</div>
-                        <div class="pg-hero-sub">ב-${r.weightGainCount} תרגילים · ${r.sessions} אימונים ${momText}</div>
-                    </div>`;
-            } else {
-                html += `
-                    <div class="pg-hero">
-                        <div class="pg-hero-num quiet">${r.sessions}</div>
-                        <div class="pg-hero-unit">אימונים נרשמו</div>
-                        <div class="pg-hero-sub">עוד לא נרשמה עליית משקל בתקופה הזו ${momText}</div>
-                    </div>`;
-            }
-
-            // --- 2. The detail behind that number, immediately after it ---
-            if (r.gains.length) {
-                const show = r.gains.slice(0, 6);
-                const rest = r.gains.length - show.length;
-                html += `<div class="pg-list">
-                    <div class="pg-label">עלית לעומת הפעם הקודמת</div>
-                    ${show.map(x => liftRow(x.display, x.fromLabel, x.toLabel, x.badge)).join('')}
-                    ${rest > 0 ? `<button class="pg-more" onclick="this.closest('.pg-list').classList.add('open'); this.remove();">עוד ${rest} תרגילים</button>
-                    <div class="pg-hidden">${r.gains.slice(6).map(x => liftRow(x.display, x.fromLabel, x.toLabel, x.badge)).join('')}</div>` : ''}
-                </div>`;
-            }
-
-            // --- 3. Are you doing the programme, or drifting from it? ---
-            const ad = r.adherence;
-            if (ad) {
-                html += `<div class="pg-section">
-                    <div class="pg-label">מול התוכנית של המאמן</div>
-                    <div class="pg-bar-split">
-                        ${ad.above ? `<span class="seg above" style="flex:${ad.above}"></span>` : ''}
-                        ${ad.on    ? `<span class="seg on"    style="flex:${ad.on}"></span>` : ''}
-                        ${ad.below ? `<span class="seg below" style="flex:${ad.below}"></span>` : ''}
-                    </div>
-                    <div class="pg-legend">
-                        <span><i class="dot above"></i>מעל ${ad.abovePct}%</span>
-                        <span><i class="dot on"></i>בדיוק ${ad.onPct}%</span>
-                        <span><i class="dot below"></i>מתחת ${ad.belowPct}%</span>
-                    </div>
-                    ${ad.persistent.length ? `
-                        <div class="pg-note" style="margin-top:var(--s3);">
-                            נשארת מתחת ליעד יותר מפעם אחת ב:
-                            <b>${ad.persistent.map(x => esc(x.name)).join(' · ')}</b>
-                        </div>` : ''}
-                </div>`;
-            }
-
-            // --- 4. Does each new programme start where the last one ended? ---
-            const bl = r.blocks;
-            if (bl && bl.blocks.length >= 2) {
-                const maxVol = Math.max(...bl.blocks.flatMap(b => [b.openingVolume, b.closingVolume])) || 1;
-                html += `<div class="pg-section">
-                    <div class="pg-label">התקדמות בין תוכניות</div>
-                    <div class="pg-note" style="margin-bottom:var(--s3);">
-                        כל עמודה היא תוכנית: היכן התחלת והיכן סיימת אותה.
-                        השאלה היא אם <b>הרצפה עולה</b>, לא רק התקרה.
-                    </div>
-                    <div class="pg-blocks">
-                        ${bl.blocks.map((b, i) => `
-                            <div class="pg-block">
-                                <div class="pg-block-bars">
-                                    <span class="pg-block-open"  style="height:${Math.max(4,(b.openingVolume/maxVol)*100)}%"></span>
-                                    <span class="pg-block-close" style="height:${Math.max(4,(b.closingVolume/maxVol)*100)}%"></span>
-                                </div>
-                                <div class="pg-block-lab">${bl.blocks.length - i === 1 ? 'נוכחית' : '#' + (bl.totalBlocks - (bl.blocks.length - 1 - i))}</div>
-                            </div>`).join('')}
-                    </div>
-                    <div class="pg-legend">
-                        <span><i class="dot open"></i>פתיחה</span>
-                        <span><i class="dot close"></i>סיום</span>
-                    </div>
-                    ${bl.compared ? `
-                        <div class="pg-note" style="margin-top:var(--s3);">
-                            ב-<b>${bl.carried} מתוך ${bl.compared}</b> המעברים בין תוכניות התחלת במקום שסיימת או מעליו.
-                        </div>` : ''}
-                </div>`;
-            }
-
-            // --- 4. Context: showing up is the part that compounds ---
-            const maxW = Math.max(...r.weeks.map(w => w.count), 1);
-            const activeWeeks = r.weeks.filter(w => w.count > 0).length;
-            html += `<div class="pg-section">
-                <div class="pg-label">עקביות · 8 שבועות אחרונים</div>
-                <div class="pg-weeks">
-                    ${r.weeks.map(w => `<div class="pg-week ${w.count ? 'on' : ''}"
-                        style="--fill:${(w.count / maxW) * 100}%"><span>${w.count || ''}</span></div>`).join('')}
-                </div>
-                <div class="pg-note">התאמנת ב-${activeWeeks} מתוך 8 השבועות</div>
-            </div>`;
-
-            // --- 5. Balance: the part that changes what you do next ---
+            let balanceInsight = '';
             if (r.balance.length) {
-                html += `<div class="pg-section">
-                    <div class="pg-label">איזון לפי קבוצת שריר</div>
-                    ${r.balance.map(g => `
-                        <div class="pg-group">
-                            <div class="pg-group-head">
-                                <span class="pg-group-name">${g.emoji} ${g.label}</span>
-                                <span class="pg-group-sets">${g.sets} סטים</span>
-                            </div>
-                            <div class="pg-group-track">
-                                <div class="pg-group-fill" style="width:${g.share}%"></div>
-                            </div>
-                            <div class="pg-group-note ${g.gaining === 0 ? 'idle' : ''}">
-                                ${g.gaining} מתוך ${g.lifts} תרגילים בעלייה
-                            </div>
-                        </div>`).join('')}
-                </div>`;
+                const sortedBal = [...r.balance].sort((a,b)=>a.sets-b.sets);
+                const low = sortedBal[0], high = sortedBal[sortedBal.length-1];
+                if (high && low && high.sets >= low.sets*1.8) {
+                    balanceInsight = `הפער הגדול ביותר הוא בין <strong>${high.label}</strong> ל־<strong>${low.label}</strong>. זה לא בהכרח לא מאוזן — אבל שווה לבדוק מול התוכנית אם זו חלוקה מכוונת.`;
+                } else {
+                    balanceInsight = `החלוקה בין קבוצות השריר נראית יחסית מפוזרת. אפשר להשתמש במגמת הסטים כדי לזהות שינוי כאשר התוכנית מתחלפת.`;
+                }
             }
 
-            // --- 6. Honest counterweight, last and quiet ---
-            if (r.stalled.length) {
-                html += `<div class="pg-list">
-                    <div class="pg-label">עוד לא זזו</div>
-                    <div class="pg-note">${r.stalled.slice(0, 6).map(x => esc(x.display)).join(' · ')}</div>
+            // Simple body-map visualization, driven by the same muscle-group data.
+            const groupByKey = Object.fromEntries(r.balance.map(g=>[g.key,g]));
+            const intensity = key => {
+                const g=groupByKey[key]; if(!g) return 0.12;
+                return Math.min(.9, .18 + (g.sets / Math.max(...r.balance.map(x=>x.sets),1))*.72);
+            };
+            const selectedMuscle = window.__progressMuscle || '';
+            const bodyParts = ['chest','back','legs','shoulders','arms','core'];
+            const selectedLabel = groupByKey[selectedMuscle]?.label || '';
+            const bodyMap = `
+                <div class="pg2-body-map-wrap">
+                    <svg class="pg2-body-map" viewBox="0 0 220 360" role="img" aria-label="מפת קבוצות שריר">
+                        <circle cx="110" cy="32" r="24" class="body-head"></circle>
+                        <path d="M88 62 Q110 54 132 62 L145 116 L130 165 L90 165 L75 116 Z" class="body-torso" style="opacity:${intensity('core')}"></path>
+                        <path d="M76 70 L45 104 L58 119 L82 95 Z M144 70 L175 104 L162 119 L138 95 Z" class="body-arms" style="opacity:${intensity('arms')}"></path>
+                        <path d="M84 70 Q110 58 136 70 L132 112 Q110 124 88 112 Z" class="body-chest" style="opacity:${intensity('chest')}"></path>
+                        <path d="M88 116 L132 116 L128 162 L92 162 Z" class="body-core" style="opacity:${intensity('core')}"></path>
+                        <path d="M92 160 L108 160 L103 278 L78 278 Z M112 160 L128 160 L142 278 L117 278 Z" class="body-legs" style="opacity:${intensity('legs')}"></path>
+                        <path d="M76 70 L88 62 L98 78 L86 94 Z M144 70 L132 62 L122 78 L134 94 Z" class="body-shoulders" style="opacity:${intensity('shoulders')}"></path>
+                    </svg>
+                    <div class="pg2-body-legend">
+                        <span class="pg2-body-title">${selectedLabel ? `נבחר: ${selectedLabel}` : 'עוצמת הצבע = נפח יחסי'}</span>
+                        <div>${bodyParts.map(k=>{const g=groupByKey[k]; return g ? `<button class="pg2-body-chip ${selectedMuscle===k?'selected':''}" onclick="window.__progressMuscle='${k}'; renderProgress();">${g.emoji} ${g.label}</button>`:''}).join('')}</div>
+                    </div>
                 </div>`;
+
+            const ad = r.adherence;
+            const adherencePct = ad ? ad.abovePct + ad.onPct : null;
+            const adherenceHtml = ad ? `
+                <div class="pg2-adherence-top">
+                    <div><span class="pg2-overline">עמידה בתוכנית</span><strong>${adherencePct}%</strong><span>מהסטים עמדו ביעד או עברו אותו</span></div>
+                    <div class="pg2-adherence-score ${adherencePct>=80?'good':adherencePct>=60?'mid':'low'}">${adherencePct}%</div>
+                </div>
+                <div class="pg2-adherence-bar"><i style="flex:${ad.above}"></i><i style="flex:${ad.on}"></i><i style="flex:${ad.below}"></i></div>
+                <div class="pg2-adherence-legend"><span>↑ מעל ${ad.abovePct}%</span><span>• בדיוק ${ad.onPct}%</span><span>↓ מתחת ${ad.belowPct}%</span></div>
+                ${ad.persistent?.length ? `<div class="pg2-adherence-note">⚠️ כדאי לבדוק: ${ad.persistent.map(x=>esc(x.name)).join(' · ')}</div>` : ''}` : `<div class="pg2-empty">אין עדיין מספיק נתוני תוכנית כדי להשוות יעד מול ביצוע.</div>`;
+
+            const movers = r.gains.slice(0,6).map(x => `
+                <button class="pg2-mover" onclick="openExerciseDetail(rootOf('${escAttr(x.display)}'))">
+                    <span class="pg2-mover-icon">🏆</span>
+                    <span><strong>${esc(x.display)}</strong><small>${x.type==='weight'?'משקל':'חזרות'} · השיפור האחרון</small></span>
+                    <span class="pg2-mover-values"><b>${x.fromLabel}</b><em>←</em><b>${x.toLabel}</b><mark>${x.badge.replace('<small> חז׳</small>',' חז׳')}</mark></span>
+                </button>`).join('');
+
+            const stalledRows = r.stalled.slice(0,4).map(x => `
+                <button class="pg2-stalled" onclick="openExerciseDetail(rootOf('${escAttr(x.display)}'))"><span>⚠️</span><strong>${esc(x.display)}</strong><small>אין עלייה לאחרונה</small><i>›</i></button>`).join('');
+
+            // Coach summary: translate the dashboard into one actionable sentence.
+            let coachHeadline = 'בוא נבנה עוד קצת היסטוריה לפני שמסיקים מסקנות.';
+            let coachBody = `${r.sessions} אימונים נרשמו בתקופה הזו. ככל שתמשיך לתעד, ההמלצות יהפכו מדויקות יותר.`;
+            if (r.weightGains.length && r.volumeTrend > 5) {
+                coachHeadline = 'אתה מתקדם יפה.';
+                coachBody = `הנפח עלה ב־${r.volumeTrend}% ויש ${r.weightGains.length} תרגילים עם עלייה במשקל. ${r.stalled.length ? `הדבר העיקרי לשים לב אליו: ${r.stalled.slice(0,2).map(x=>x.display).join(' ו־')} תקועים כרגע.` : 'אין כרגע הרבה תרגילים תקועים.'}`;
+            } else if (r.stalled.length) {
+                coachHeadline = 'יש התקדמות, אבל יש כמה נקודות תקועות.';
+                coachBody = `${r.stalled.slice(0,3).map(x=>x.display).join(', ')} לא הראו עלייה לאחרונה. לפני שמוסיפים עומס, כדאי לבדוק עקביות, טכניקה והתאוששות.`;
+            } else if (r.volumeTrend < -5) {
+                coachHeadline = 'העומס ירד לאחרונה.';
+                coachBody = `נפח האימונים ירד ב־${Math.abs(r.volumeTrend)}% לעומת 4 השבועות הקודמים. אם זו לא הייתה הורדה מתוכננת, שווה לחזור לשגרה בהדרגה.`;
             }
 
-            zone.innerHTML = html;
+            zone.innerHTML = `
+                <div class="pg2-dashboard">
+                    <div class="pg2-windowbar">
+                        <div><span class="pg2-overline">סקירה</span><h2>ההתקדמות שלך</h2></div>
+                        <div class="pg2-window">${[30,90,365].map(d=>`<button class="${progressWindow===d?'on':''}" onclick="setProgressWindow(${d})">${windowLabel(d)}</button>`).join('')}</div>
+                    </div>
+
+                    <section class="pg2-hero">
+                        <div class="pg2-hero-copy">
+                            <span class="pg2-overline">תמונת מצב · ${windowLabel(progressWindow)}</span>
+                            <h1>${r.weightGains.length ? 'אתה מתחזק' : consistency >= 65 ? 'אתה בונה שגרה' : 'בוא נבנה עקביות'}</h1>
+                            <p>${r.weightGains.length ? `${r.weightGains.length} תרגילים השתפרו לאחרונה.` : 'עוד אין מספיק עליות עומס כדי לקבוע מגמה ברורה.'}</p>
+                        </div>
+                        <div class="pg2-hero-kpis">
+                            <div><strong class="${trendClass}">${trendText}</strong><span>נפח ב־4 שבועות</span></div>
+                            <div><strong>${r.weightGains.length}</strong><span>תרגילים בעלייה</span></div>
+                            <div><strong>${consistency}%</strong><span>עקביות · ${consistencyLabel}</span></div>
+                        </div>
+                    </section>
+
+                    <section class="pg2-card pg2-coach">
+                        <div class="pg2-coach-icon">🧠</div><div><span class="pg2-overline">המאמן שלך אומר</span><h3>${coachHeadline}</h3><p>${coachBody}</p></div>
+                    </section>
+
+                    <section class="pg2-card">
+                        <div class="pg2-card-head"><div><span class="pg2-overline">מגמה</span><h3>עומס האימונים</h3><p>נפח שבועי בפועל. שבוע בלי אימון נשאר ריק בכוונה.</p></div><strong class="pg2-head-stat ${trendClass}">${trendText}</strong></div>
+                        <div class="pg2-chart">
+                            <div class="pg2-chart-grid"></div><svg viewBox="0 0 100 100" preserveAspectRatio="none"><polygon class="pg2-chart-area" points="${areaStr}"></polygon><polyline class="pg2-chart-line" points="${pointStr}"></polyline>${pointDots}</svg>
+                        </div>
+                        <div class="pg2-chart-labels">${r.weeks.map(w=>`<span>${w.label}<b>${fmtVol(w.volume)}</b></span>`).join('')}</div>
+                    </section>
+
+                    <section class="pg2-card">
+                        <div class="pg2-card-head"><div><span class="pg2-overline">תוכניות</span><h3>האם התוכנית הבאה התחילה חזק יותר?</h3><p>השוואה בין נקודת הפתיחה והסיום של כל בלוק אימון.</p></div></div>
+                        <div class="pg2-programs">${programCards || '<div class="pg2-empty">עדיין אין מספיק תוכניות להשוואה.</div>'}</div>
+                        ${carry}
+                    </section>
+
+                    <section class="pg2-card">
+                        <div class="pg2-card-head"><div><span class="pg2-overline">חלוקת עומס</span><h3>איזון קבוצות שריר</h3><p>כמה סטים קיבלה כל קבוצה, וכמה מהתרגילים שלה באמת מתקדמים.</p></div></div>
+                        <div class="pg2-muscle-layout"><div class="pg2-muscles">${balanceRows || '<div class="pg2-empty">אין מספיק אימונים בתקופה הזו.</div>'}</div>${bodyMap}</div>
+                        ${balanceInsight ? `<div class="pg2-callout"><div class="pg2-callout-icon">💡</div><div><strong>מה זה אומר?</strong><span>${balanceInsight}</span></div></div>` : ''}
+                    </section>
+
+                    <section class="pg2-card">
+                        <div class="pg2-card-head"><div><span class="pg2-overline">ביצוע מול תכנון</span><h3>האם אתה עומד בתוכנית?</h3><p>מה שתוכנן מול מה שבוצע בפועל.</p></div></div>
+                        ${adherenceHtml}
+                    </section>
+
+                    <section class="pg2-card">
+                        <div class="pg2-card-head"><div><span class="pg2-overline">Progression</span><h3>במה התחזקת?</h3><p>השיפור האחרון — לא סכום מצטבר שמנפח את התמונה.</p></div><strong class="pg2-head-stat">${r.repGains.length ? `+${r.repGains.length} שיפורי חזרות` : ''}</strong></div>
+                        <div class="pg2-movers">${movers || '<div class="pg2-empty">עוד לא נרשמו עליות בתקופה הזו.</div>'}</div>
+                    </section>
+
+                    ${stalledRows ? `<section class="pg2-card"><div class="pg2-card-head"><div><span class="pg2-overline">Attention</span><h3>מה תקוע?</h3><p>תרגילים שלא הראו עלייה לאחרונה.</p></div></div><div class="pg2-stalled-list">${stalledRows}</div></section>` : ''}
+                </div>`;
         }
 
         function renderStageChrome(slides) {
