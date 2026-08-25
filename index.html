@@ -4217,7 +4217,7 @@
                 if (!v) return;
                 if (!series.has(root)) series.set(root, new Map());
                 // One reading per day; a logged session overwrites the plan
-                series.get(root).set(dayKeyOf(iso), { t, v });
+                series.get(root).set(dayKeyOf(iso), { t, v, weight, reps, sets });
             };
 
             stateWorkouts.forEach(w => w.exercises?.forEach(ex => add(ex.name, w.date, ex.weight, ex.reps, ex.sets)));
@@ -4226,7 +4226,9 @@
             sparkIndex = new Map();
             series.forEach((days, root) => {
                 const pts = Array.from(days.values()).sort((a, b) => a.t - b.t).slice(-6);
-                if (pts.length >= 2) sparkIndex.set(root, pts.map(p => p.v));
+                // Keep the full points: the line is drawn from volume, but the colour
+                // is decided by our effort rule on the last two readings.
+                if (pts.length >= 2) sparkIndex.set(root, pts);
             });
         }
 
@@ -4302,26 +4304,30 @@
 
         function sparklineFor(exerciseName) {
             const key = normalizeExerciseName((exerciseName || '').trim());
-            const vals = sparkIndex.get(key);
-            if (!vals || vals.length < 2) return '';
+            const pts = sparkIndex.get(key);
+            if (!pts || pts.length < 2) return '';
 
+            const vals = pts.map(p => p.v);
             const W = 52, H = 18, pad = 2;
             const min = Math.min(...vals);
             const max = Math.max(...vals);
             const span = max - min || 1;
             const stepX = (W - pad * 2) / (vals.length - 1);
 
-            const pts = vals.map((v, i) => {
+            const coords = vals.map((v, i) => {
                 const x = pad + i * stepX;
                 const y = H - pad - ((v - min) / span) * (H - pad * 2);
                 return [x, y];
             });
 
-            const path = pts.map((p, i) => `${i ? 'L' : 'M'}${p[0].toFixed(1)},${p[1].toFixed(1)}`).join(' ');
-            const last = pts[pts.length - 1];
-            const rising = vals[vals.length - 1] > vals[0];
-            const flat = vals[vals.length - 1] === vals[0];
-            const tone = flat ? 'flat' : rising ? 'up' : 'down';
+            const path = coords.map((p, i) => `${i ? 'L' : 'M'}${p[0].toFixed(1)},${p[1].toFixed(1)}`).join(' ');
+            const last = coords[coords.length - 1];
+
+            // Colour follows our rule — any increase (weight, reps or sets) vs the
+            // previous session is up, even if volume fell — so it agrees with the
+            // arrows in the log and against last time, instead of last-vs-first volume.
+            const dir = effortTrend(pts[pts.length - 1], pts[pts.length - 2]);
+            const tone = dir === 'up' ? 'up' : dir === 'down' ? 'down' : 'flat';
 
             return `<svg class="spark ${tone}" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" aria-hidden="true">
                 <path class="spark-line" d="${path}"/>
