@@ -1041,6 +1041,23 @@
             margin-bottom: var(--s3);
         }
 
+        /* Video demo from the imported programme — opens the coach's clip */
+        .demo-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            margin-bottom: var(--s3);
+            padding: 5px 11px;
+            border-radius: var(--r-pill);
+            background: var(--accent-wash);
+            color: var(--accent);
+            font-size: var(--t-xs);
+            font-weight: 700;
+            text-decoration: none;
+            border: 1px solid color-mix(in srgb, var(--accent) 28%, transparent);
+        }
+        .demo-link:active { background: color-mix(in srgb, var(--accent) 18%, transparent); }
+
         .workout-card h3 {
             font-size: var(--t-md);
             font-weight: 600;
@@ -3012,15 +3029,15 @@
                 <!-- VIEW 3: ADD NEW DATA -->
                 <div id="view-add" class="tab-view">
                     <div class="view-title">📝 קליטת אימונים</div>
-                    
-                    <!-- WhatsApp Import -->
+
+                    <!-- Excel upload -->
                     <div style="background: var(--accent-wash); border: 1px dashed color-mix(in srgb, var(--accent) 35%, transparent); border-radius: var(--r-lg); padding: 16px; margin-bottom: 20px;">
-                        <h4 style="font-size: 13px; margin-bottom: 6px; color: var(--accent);">📂 יבוא ממאמן ב-WhatsApp</h4>
-                        <p style="font-size: 12px; color: var(--ink-soft); margin-bottom: 12px;">ייצא צ'אט כקובץ טקסט וטען כאן לחילוץ אימונים מהיסטוריה.</p>
-                        <input type="file" id="whatsapp-file-input" accept=".txt" style="margin-bottom: 10px;">
-                        <button class="btn btn-primary" onclick="importWhatsAppHistoryFile()">🚀 חלץ ברשומות</button>
+                        <h4 style="font-size: 13px; margin-bottom: 6px; color: var(--accent);">📊 העלאת אימון מאקסל</h4>
+                        <p style="font-size: 12px; color: var(--ink-soft); margin-bottom: 12px;">טען קובץ .xlsx עם עמודות EXERCISE · # REPS · # SETS · Weight. סופרסטים מזוהים אוטומטית.</p>
+                        <input type="file" id="excel-file-input" accept=".xlsx,.xls" style="margin-bottom: 10px;">
+                        <button class="btn btn-primary" onclick="importExcelFile()">🚀 עבד קובץ</button>
                     </div>
-                    
+
                     <div style="position: relative; text-align: center; margin-bottom: 20px;"><span style="background: var(--surface-0); padding: 0 10px; font-size:11px; color:var(--ink-faint); font-weight:600; letter-spacing:0.04em;">או הזן אימון בודד</span><hr style="border:0; border-top:1px solid var(--rule); position:absolute; top:50%; left:0; right:0; z-index:-1;"></div>
 
                     <textarea id="raw-coach-payload" placeholder="הדבק הודעת תרגילים מ-WhatsApp..." style="min-height: 100px;"></textarea>
@@ -5687,6 +5704,10 @@
                     </div>`;
             }
 
+            const demoLink = ex.demo
+                ? `<a class="demo-link" href="${escAttr(ex.demo)}" target="_blank" rel="noopener noreferrer" aria-label="צפה בהדגמת התרגיל">▶ צפה בתרגיל</a>`
+                : '';
+
             return `
                 <div class="workout-card ${isDone ? 'exercise-done' : ''}" data-ex-index="${index}" data-num="${index + 1}">
                     <div class="exercise-header-row">
@@ -5695,106 +5716,148 @@
                         </button>
                         <h3>${esc(ex.name)}</h3>
                     </div>
+                    ${demoLink}
                     ${selectors}
                     ${prevRow}
                 </div>`;
         }
 
-        function importWhatsAppHistoryFile() {
-            const fileInput = document.getElementById('whatsapp-file-input');
-            if (!fileInput.files || fileInput.files.length === 0) {
-                return displayNativeToast('⚠️ אנא בחר קובץ txt');
+        // ============ EXCEL IMPORT ============
+        // His programmes arrive as .xlsx. Columns: EXERCISE / # REPS / # SETS /
+        // Weight (+ REST, DEMO which the app doesn't model yet). Two quirks handled:
+        //  1. Rep ranges like "10-12" get auto-converted by Excel into dates
+        //     (Oct-12); we decode the month/day back into the range.
+        //  2. A superset is a row tagged "(SUPERSET)" followed by a continuation
+        //     row with no index number — the two share reps and sets.
+        let pendingImportKind = 'paste';
+
+        function ensureXLSX() {
+            return new Promise((resolve, reject) => {
+                if (window.XLSX) return resolve();
+                const s = document.createElement('script');
+                s.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+                s.onload = () => resolve();
+                s.onerror = () => reject(new Error('xlsx load failed'));
+                document.head.appendChild(s);
+            });
+        }
+
+        function decodeReps(v) {
+            if (v == null || v === '') return null;
+            // Excel turned a rep range into a date — recover it as month-day
+            if (v instanceof Date) return Math.min(v.getMonth() + 1, v.getDate());
+            if (typeof v === 'string' && v.includes('-')) {
+                const parts = v.split('-').map(x => parseInt(x, 10)).filter(Number.isFinite);
+                if (parts.length) return Math.min(...parts);
+            }
+            const n = parseFloat(v);
+            return Number.isFinite(n) ? Math.round(n) : null;
+        }
+
+        function makeImportedExercise(name, sets, reps, weight, superset, demo) {
+            sets = sets || 3; reps = reps || 10; weight = weight || 0;
+            const ex = {
+                name, sets, reps, weight,
+                plan: { sets, reps, weight },
+                superset: !!superset,
+                history: []
+            };
+            // Only keep a real http(s) link — never anything else in a URL slot
+            if (demo && /^https?:\/\//i.test(String(demo).trim())) ex.demo = String(demo).trim();
+            return ex;
+        }
+
+        function parseWorkbookRows(rows) {
+            const headerIdx = rows.findIndex(r => Array.isArray(r) &&
+                r.some(c => String(c || '').toUpperCase().includes('EXERCISE')));
+            if (headerIdx < 0) return [];
+
+            const header = rows[headerIdx].map(c => String(c || '').trim().toUpperCase());
+            const find = keys => header.findIndex(h => keys.some(k => h.includes(k)));
+            const cName = find(['EXERCISE']);
+            const cReps = find(['REP']);
+            const cSets = find(['SET']);
+            const cWeight = find(['WEIGHT', 'KG', 'LOAD']);
+            const cDemo = find(['DEMO', 'VIDEO', 'LINK', 'URL']);
+            // The leading serial column ("#"): explicit, else the first column if names sit further right
+            let cIdx = header.findIndex(h => h === '#' || h === 'NO' || h === 'NO.');
+            if (cIdx < 0) cIdx = cName > 0 ? 0 : -1;
+
+            const out = [];
+            let group = null; // the active superset header's shared reps/sets
+
+            for (let i = headerIdx + 1; i < rows.length; i++) {
+                const r = rows[i] || [];
+                const name = String(r[cName] ?? '').trim();
+                if (!name) continue;
+
+                const hasIdx = cIdx >= 0 && r[cIdx] != null && String(r[cIdx]).trim() !== '';
+                const reps = decodeReps(r[cReps]);
+                const sets = parseInt(r[cSets], 10) || null;
+                const weight = parseFloat(r[cWeight]) || 0;
+                const demo = cDemo >= 0 ? r[cDemo] : '';
+
+                // Continuation row of a superset: no serial number, inherits reps/sets
+                if (!hasIdx && group) {
+                    out.push(makeImportedExercise(name, group.sets, group.reps, weight || group.weight, true, demo));
+                    continue;
+                }
+
+                if (/\(?\s*superset\s*\)?/i.test(name)) {
+                    const clean = name.replace(/\(\s*superset\s*\)/i, '').trim();
+                    out.push(makeImportedExercise(clean, sets, reps, weight, true, demo));
+                    group = { sets: sets || 3, reps: reps || 10, weight };
+                    continue;
+                }
+
+                out.push(makeImportedExercise(name, sets, reps, weight, false, demo));
+                group = null;
             }
 
-            const file = fileInput.files[0];
-            const reader = new FileReader();
-
-            reader.onload = async function(e) {
-                try {
-                    const text = e.target.result;
-                    const lines = text.split('\n');
-                    let parsedWorkoutsCount = 0;
-                    let currentImportDate = null;
-                    let currentImportExercises = [];
-                    
-                    // QA FIX #3: More flexible date regex for WhatsApp exports
-                    const whatsappHeaderRegex = /^\[?(\d{1,2})[\.\/](\d{1,2})[\.\/](\d{2,4})/;
-
-                    for (let i = 0; i < lines.length; i++) {
-                        const line = lines[i].trim();
-                        const dateMatch = line.match(whatsappHeaderRegex);
-
-                        if (dateMatch) {
-                            if (currentImportExercises.length > 0 && currentImportDate) {
-                                stateWorkouts.push({
-                                    id: 'wk-hist-' + Date.parse(currentImportDate) + '-' + Math.floor(Math.random()*1000),
-                                    date: currentImportDate.toISOString(),
-                                    exercises: currentImportExercises
-                                });
-                                parsedWorkoutsCount++;
-                            }
-
-                            let day = parseInt(dateMatch[1]);
-                            let month = parseInt(dateMatch[2]) - 1;
-                            let year = parseInt(dateMatch[3]);
-                            if (year < 100) year += 2000;
-
-                            currentImportDate = new Date(year, month, day, 12, 0, 0);
-                            currentImportExercises = [];
-                        }
-
-                        if (line.match(/(\d+)[×x]/)) {
-                            if (line.includes('+')) {
-                                line.split('+').forEach(part => {
-                                    const parsed = parseExerciseStringToken(part);
-                                    if (parsed) { 
-                                        parsed.superset = true; 
-                                        currentImportExercises.push(parsed); 
-                                    }
-                                });
-                            } else {
-                                const parsed = parseExerciseStringToken(line);
-                                if (parsed) currentImportExercises.push(parsed);
-                            }
-                        }
+            // "A to B (SUPERSET)" + continuation "B" → trim the header down to "A"
+            for (let i = 0; i < out.length - 1; i++) {
+                if (out[i].superset && out[i + 1].superset) {
+                    const suffix = ' to ' + out[i + 1].name.trim();
+                    if (out[i].name.toLowerCase().endsWith(suffix.toLowerCase())) {
+                        out[i].name = out[i].name.slice(0, -suffix.length).trim();
                     }
-
-                    if (currentImportExercises.length > 0 && currentImportDate) {
-                        stateWorkouts.push({ 
-                            id: 'wk-hist-' + Date.parse(currentImportDate), 
-                            date: currentImportDate.toISOString(), 
-                            exercises: currentImportExercises 
-                        });
-                        parsedWorkoutsCount++;
-                    }
-
-                    if (parsedWorkoutsCount > 0) {
-                        stateWorkouts.sort((a, b) => new Date(a.date) - new Date(b.date));
-                        const synced = await syncToCloud('/workouts', stateWorkouts);
-                        if (synced) {
-                            displayNativeToast(`🟢 ${parsedWorkoutsCount} אימונים סונכרנו לענן!`);
-                        } else {
-                            displayNativeToast(`💾 ${parsedWorkoutsCount} אימונים נשמרו במכשיר - יסתנכרנו כשהחיבור יחזור`);
-                        }
-                        invalidateIndexes();
-                        renderWeeklyWorkoutDashboard();
-                        rebuildChangesSummaryReport();
-                        fileInput.value = '';
-                    } else {
-                        displayNativeToast('❌ לא נמצאו מבנים תקינים');
-                    }
-                } catch (err) {
-                    displayNativeToast('❌ שגיאה בעיבוד הקובץ');
-                    console.error(err);
                 }
-            };
-            reader.readAsText(file);
+            }
+            return out;
+        }
+
+        async function importExcelFile() {
+            const input = document.getElementById('excel-file-input');
+            const file = input && input.files && input.files[0];
+            if (!file) return displayNativeToast('⚠️ בחר קובץ אקסל');
+
+            displayNativeToast('📊 קורא את הקובץ…');
+            try {
+                await ensureXLSX();
+                const buf = await file.arrayBuffer();
+                const wb = XLSX.read(buf, { cellDates: true });
+                const ws = wb.Sheets[wb.SheetNames[0]];
+                const rows = XLSX.utils.sheet_to_json(ws, { header: 1, raw: true, defval: '' });
+                const parsed = parseWorkbookRows(rows);
+
+                if (!parsed.length) return displayNativeToast('❌ לא נמצאו תרגילים בקובץ');
+
+                temporaryStagedWorkout = parsed;
+                pendingImportKind = 'excel';
+                renderReviewSheetUI();
+                toggleReviewSheet(true);
+                input.value = '';
+            } catch (err) {
+                console.error(err);
+                displayNativeToast(navigator.onLine ? '❌ שגיאה בקריאת האקסל' : '❌ ייבוא אקסל דורש חיבור לאינטרנט');
+            }
         }
 
         function processIncomingMessage() {
             const rawText = document.getElementById('raw-coach-payload').value.trim();
             if (!rawText) return displayNativeToast('⚠️ הזן טקסט');
 
+            pendingImportKind = 'paste';
             const lines = rawText.split('\n').filter(l => l.trim().length > 2);
             temporaryStagedWorkout = [];
 
@@ -5909,10 +5972,13 @@
             // That session happened, so it belongs in the journal and in every
             // count derived from it — otherwise the first workout of each block
             // is invisible and the weekly tally is short.
+            // A coach message means the trainer just took you through it, so it
+            // becomes a logged session. An Excel programme upload is a template for
+            // the days ahead — it must NOT log a phantom completed session.
             const alreadyToday = sessionLog.some(s =>
                 s.workoutId === newId || (s.withTrainer && dayKeyOf(s.date) === dayKeyOf(now)));
 
-            if (!alreadyToday && temporaryStagedWorkout.length) {
+            if (pendingImportKind !== 'excel' && !alreadyToday && temporaryStagedWorkout.length) {
                 sessionLog.push({
                     id: 'sess-' + Date.now(),
                     date: now,
@@ -5936,6 +6002,8 @@
             }
             
             const synced = await syncToCloud('/workouts', stateWorkouts);
+            invalidateIndexes();
+            pendingImportKind = 'paste';
             toggleReviewSheet(false);
             document.getElementById('raw-coach-payload').value = '';
             renderWeeklyWorkoutDashboard();
