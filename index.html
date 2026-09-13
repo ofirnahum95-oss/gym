@@ -1197,6 +1197,86 @@
         .is-editing .inline-edit-input.active { display: inline-block; }
         .is-editing .inline-edit-input.active + .step-value { display: none; }
 
+        /* ============ Per-set editor ============ */
+        .perset {
+            background: var(--surface-sunk);
+            border-radius: var(--r-md);
+            padding: var(--s3);
+        }
+        .perset-list { display: flex; flex-direction: column; gap: var(--s2); }
+        .perset-row {
+            display: flex;
+            align-items: center;
+            gap: var(--s2);
+        }
+        .perset-idx {
+            flex-shrink: 0;
+            width: 44px;
+            font-size: var(--t-xs);
+            color: var(--ink-soft);
+            font-weight: 600;
+        }
+        .perset-field {
+            display: inline-flex;
+            align-items: baseline;
+            gap: 3px;
+            background: var(--surface-1);
+            border: 1px solid var(--rule);
+            border-radius: var(--r-sm);
+            padding: 4px 8px;
+            flex: 1;
+        }
+        .perset-input {
+            width: 100%;
+            border: none;
+            background: transparent;
+            font-family: var(--mono);
+            font-size: var(--t-md);
+            font-weight: 700;
+            color: var(--ink);
+            text-align: center;
+            padding: 0;
+            -moz-appearance: textfield;
+        }
+        .perset-input::-webkit-outer-spin-button,
+        .perset-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+        .perset-input:read-only { color: var(--ink); }
+        .perset-field:focus-within { border-color: var(--accent); }
+        .perset-unit { flex-shrink: 0; font-size: var(--t-micro); color: var(--ink-faint); }
+        .perset-x { flex-shrink: 0; color: var(--ink-faint); font-weight: 700; }
+        .perset-del {
+            flex-shrink: 0;
+            width: 26px; height: 26px;
+            border: none; background: transparent;
+            color: var(--ink-faint); font-size: var(--t-sm);
+            border-radius: var(--r-sm); cursor: pointer;
+        }
+        .perset-del:active { background: var(--surface-2); color: var(--alert); }
+        .perset-del-spacer { flex-shrink: 0; width: 26px; }
+        .perset-add {
+            margin-top: var(--s2);
+            width: 100%;
+            border: 1px dashed var(--rule);
+            background: transparent;
+            color: var(--accent);
+            font-family: inherit;
+            font-size: var(--t-sm);
+            font-weight: 700;
+            padding: 8px;
+            border-radius: var(--r-sm);
+            cursor: pointer;
+        }
+        .perset-add:active { background: var(--accent-wash); }
+        .perset-vol {
+            margin-top: var(--s2);
+            text-align: center;
+            font-size: var(--t-xs);
+            color: var(--ink-soft);
+            font-family: var(--mono);
+            font-variant-numeric: tabular-nums;
+        }
+        .perset-vol b { color: var(--ink); }
+
         .ctrl-btn {
             background: var(--surface-1);
             border: 1px solid var(--rule);
@@ -3028,6 +3108,14 @@
                     <hr style="border: 0; border-top: 1px solid var(--rule-soft); margin-bottom: 20px;">
 
                     <div style="margin-bottom: 20px;">
+                        <h4 style="margin-bottom: 6px;">🏋️ תיעוד</h4>
+                        <div style="font-size:12px; color:var(--ink-soft); margin-bottom:10px;">מאפשר משקל וחזרות שונים בכל סט. כבוי כברירת מחדל.</div>
+                        <button class="btn btn-secondary" id="perset-toggle" onclick="togglePerSetMode()">עריכת סטים בנפרד: כבויה</button>
+                    </div>
+
+                    <hr style="border: 0; border-top: 1px solid var(--rule-soft); margin-bottom: 20px;">
+
+                    <div style="margin-bottom: 20px;">
                         <h4 style="margin-bottom: 8px;">👤 חשבון</h4>
                         <div id="account-email" style="font-size:12px; color:var(--ink-soft); margin-bottom:10px; font-family:'Roboto Mono',monospace; word-break:break-all;"></div>
                         <button class="btn btn-secondary" onclick="confirmSignOut()">התנתק</button>
@@ -3490,6 +3578,7 @@
                 const box = document.getElementById('account-email');
                 if (box) box.textContent = authState.email || '';
                 renderAutoRestLabel();
+                renderPerSetLabel();
             }
 
             if (tabId === 'view-history') {
@@ -3528,6 +3617,25 @@
             if (!btn) return;
             const on = localStorage.getItem('fitpro-autorest') !== 'off';
             btn.textContent = `מנוחה אוטומטית: ${on ? 'פעילה' : 'כבויה'}`;
+        }
+
+        // Per-set editing — off by default, stored per device (like the other
+        // preferences), so it's on only where it's turned on and never affects
+        // anyone else's board.
+        let perSetMode = localStorage.getItem('fitpro-perset') === 'on';
+
+        function togglePerSetMode() {
+            perSetMode = !perSetMode;
+            localStorage.setItem('fitpro-perset', perSetMode ? 'on' : 'off');
+            triggerHaptic(10);
+            renderPerSetLabel();
+            renderWeeklyWorkoutDashboard();
+            displayNativeToast(perSetMode ? '✅ עריכת סטים בנפרד: פעילה' : 'עריכת סטים בנפרד: כבויה');
+        }
+
+        function renderPerSetLabel() {
+            const btn = document.getElementById('perset-toggle');
+            if (btn) btn.textContent = `עריכת סטים בנפרד: ${perSetMode ? 'פעילה' : 'כבויה'}`;
         }
 
         // Show the floating timer only where it's useful, and let the pill
@@ -3731,6 +3839,12 @@
 
         function deviatesFromPlan(ex) {
             const p = planOf(ex);
+            // Per-set: any set whose load differs from the prescribed set counts
+            if (hasSetLog(ex) || hasSetLog(p)) {
+                const a = ex.setLog || [], b = p.setLog || [];
+                if (a.length !== b.length) return true;
+                return a.some((s, i) => Number(s.weight) !== Number(b[i].weight) || Number(s.reps) !== Number(b[i].reps));
+            }
             return p.weight !== ex.weight || p.reps !== ex.reps || p.sets !== ex.sets;
         }
 
@@ -4144,7 +4258,7 @@
             const todayK = dayKeyOf(new Date().toISOString());
             const best = new Map();
 
-            const consider = (name, iso, weight, reps, sets, performed) => {
+            const consider = (name, iso, src, performed) => {
                 const root = clusterOf[normalizeExerciseName((name || '').trim())];
                 if (!root) return;
                 const t = new Date(iso).getTime();
@@ -4153,21 +4267,22 @@
                 // "Last time" means before today — today's own numbers aren't a reference
                 if (dayKeyOf(iso) === todayK) return;
 
+                const rec = { timestamp: t, weight: src.weight, reps: src.reps, sets: src.sets, setLog: src.setLog, performed };
                 const cur = best.get(root);
-                if (!cur) { best.set(root, { timestamp: t, weight, reps, sets, performed }); return; }
+                if (!cur) { best.set(root, rec); return; }
 
                 // Newer wins; on the same day a logged session beats a prescription
                 const sameDay = dayKeyOf(new Date(cur.timestamp).toISOString()) === dayKeyOf(iso);
                 if (t > cur.timestamp || (sameDay && performed && !cur.performed)) {
-                    best.set(root, { timestamp: t, weight, reps, sets, performed });
+                    best.set(root, rec);
                 }
             };
 
             stateWorkouts.forEach(w => {
-                w.exercises?.forEach(ex => consider(ex.name, w.date, ex.weight, ex.reps, ex.sets, false));
+                w.exercises?.forEach(ex => consider(ex.name, w.date, ex, false));
             });
             sessionLog.forEach(s => {
-                s.entries?.forEach(e => consider(e.name, s.date, e.weight, e.reps, e.sets, true));
+                s.entries?.forEach(e => consider(e.name, s.date, e, true));
             });
 
             lastPerformedIndex = new Map();
@@ -4204,24 +4319,56 @@
             return (weight || 0) * (reps || 0) * (sets || 0);
         }
 
+        // ============ PER-SET SUPPORT ============
+        // An exercise or session entry may carry setLog:[{weight,reps}] — one row
+        // per set, each with its own load. When present it's the source of truth;
+        // otherwise everything falls back to the scalar weight×reps×sets, so per-set
+        // mode stays completely invisible to the rest of the app when it's off.
+        function hasSetLog(x) { return !!(x && Array.isArray(x.setLog) && x.setLog.length); }
+
+        function entryVolume(x) {
+            if (hasSetLog(x)) {
+                return x.setLog.reduce((n, s) => n + (Number(s.weight) || 0) * (Number(s.reps) || 0), 0);
+            }
+            return workVolume(x.weight, x.reps, x.sets);
+        }
+
+        // The heaviest set's estimated 1RM — the one strength number when needed
+        function entryTopE1rm(x) {
+            if (hasSetLog(x)) {
+                return Math.max(0, ...x.setLog.map(s => e1rm(s.weight, s.reps)));
+            }
+            return e1rm(x.weight, x.reps);
+        }
+
+        // Trend between two readings. If either side is per-set, compare by total
+        // volume (the metric chosen for per-set); otherwise use the metric-wise rule.
+        function readingTrend(cur, prev) {
+            if (hasSetLog(cur) || hasSetLog(prev)) {
+                const a = entryVolume(cur), b = entryVolume(prev);
+                return a > b ? 'up' : a < b ? 'down' : 'same';
+            }
+            return effortTrend(cur, prev);
+        }
+
         function buildSparkIndex() {
             const { clusterOf } = computeExerciseClusters();
             const series = new Map();
 
-            const add = (name, iso, weight, reps, sets) => {
+            const add = (name, iso, src) => {
                 const root = clusterOf[normalizeExerciseName((name || '').trim())];
                 if (!root) return;
                 const t = new Date(iso).getTime();
                 if (!Number.isFinite(t)) return;
-                const v = workVolume(weight, reps, sets);
+                const v = entryVolume(src);
                 if (!v) return;
                 if (!series.has(root)) series.set(root, new Map());
                 // One reading per day; a logged session overwrites the plan
-                series.get(root).set(dayKeyOf(iso), { t, v, weight, reps, sets });
+                series.get(root).set(dayKeyOf(iso), { t, v, weight: src.weight, reps: src.reps, sets: src.sets, setLog: src.setLog });
             };
 
-            stateWorkouts.forEach(w => w.exercises?.forEach(ex => add(ex.name, w.date, ex.weight, ex.reps, ex.sets)));
-            sessionLog.forEach(s => s.entries?.forEach(e => add(e.name, s.date, e.weight, e.reps, e.sets)));
+            stateWorkouts.forEach(w => w.exercises?.forEach(ex => add(ex.name, w.date, ex)));
+            sessionLog.forEach(s => s.entries?.forEach(e => add(e.name, s.date, e)));
 
             sparkIndex = new Map();
             series.forEach((days, root) => {
@@ -4245,26 +4392,27 @@
             sessionTrendClusterOf = clusterOf;
             const series = new Map();
 
-            const add = (name, iso, weight, reps, sets) => {
+            const add = (name, iso, src) => {
                 const root = clusterOf[normalizeExerciseName((name || '').trim())];
                 if (!root) return;
                 const t = new Date(iso).getTime();
                 if (!Number.isFinite(t)) return;
+                const { weight, reps, sets } = src;
                 // Keep any real reading — a bodyweight set (weight 0) still counts
                 // if it has reps, since more reps is progress on its own.
-                if (!(weight > 0 || reps > 0 || sets > 0)) return;
+                if (!(weight > 0 || reps > 0 || sets > 0 || hasSetLog(src))) return;
                 if (!series.has(root)) series.set(root, new Map());
                 // One reading per day; a logged session overwrites a plan the same day
-                series.get(root).set(dayKeyOf(iso), { t, weight, reps, sets });
+                series.get(root).set(dayKeyOf(iso), { t, weight, reps, sets, setLog: src.setLog });
             };
 
-            stateWorkouts.forEach(w => w.exercises?.forEach(ex => add(ex.name, w.date, ex.weight, ex.reps, ex.sets)));
-            sessionLog.forEach(s => s.entries?.forEach(e => add(e.name, s.date, e.weight, e.reps, e.sets)));
+            stateWorkouts.forEach(w => w.exercises?.forEach(ex => add(ex.name, w.date, ex)));
+            sessionLog.forEach(s => s.entries?.forEach(e => add(e.name, s.date, e)));
 
             sessionTrendIndex = new Map();
             series.forEach((days, root) => {
                 const pts = Array.from(days.entries())
-                    .map(([dayKey, o]) => ({ dayKey, t: o.t, weight: o.weight, reps: o.reps, sets: o.sets }))
+                    .map(([dayKey, o]) => ({ dayKey, t: o.t, weight: o.weight, reps: o.reps, sets: o.sets, setLog: o.setLog }))
                     .sort((a, b) => a.t - b.t);
                 sessionTrendIndex.set(root, pts);
             });
@@ -4299,7 +4447,7 @@
             const dk = dayKeyOf(sessionISO);
             const idx = pts.findIndex(p => p.dayKey === dk);
             if (idx <= 0) return null;   // first ever reading, or not found
-            return effortTrend(entry, pts[idx - 1]);
+            return readingTrend(entry, pts[idx - 1]);
         }
 
         function sparklineFor(exerciseName) {
@@ -4326,7 +4474,7 @@
             // Colour follows our rule — any increase (weight, reps or sets) vs the
             // previous session is up, even if volume fell — so it agrees with the
             // arrows in the log and against last time, instead of last-vs-first volume.
-            const dir = effortTrend(pts[pts.length - 1], pts[pts.length - 2]);
+            const dir = readingTrend(pts[pts.length - 1], pts[pts.length - 2]);
             const tone = dir === 'up' ? 'up' : dir === 'down' ? 'down' : 'flat';
 
             return `<svg class="spark ${tone}" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" aria-hidden="true">
@@ -5213,15 +5361,17 @@
                         // stays answerable years later
                         planWeight: p.weight,
                         planReps: p.reps,
-                        planSets: p.sets
+                        planSets: p.sets,
+                        // Per-set detail travels with the entry when it exists
+                        ...(hasSetLog(ex) ? { setLog: ex.setLog.map(s => ({ weight: s.weight, reps: s.reps })) } : {}),
+                        ...(hasSetLog(p) ? { planSetLog: p.setLog.map(s => ({ weight: s.weight, reps: s.reps })) } : {})
                     };
                 })
             };
         }
 
         function sessionVolume(session) {
-            return session.entries.reduce((sum, e) =>
-                sum + workVolume(e.weight, e.reps, e.sets), 0);
+            return session.entries.reduce((sum, e) => sum + entryVolume(e), 0);
         }
 
         // Finish the workout: snapshot what was done, then clear the board
@@ -5328,9 +5478,12 @@
                                : dir === 'down' ? ' <b>↓</b>'
                                : dir === 'same' ? ' <b class="flat">=</b>' : '';
                     const cls = dir === 'up' ? ' up' : dir === 'down' ? ' down' : '';
+                    const figs = hasSetLog(e)
+                        ? e.setLog.map(s => `${s.weight}×${s.reps}`).join(' · ')
+                        : `${e.reps}×${e.sets} · ${e.weight}`;
                     return `<div class="session-row">
                         <span class="session-ex">${esc(e.name)}</span>
-                        <span class="session-fig${cls}">${e.reps}×${e.sets} · ${e.weight}${mark}</span>
+                        <span class="session-fig${cls}">${figs}${mark}</span>
                     </div>`;
                 }).join('');
 
@@ -5390,7 +5543,70 @@
         // Any increase — weight, reps or sets — reads as up, even if another
         // metric drops (heavier for fewer reps still counts as progress).
         function trendAgainst(ex, prev) {
-            return effortTrend(ex, prev);
+            return readingTrend(ex, prev);
+        }
+
+        // ---- Per-set editing ----
+        function ensureSetLog(ex) {
+            if (!hasSetLog(ex)) {
+                const n = Math.max(1, ex.sets || 1);
+                ex.setLog = Array.from({ length: n }, () => ({ weight: ex.weight, reps: ex.reps }));
+            }
+            return ex.setLog;
+        }
+
+        // Keep a scalar summary (heaviest set) so any reader that isn't per-set
+        // aware still shows something sane; volume-critical paths use entryVolume.
+        function syncScalarFromSetLog(ex) {
+            if (!hasSetLog(ex)) return;
+            ex.sets = ex.setLog.length;
+            let top = ex.setLog[0];
+            ex.setLog.forEach(s => { if ((Number(s.weight) || 0) > (Number(top.weight) || 0)) top = s; });
+            ex.weight = Number(top.weight) || 0;
+            ex.reps = Number(top.reps) || 0;
+        }
+
+        function saveSetValue(exIndex, setIndex, field, value) {
+            const active = getActiveWorkout();
+            const ex = active?.exercises?.[exIndex];
+            if (!ex) return;
+            const log = ensureSetLog(ex);
+            if (!log[setIndex]) return;
+            const num = parseFloat(value);
+            log[setIndex][field] = Number.isFinite(num) ? num : 0;
+            syncScalarFromSetLog(ex);
+            rebuildChangesSummaryReport();
+            renderCoachUpdateCard();
+            queueSync('/workouts', () => stateWorkouts);
+            renderWeeklyWorkoutDashboard();
+        }
+
+        function addSet(exIndex) {
+            const active = getActiveWorkout();
+            const ex = active?.exercises?.[exIndex];
+            if (!ex) return;
+            const log = ensureSetLog(ex);
+            const last = log[log.length - 1] || { weight: ex.weight, reps: ex.reps };
+            log.push({ weight: last.weight, reps: last.reps });
+            syncScalarFromSetLog(ex);
+            triggerHaptic(8);
+            queueSync('/workouts', () => stateWorkouts);
+            renderWeeklyWorkoutDashboard();
+        }
+
+        function removeSet(exIndex, setIndex) {
+            const active = getActiveWorkout();
+            const ex = active?.exercises?.[exIndex];
+            if (!ex) return;
+            const log = ensureSetLog(ex);
+            if (log.length <= 1) return;
+            log.splice(setIndex, 1);
+            syncScalarFromSetLog(ex);
+            triggerHaptic(8);
+            rebuildChangesSummaryReport();
+            renderCoachUpdateCard();
+            queueSync('/workouts', () => stateWorkouts);
+            renderWeeklyWorkoutDashboard();
         }
 
         function generateInlineExerciseRow(ex, index) {
@@ -5421,14 +5637,38 @@
                     </div>`;
             }
 
-            return `
-                <div class="workout-card ${isDone ? 'exercise-done' : ''}" data-ex-index="${index}" data-num="${index + 1}">
-                    <div class="exercise-header-row">
-                        <button class="complete-toggle ${isDone ? 'checked' : ''}" onclick="toggleExerciseComplete(${index})" aria-label="סמן כהושלם">
-                            ${isDone ? '✓' : ''}
-                        </button>
-                        <h3>${esc(ex.name)}</h3>
-                    </div>
+            // Per-set mode swaps the two summary tiles for one editable row per set.
+            // Off by default, so a scalar card is byte-for-byte what it was before.
+            let selectors;
+            if (perSetMode) {
+                const rows = hasSetLog(ex)
+                    ? ex.setLog
+                    : Array.from({ length: Math.max(1, ex.sets || 1) }, () => ({ weight: ex.weight, reps: ex.reps }));
+                const vol = Math.round(rows.reduce((n, s) => n + (Number(s.weight) || 0) * (Number(s.reps) || 0), 0));
+                const ed = isEditingModeActive;
+                selectors = `
+                    <div class="perset">
+                        <div class="perset-list">
+                            ${rows.map((s, si) => `
+                                <div class="perset-row">
+                                    <span class="perset-idx">סט ${si + 1}</span>
+                                    <span class="perset-field">
+                                        <input type="number" step="0.5" class="perset-input" value="${s.weight}" inputmode="decimal" ${ed ? '' : 'readonly'} onblur="saveSetValue(${index}, ${si}, 'weight', this.value)">
+                                        <span class="perset-unit">ק"ג</span>
+                                    </span>
+                                    <span class="perset-x">×</span>
+                                    <span class="perset-field">
+                                        <input type="number" class="perset-input" value="${s.reps}" inputmode="numeric" ${ed ? '' : 'readonly'} onblur="saveSetValue(${index}, ${si}, 'reps', this.value)">
+                                        <span class="perset-unit">חז'</span>
+                                    </span>
+                                    ${ed && rows.length > 1 ? `<button class="perset-del" onclick="removeSet(${index}, ${si})" aria-label="הסר סט">✕</button>` : '<span class="perset-del-spacer"></span>'}
+                                </div>`).join('')}
+                        </div>
+                        ${ed ? `<button class="perset-add" onclick="addSet(${index})">+ הוסף סט</button>` : ''}
+                        <div class="perset-vol">נפח: <b>${vol}</b> ק"ג</div>
+                    </div>`;
+            } else {
+                selectors = `
                     <div class="card-selectors">
                         <div class="inline-stepper ${isEditingModeActive ? 'is-editing' : ''}">
                             <span class="stepper-label">משקל ${weightHint}</span>
@@ -5444,7 +5684,18 @@
                             <span class="step-value reps" onclick="enableManualInput('inp-r-${index}')">${ex.reps}×${ex.sets}</span>
                             <button class="ctrl-btn" onclick="modifyMetric(${index}, 'reps', 1)" aria-label="הוסף חזרה">+</button>
                         </div>
+                    </div>`;
+            }
+
+            return `
+                <div class="workout-card ${isDone ? 'exercise-done' : ''}" data-ex-index="${index}" data-num="${index + 1}">
+                    <div class="exercise-header-row">
+                        <button class="complete-toggle ${isDone ? 'checked' : ''}" onclick="toggleExerciseComplete(${index})" aria-label="סמן כהושלם">
+                            ${isDone ? '✓' : ''}
+                        </button>
+                        <h3>${esc(ex.name)}</h3>
                     </div>
+                    ${selectors}
                     ${prevRow}
                 </div>`;
         }
