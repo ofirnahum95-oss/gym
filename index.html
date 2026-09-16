@@ -1238,7 +1238,7 @@
             align-items: baseline;
             gap: 3px;
             background: var(--surface-1);
-            border: 1px solid var(--rule);
+            border: 1px solid transparent;
             border-radius: var(--r-sm);
             padding: 4px 8px;
             flex: 1;
@@ -1257,8 +1257,16 @@
         }
         .perset-input::-webkit-outer-spin-button,
         .perset-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
-        .perset-input:read-only { color: var(--ink); }
-        .perset-field:focus-within { border-color: var(--accent); }
+        /* Locked (edit mode off): flat, no border, not a tap target visually */
+        .perset-input:read-only { cursor: default; }
+        .perset-field:has(.perset-input:read-only) { border-color: transparent; }
+        /* Unlocked (edit mode on): the same accent affordance as the scalar
+           editor's dashed underline, so both editors speak one visual language */
+        .is-editing .perset-field { border-color: var(--rule); }
+        .is-editing .perset-field:has(.perset-input:not(:read-only)) {
+            border-color: color-mix(in srgb, var(--accent) 35%, transparent);
+        }
+        .perset-field:focus-within:has(.perset-input:not(:read-only)) { border-color: var(--accent); }
         .perset-unit { flex-shrink: 0; font-size: var(--t-micro); color: var(--ink-faint); }
         .perset-x { flex-shrink: 0; color: var(--ink-faint); font-weight: 700; }
         .perset-del {
@@ -1267,10 +1275,15 @@
             border: none; background: transparent;
             color: var(--ink-faint); font-size: var(--t-sm);
             border-radius: var(--r-sm); cursor: pointer;
+            /* Present in the DOM always so toggling edit mode needs no re-render;
+               CSS alone decides whether it's reachable. */
+            display: none;
         }
+        .is-editing .perset-del { display: inline-flex; align-items: center; justify-content: center; }
         .perset-del:active { background: var(--surface-2); color: var(--alert); }
         .perset-del-spacer { flex-shrink: 0; width: 26px; }
         .perset-add {
+            display: none;
             margin-top: var(--s2);
             width: 100%;
             border: 1px dashed var(--rule);
@@ -1283,6 +1296,7 @@
             border-radius: var(--r-sm);
             cursor: pointer;
         }
+        .is-editing .perset-add { display: block; }
         .perset-add:active { background: var(--accent-wash); }
         .perset-vol {
             margin-top: var(--s2);
@@ -1293,6 +1307,16 @@
             font-variant-numeric: tabular-nums;
         }
         .perset-vol b { color: var(--ink); }
+
+        /* Stage & superset compact treatment, mirroring the scalar editor's */
+        .stage .perset { padding: var(--s3); }
+        .stage .perset-input { font-size: var(--t-lg); }
+        .stage .superset-wrapper .perset { padding: var(--s2); }
+        .stage .superset-wrapper .perset-row { gap: 6px; }
+        .stage .superset-wrapper .perset-idx { width: 36px; font-size: var(--t-micro); }
+        .stage .superset-wrapper .perset-input { font-size: var(--t-sm); }
+        .stage .superset-wrapper .perset-unit { display: none; }
+        .stage .superset-wrapper .perset-field { padding: 3px 6px; }
 
         .ctrl-btn {
             background: var(--surface-1);
@@ -3808,6 +3832,14 @@
             document.querySelectorAll('.inline-stepper').forEach(el => {
                 el.classList.toggle('is-editing', isEditingModeActive);
             });
+
+            // Per-set inputs: CSS handles the add/delete buttons' visibility, but
+            // `readOnly` is a real DOM property CSS can't set — it has to be
+            // flipped directly so an already-rendered card unlocks (or locks
+            // back up) the instant edit mode changes, with no re-render needed.
+            document.querySelectorAll('.perset-input').forEach(el => {
+                el.readOnly = !isEditingModeActive;
+            });
         }
 
         // ============ WORKOUT MODEL ============
@@ -4018,9 +4050,17 @@
                 return;
             }
             const inputField = document.getElementById(elementId);
+            if (!inputField) return;
             inputField.classList.add('active');
-            inputField.focus();
-            inputField.select();
+            // iOS Safari routinely drops focus() when it's called in the same
+            // frame that made the element visible (the 'active' class is what
+            // flips display:none -> inline-block). Waiting one frame lets the
+            // browser finish that layout pass first, so the field opens on the
+            // FIRST tap instead of needing a second one to "catch up".
+            requestAnimationFrame(() => {
+                inputField.focus();
+                inputField.select();
+            });
         }
 
         async function saveManualInputValue(exerciseIndex, field, value) {
@@ -4037,9 +4077,12 @@
             let numVal = parseFloat(value) || 0;
             if (numVal < 0) numVal = 0;
 
-            // No actual change? Just re-render to clear the input state.
+            // No actual change? Just re-render to clear the input state — unless
+            // a stale setLog is still lurking behind that matching summary number,
+            // in which case this "unchanged" scalar edit is exactly what should
+            // clear it.
             const newVal = field === 'weight' ? numVal : Math.max(1, Math.floor(numVal));
-            if (targetExercise[field] === newVal) {
+            if (targetExercise[field] === newVal && !hasSetLog(targetExercise)) {
                 renderWeeklyWorkoutDashboard();
                 return;
             }
@@ -4054,6 +4097,12 @@
             if (!targetExercise.history) targetExercise.history = [];
             targetExercise.history.push(oldRecord);
             invalidateIndexes();
+
+            // Same reasoning as modifyMetric: a scalar edit must actually take
+            // effect even if the exercise still carries a setLog from an earlier
+            // per-set session — otherwise every downstream calculation keeps
+            // reading the stale array and quietly ignores this edit.
+            delete targetExercise.setLog;
 
             if (field === 'weight') targetExercise.weight = numVal;
             if (field === 'reps') targetExercise.reps = Math.max(1, Math.floor(numVal));
@@ -4197,6 +4246,14 @@
             if (!targetExercise.history) targetExercise.history = [];
             targetExercise.history.push(oldRecord);
             invalidateIndexes();
+
+            // A scalar edit means the person is treating this as one number again.
+            // Every volume/trend/adherence calculation prefers setLog when it's
+            // present, so a leftover array from an earlier per-set session would
+            // silently keep overriding this edit forever if left in place —
+            // exactly the kind of stale state the per-set toggle must not leave
+            // behind once it's switched off.
+            delete targetExercise.setLog;
 
             if (field === 'weight') {
                 targetExercise.weight = Math.max(0, parseFloat((targetExercise.weight + delta).toFixed(1)));
@@ -4627,7 +4684,7 @@
             const { clusterOf, exerciseMap } = computeExerciseClusters();
             const series = new Map();
 
-            const add = (name, iso, weight, reps, sets, performed) => {
+            const add = (name, iso, src, performed) => {
                 const root = clusterOf[normalizeExerciseName((name || '').trim())];
                 if (!root) return;
                 const t = new Date(iso).getTime();
@@ -4637,14 +4694,14 @@
                 const seen = series.get(root).get(day);
                 // A logged session outranks a prescription for the same day
                 if (!seen || performed) {
-                    series.get(root).set(day, { t, weight, reps, sets, performed });
+                    series.get(root).set(day, { t, weight: src.weight, reps: src.reps, sets: src.sets, setLog: src.setLog, performed });
                 }
             };
 
             stateWorkouts.forEach(w =>
-                w.exercises?.forEach(ex => add(ex.name, w.date, ex.weight, ex.reps, ex.sets, false)));
+                w.exercises?.forEach(ex => add(ex.name, w.date, ex, false)));
             sessionLog.forEach(sn =>
-                sn.entries?.forEach(e => add(e.name, sn.date, e.weight, e.reps, e.sets, true)));
+                sn.entries?.forEach(e => add(e.name, sn.date, e, true)));
 
             const out = new Map();
             series.forEach((days, root) => {
@@ -4678,6 +4735,21 @@
                 // The step has to be recent to be worth reporting
                 if (end.t < cutoff) return;
 
+                // Per-set exercises don't have a single "weight" that moved — their
+                // progress is total volume. Give them their own kind of gain row.
+                if (hasSetLog(end) || hasSetLog(prev)) {
+                    const vGain = Math.round(entryVolume(end) - entryVolume(prev));
+                    if (vGain > 0) {
+                        gains.push({
+                            type: 'volume', display,
+                            fromLabel: `${Math.round(entryVolume(prev))}`, toLabel: `${Math.round(entryVolume(end))}`,
+                            badge: `+${vGain}<small> נפח</small>`,
+                            gain: vGain, lastSeen: end.t, since: prev.t
+                        });
+                    }
+                    return;
+                }
+
                 const wGain = end.weight - prev.weight;
                 const rGain = (end.reps || 0) - (prev.reps || 0);
 
@@ -4704,11 +4776,9 @@
                 }
             });
 
-            // Weight gains lead (the kg story); rep gains follow, each by magnitude
-            gains.sort((a, b) => {
-                if (a.type !== b.type) return a.type === 'weight' ? -1 : 1;
-                return b.gain - a.gain;
-            });
+            // Weight gains lead (the kg story); then rep gains, then volume gains
+            const rank = { weight: 0, reps: 1, volume: 2 };
+            gains.sort((a, b) => (rank[a.type] - rank[b.type]) || (b.gain - a.gain));
             return gains;
         }
 
@@ -4735,7 +4805,7 @@
                     const display = exerciseMap.get(root) || e.name;
                     const g = ensure(categorizeExercise(display));
                     g.sets += e.sets || 0;
-                    g.volume += workVolume(e.weight, e.reps, e.sets);
+                    g.volume += entryVolume(e);
                     g.lifts.add(root || display);
                 });
             });
@@ -4853,8 +4923,9 @@
                 s.entries?.forEach(e => {
                     if (e.planWeight == null || e.planReps == null) { unknown++; return; }
 
-                    const plan = { weight: e.planWeight, reps: e.planReps, sets: e.planSets ?? e.sets };
-                    const dir = effortTrend(e, plan);
+                    // Carry the per-set plan so the comparison matches the actual
+                    const plan = { weight: e.planWeight, reps: e.planReps, sets: e.planSets ?? e.sets, setLog: e.planSetLog };
+                    const dir = readingTrend(e, plan);
 
                     if (dir === 'up') above++;          // beat the plan on some axis
                     else if (dir === 'same') on++;      // matched it exactly
@@ -4862,8 +4933,8 @@
                         below++;
                         // Rank the shortfall by how far the volume fell — worst first.
                         // A 'down' verdict means no axis rose, so volume is always < asked.
-                        const asked = workVolume(plan.weight, plan.reps, plan.sets);
-                        const ratio = asked ? workVolume(e.weight, e.reps, e.sets) / asked : 1;
+                        const asked = entryVolume(plan);
+                        const ratio = asked ? entryVolume(e) / asked : 1;
                         const cur = shortfalls.get(e.name) || { name: e.name, times: 0, worst: 1 };
                         cur.times++;
                         cur.worst = Math.min(cur.worst, ratio);
@@ -4979,7 +5050,7 @@
                 if (!Number.isFinite(t) || t < cutoff) return;
                 s.entries?.forEach(e => {
                     const root = clusterOf[normalizeExerciseName((e.name || '').trim())];
-                    const v = e1rm(e.weight, e.reps);
+                    const v = entryTopE1rm(e);
                     if (root && v) rows.push({ t, dayKey: dayKeyOf(s.date), root, v });
                 });
             });
@@ -5022,13 +5093,14 @@
                      sub: 'הכוח יציב בתקופה — שינוי בתוכנית יכול להזיז אותו' };
         }
 
-        // Per-lift movement over the window, by e1RM: what's climbing, flat, or down
+        // Per-lift movement over the window, by e1RM (top set when per-set):
+        // what's climbing, flat, or down
         function buildLiftMovers(windowDays) {
             const cutoff = Date.now() - windowDays * 86400000;
             const out = [];
             allReadings().forEach(({ display, points }) => {
                 const win = points.filter(p => p.t >= cutoff).sort((a, b) => a.t - b.t);
-                const series = win.map(p => e1rm(p.weight, p.reps)).filter(v => v > 0);
+                const series = win.map(p => entryTopE1rm(p)).filter(v => v > 0);
                 if (series.length < 2) return;
                 const first = series[0], last = series[series.length - 1];
                 const pct = Math.round((last - first) / first * 100);
@@ -5584,6 +5656,12 @@
         }
 
         function saveSetValue(exIndex, setIndex, field, value) {
+            // Safety net: refuse the write no matter how this was triggered —
+            // mirrors the guard on saveManualInputValue/modifyMetric
+            if (!isEditingModeActive) {
+                renderWeeklyWorkoutDashboard();
+                return;
+            }
             const active = getActiveWorkout();
             const ex = active?.exercises?.[exIndex];
             if (!ex) return;
@@ -5599,6 +5677,7 @@
         }
 
         function addSet(exIndex) {
+            if (!isEditingModeActive) return;
             const active = getActiveWorkout();
             const ex = active?.exercises?.[exIndex];
             if (!ex) return;
@@ -5612,6 +5691,7 @@
         }
 
         function removeSet(exIndex, setIndex) {
+            if (!isEditingModeActive) return;
             const active = getActiveWorkout();
             const ex = active?.exercises?.[exIndex];
             if (!ex) return;
@@ -5646,10 +5726,17 @@
                 const dir = trendAgainst(ex, prev);
                 const arrow = dir === 'up' ? '↑' : dir === 'down' ? '↓' : '=';
                 const spark = sparklineFor(ex.name);
+                // A per-set reading has no single "weight" worth quoting — show
+                // the sets themselves, same shorthand as the log screen, so the
+                // one thing this strip exists for (what did I lift last time)
+                // doesn't quietly collapse to just the heaviest set.
+                const figs = hasSetLog(prev)
+                    ? prev.setLog.map(s => `${s.weight}×${s.reps}`).join(' · ')
+                    : `${prev.weight} · ${prev.reps}×${prev.sets}`;
                 prevRow = `
                     <div class="last-time ${dir}">
                         <span class="last-time-label">${describeGap(prev.timestamp)}</span>
-                        <span class="last-time-figs">${prev.weight} · ${prev.reps}×${prev.sets}</span>
+                        <span class="last-time-figs">${figs}</span>
                         ${spark || `<span class="last-time-arrow">${arrow}</span>`}
                     </div>`;
             }
@@ -5663,6 +5750,10 @@
                     : Array.from({ length: Math.max(1, ex.sets || 1) }, () => ({ weight: ex.weight, reps: ex.reps }));
                 const vol = Math.round(rows.reduce((n, s) => n + (Number(s.weight) || 0) * (Number(s.reps) || 0), 0));
                 const ed = isEditingModeActive;
+                // The button/lock state is driven by CSS + a live property sync in
+                // toggleEditMode (see there), not baked into this HTML — otherwise
+                // toggling edit mode on an already-rendered card has no effect until
+                // something else happens to force a fresh render.
                 selectors = `
                     <div class="perset">
                         <div class="perset-list">
@@ -5678,10 +5769,12 @@
                                         <input type="number" class="perset-input" value="${s.reps}" inputmode="numeric" ${ed ? '' : 'readonly'} onblur="saveSetValue(${index}, ${si}, 'reps', this.value)">
                                         <span class="perset-unit">חז'</span>
                                     </span>
-                                    ${ed && rows.length > 1 ? `<button class="perset-del" onclick="removeSet(${index}, ${si})" aria-label="הסר סט">✕</button>` : '<span class="perset-del-spacer"></span>'}
+                                    ${rows.length > 1
+                                        ? `<button class="perset-del" onclick="removeSet(${index}, ${si})" aria-label="הסר סט">✕</button>`
+                                        : '<span class="perset-del-spacer"></span>'}
                                 </div>`).join('')}
                         </div>
-                        ${ed ? `<button class="perset-add" onclick="addSet(${index})">+ הוסף סט</button>` : ''}
+                        <button class="perset-add" onclick="addSet(${index})">+ הוסף סט</button>
                         <div class="perset-vol">נפח: <b>${vol}</b> ק"ג</div>
                     </div>`;
             } else {
@@ -6244,9 +6337,9 @@
                 const first = points[0];
 
                 // Volume captures progress that weight alone misses — more reps at
-                // the same load is still progress.
-                const vol = p => workVolume(p.weight, p.reps, p.sets);
-                const delta = latest.weight - first.weight;
+                // the same load, or a per-set change, is still progress.
+                const vol = p => entryVolume(p);
+                const delta = entryTopE1rm(latest) - entryTopE1rm(first);
                 const volDelta = vol(latest) - vol(first);
 
                 let state;
