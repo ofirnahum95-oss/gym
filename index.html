@@ -4063,6 +4063,18 @@
             });
         }
 
+        // The per-set fields are real <input readonly> elements rather than the
+        // span-plus-hidden-input pair the scalar editor uses, so they never went
+        // through enableManualInput and its lock toast — tapping one while locked
+        // just silently focused it. This gives per-set the same "🔒 turn on edit
+        // mode" feedback scalar already had.
+        function guardPerSetInput(el) {
+            if (isEditingModeActive) return;
+            el.blur();
+            displayNativeToast('🔒 לחץ על ✏️ ערוך כדי לשנות נתונים');
+            triggerHaptic(6);
+        }
+
         async function saveManualInputValue(exerciseIndex, field, value) {
             // Safety net: refuse the write no matter how this was triggered
             if (!isEditingModeActive) {
@@ -5761,12 +5773,12 @@
                                 <div class="perset-row">
                                     <span class="perset-idx">סט ${si + 1}</span>
                                     <span class="perset-field">
-                                        <input type="number" step="0.5" class="perset-input" value="${s.weight}" inputmode="decimal" ${ed ? '' : 'readonly'} onblur="saveSetValue(${index}, ${si}, 'weight', this.value)">
+                                        <input type="number" step="0.5" class="perset-input" value="${s.weight}" inputmode="decimal" ${ed ? '' : 'readonly'} onclick="guardPerSetInput(this)" onblur="saveSetValue(${index}, ${si}, 'weight', this.value)">
                                         <span class="perset-unit">ק"ג</span>
                                     </span>
                                     <span class="perset-x">×</span>
                                     <span class="perset-field">
-                                        <input type="number" class="perset-input" value="${s.reps}" inputmode="numeric" ${ed ? '' : 'readonly'} onblur="saveSetValue(${index}, ${si}, 'reps', this.value)">
+                                        <input type="number" class="perset-input" value="${s.reps}" inputmode="numeric" ${ed ? '' : 'readonly'} onclick="guardPerSetInput(this)" onblur="saveSetValue(${index}, ${si}, 'reps', this.value)">
                                         <span class="perset-unit">חז'</span>
                                     </span>
                                     ${rows.length > 1
