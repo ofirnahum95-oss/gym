@@ -22,7 +22,7 @@
     <meta name="format-detection" content="telephone=no, date=no, address=no, email=no">
     <meta name="color-scheme" content="light dark">
     <title>FitPro - ניטור אימונים</title>
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'><defs><linearGradient id='grad' x1='0%' y1='0%' x2='100%' y2='100%'><stop offset='0%' style='stop-color:%230052cc'/><stop offset='100%' style='stop-color:%23003d99'/></linearGradient></defs><rect fill='url(%23grad)' width='180' height='180'/><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' font-size='72' font-weight='800' font-family='system-ui, -apple-system' fill='white' letter-spacing='-2'>FIT</text></svg>">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'><defs><linearGradient id='grad' x1='0%25' y1='0%25' x2='100%25' y2='100%25'><stop offset='0%25' style='stop-color:%230052cc'/><stop offset='100%25' style='stop-color:%23003d99'/></linearGradient></defs><rect fill='url(%23grad)' width='180' height='180'/><text x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-size='72' font-weight='800' font-family='system-ui, -apple-system' fill='white' letter-spacing='-2'>FIT</text></svg>">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600;700;800&family=Roboto+Mono:wght@500;600;700&display=swap" rel="stylesheet">
@@ -1057,6 +1057,54 @@
             border: 1px solid color-mix(in srgb, var(--accent) 28%, transparent);
         }
         .demo-link:active { background: color-mix(in srgb, var(--accent) 18%, transparent); }
+
+        /* Personal note per exercise — same pill language as the demo link, but
+           neutral until a note actually exists so an untouched card stays quiet. */
+        .note-row {
+            display: flex;
+            margin-bottom: var(--s3);
+        }
+        .note-toggle-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 5px 11px;
+            border-radius: var(--r-pill);
+            background: var(--surface-sunk);
+            color: var(--ink-soft);
+            font-family: inherit;
+            font-size: var(--t-xs);
+            font-weight: 700;
+            border: 1px solid transparent;
+            cursor: pointer;
+            transition: all 0.18s ease;
+        }
+        .note-toggle-btn.has-note {
+            background: var(--accent-wash);
+            color: var(--accent);
+            border-color: color-mix(in srgb, var(--accent) 28%, transparent);
+        }
+        .note-toggle-btn:active { transform: scale(0.96); }
+
+        .note-preview {
+            margin-bottom: var(--s3);
+            padding: var(--s2) var(--s3);
+            background: var(--surface-sunk);
+            border-radius: var(--r-md);
+            font-size: var(--t-sm);
+            color: var(--ink-soft);
+            line-height: 1.45;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .note-panel { display: none; margin-bottom: var(--s3); }
+        .note-panel.open { display: block; }
+        .note-panel textarea {
+            min-height: 64px;
+            font-size: var(--t-sm);
+            margin-bottom: 0;
+        }
 
         .workout-card h3 {
             font-size: var(--t-md);
@@ -4577,6 +4625,8 @@
 
         let viewMode = 'stage';   // 'stage' | 'list'
         let stageIndex = 0;
+        // Which exercise's note editor is expanded — cleared whenever it closes.
+        let openNoteIndex = null;
 
         // A slide is one exercise, or a superset pair that belongs together
         function buildSlides(exercises) {
@@ -4678,6 +4728,61 @@
             const slides = buildSlides(active.exercises);
             const at = slides.findIndex(s => s.some(i => !isCompletedToday(active.exercises[i])));
             stageIndex = at === -1 ? slides.length - 1 : at;
+        }
+
+        // ============ EXERCISE NOTES ============
+        // A free-text note per exercise ("felt tight in the left shoulder", "use
+        // the wider grip"), independent from the plan/actual numbers and always
+        // editable — it isn't something the trainer prescribed, so it isn't
+        // gated behind edit mode the way weight/reps are.
+        function toggleNoteEditor(index) {
+            triggerHaptic(6);
+            openNoteIndex = (openNoteIndex === index) ? null : index;
+            renderWeeklyWorkoutDashboard();
+            if (openNoteIndex === index) {
+                requestAnimationFrame(() => {
+                    const el = document.getElementById(`note-input-${index}`);
+                    if (el) el.focus();
+                });
+            }
+        }
+
+        function saveNoteValue(exerciseIndex, value) {
+            const currentActiveWorkout = getActiveWorkout();
+            if (!currentActiveWorkout) return;
+            const targetExercise = currentActiveWorkout.exercises[exerciseIndex];
+            if (!targetExercise) return;
+
+            const trimmed = (value || '').trim();
+            if ((targetExercise.notes || '') === trimmed) return;
+
+            if (trimmed) targetExercise.notes = trimmed;
+            else delete targetExercise.notes;
+
+            // Update just the button/preview so a blur mid-render doesn't fight
+            // a full re-render, and typing elsewhere isn't disrupted.
+            const card = document.querySelector(`.workout-card[data-ex-index="${exerciseIndex}"]`);
+            if (card) {
+                const btn = card.querySelector('.note-toggle-btn');
+                if (btn) {
+                    btn.classList.toggle('has-note', !!trimmed);
+                    btn.textContent = trimmed ? '📝 ערוך הערה' : '📝 הוסף הערה';
+                }
+                let preview = card.querySelector('.note-preview');
+                if (trimmed && openNoteIndex !== exerciseIndex) {
+                    if (!preview) {
+                        preview = document.createElement('div');
+                        preview.className = 'note-preview';
+                        const panel = card.querySelector('.note-panel');
+                        panel?.insertAdjacentElement('afterend', preview);
+                    }
+                    preview.textContent = trimmed;
+                } else if (preview) {
+                    preview.remove();
+                }
+            }
+
+            queueSync('/workouts', () => stateWorkouts);
         }
 
         // ============ PROGRESS ============
@@ -5465,7 +5570,10 @@
                         planSets: p.sets,
                         // Per-set detail travels with the entry when it exists
                         ...(hasSetLog(ex) ? { setLog: ex.setLog.map(s => ({ weight: s.weight, reps: s.reps })) } : {}),
-                        ...(hasSetLog(p) ? { planSetLog: p.setLog.map(s => ({ weight: s.weight, reps: s.reps })) } : {})
+                        ...(hasSetLog(p) ? { planSetLog: p.setLog.map(s => ({ weight: s.weight, reps: s.reps })) } : {}),
+                        // Carry the note along too, so a session keeps the context
+                        // that was true when it happened
+                        ...(ex.notes ? { note: ex.notes } : {})
                     };
                 })
             };
@@ -5582,10 +5690,13 @@
                     const figs = hasSetLog(e)
                         ? e.setLog.map(s => `${s.weight}×${s.reps}`).join(' · ')
                         : `${e.reps}×${e.sets} · ${e.weight}`;
+                    const noteLine = e.note
+                        ? `<div class="note-preview" style="margin-top:2px; margin-bottom:0;">${esc(e.note)}</div>`
+                        : '';
                     return `<div class="session-row">
                         <span class="session-ex">${esc(e.name)}</span>
                         <span class="session-fig${cls}">${figs}${mark}</span>
-                    </div>`;
+                    </div>${noteLine}`;
                 }).join('');
 
                 return `<div class="session-card${s.withTrainer ? ' with-trainer' : ''}">
@@ -5813,6 +5924,18 @@
                 ? `<a class="demo-link" href="${escAttr(ex.demo)}" target="_blank" rel="noopener noreferrer" aria-label="צפה בהדגמת התרגיל">▶ צפה בתרגיל</a>`
                 : '';
 
+            const noteOpen = openNoteIndex === index;
+            const noteRow = `
+                <div class="note-row">
+                    <button class="note-toggle-btn ${ex.notes ? 'has-note' : ''}" onclick="toggleNoteEditor(${index})" aria-label="הערה לתרגיל">
+                        📝 ${ex.notes ? 'ערוך הערה' : 'הוסף הערה'}
+                    </button>
+                </div>
+                ${(ex.notes && !noteOpen) ? `<div class="note-preview">${esc(ex.notes)}</div>` : ''}
+                <div class="note-panel ${noteOpen ? 'open' : ''}" id="note-panel-${index}">
+                    <textarea id="note-input-${index}" placeholder="הערה לתרגיל..." onblur="saveNoteValue(${index}, this.value)">${esc(ex.notes || '')}</textarea>
+                </div>`;
+
             return `
                 <div class="workout-card ${isDone ? 'exercise-done' : ''}" data-ex-index="${index}" data-num="${index + 1}">
                     <div class="exercise-header-row">
@@ -5822,6 +5945,7 @@
                         <h3>${esc(ex.name)}</h3>
                     </div>
                     ${demoLink}
+                    ${noteRow}
                     ${selectors}
                     ${prevRow}
                 </div>`;
