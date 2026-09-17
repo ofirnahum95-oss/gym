@@ -2,11 +2,11 @@
 <html dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <!-- Pinch-zoom stays enabled. Installed to the home screen there is no
-         browser chrome to fall back on, so blocking it would leave anyone who
-         needs larger text with no way out. Accidental zoom is handled by
-         touch-action and 16px inputs, which don't remove the option. -->
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <!-- Zoom fully disabled (pinch included) per explicit request, to stop
+         double-tap-to-zoom from firing on fast successive taps. touch-action:
+         manipulation alone wasn't enough in practice, so this trades away
+         pinch-zoom accessibility for a fully native, non-zoomable feel. -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
     <!-- "default" keeps the status bar as its own strip with dark text, which is
