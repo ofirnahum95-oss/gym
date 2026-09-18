@@ -5779,6 +5779,7 @@
         // entry for today overwrites today's — this tracks the trend, not every
         // time someone steps on the scale.
         let bodyWeightLog = [];   // [{date: iso, weight: number}]
+        let editingBwDayKey = null;   // dayKey of the log row currently open for editing, if any
 
         function bwEntryForToday() {
             const k = todayKey();
@@ -5809,9 +5810,44 @@
         function deleteBodyWeightEntry(dayKey) {
             if (!confirm('למחוק את הרשומה הזו?')) return;
             bodyWeightLog = bodyWeightLog.filter(e => dayKeyOf(e.date) !== dayKey);
+            if (editingBwDayKey === dayKey) editingBwDayKey = null;
             triggerHaptic(8);
             renderBodyWeightTab();
             syncToCloud('/bodyweight', bodyWeightLog);
+        }
+
+        // Opens one log row for editing — the date stays fixed, only the weight
+        // itself is corrected. Only one row is editable at a time.
+        function editBodyWeightEntry(dayKey) {
+            editingBwDayKey = dayKey;
+            triggerHaptic(6);
+            renderBodyWeightTab();
+            requestAnimationFrame(() => {
+                const el = document.getElementById(`bw-edit-input-${dayKey}`);
+                if (el) { el.focus(); el.select(); }
+            });
+        }
+
+        function cancelEditBodyWeight() {
+            editingBwDayKey = null;
+            renderBodyWeightTab();
+        }
+
+        function saveEditedBodyWeightEntry(dayKey, value) {
+            const val = parseFloat(value);
+            if (!Number.isFinite(val) || val <= 0) {
+                displayNativeToast('⚠️ הזן משקל תקין');
+                return;
+            }
+            const idx = bodyWeightLog.findIndex(e => dayKeyOf(e.date) === dayKey);
+            if (idx < 0) return;
+
+            bodyWeightLog[idx] = { ...bodyWeightLog[idx], weight: Math.round(val * 10) / 10 };
+            editingBwDayKey = null;
+            triggerHaptic(10);
+            renderBodyWeightTab();
+            syncToCloud('/bodyweight', bodyWeightLog);
+            displayNativeToast('✅ העדכון נשמר');
         }
 
         // Trailing average over the last N logged entries (not calendar days —
@@ -5934,14 +5970,27 @@
                 graphWrap.style.display = 'none';
             }
 
-            logWrap.innerHTML = [...sorted].reverse().map(e => `
+            logWrap.innerHTML = [...sorted].reverse().map(e => {
+                const dayKey = dayKeyOf(e.date);
+                const isEditing = editingBwDayKey === dayKey;
+                const valueCell = isEditing
+                    ? `<input type="number" step="0.1" id="bw-edit-input-${dayKey}" value="${e.weight}" inputmode="decimal"
+                           style="width:70px; margin-bottom:0; padding:4px 8px; font-size:var(--t-sm);"
+                           onkeydown="if(event.key==='Enter') saveEditedBodyWeightEntry('${dayKey}', this.value); if(event.key==='Escape') cancelEditBodyWeight();">
+                       ק"ג
+                       <button class="perset-del" style="display:inline-flex;" onclick="saveEditedBodyWeightEntry('${dayKey}', document.getElementById('bw-edit-input-${dayKey}').value)" aria-label="שמור">✓</button>
+                       <button class="perset-del" style="display:inline-flex;" onclick="cancelEditBodyWeight()" aria-label="בטל עריכה">✕</button>`
+                    : `${e.weight} ק"ג
+                       <button class="perset-del" style="display:inline-flex;" onclick="editBodyWeightEntry('${dayKey}')" aria-label="ערוך רשומה">✎</button>
+                       <button class="perset-del" style="display:inline-flex;" onclick="deleteBodyWeightEntry('${dayKey}')" aria-label="מחק רשומה">✕</button>`;
+                return `
                 <div class="log-row">
                     <span>${formatSessionDate(e.date)}</span>
                     <span style="display:inline-flex; align-items:center; gap:8px;">
-                        ${e.weight} ק"ג
-                        <button class="perset-del" style="display:inline-flex;" onclick="deleteBodyWeightEntry('${dayKeyOf(e.date)}')" aria-label="מחק רשומה">✕</button>
+                        ${valueCell}
                     </span>
-                </div>`).join('');
+                </div>`;
+            }).join('');
         }
 
         async function clearAllCompletions() {
