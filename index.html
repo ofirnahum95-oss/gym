@@ -946,6 +946,28 @@
             font-size: var(--t-lg);
         }
 
+        /* A superset slide has two exercises sharing one screen — the demo
+           link and notes have to shrink here the same way everything else in
+           this block already does, or a superset with both can grow past the
+           screen and force a scroll, defeating the point of stage mode. */
+        .stage .superset-wrapper .demo-link {
+            margin-bottom: var(--s2);
+            padding: 3px 9px;
+            font-size: var(--t-micro);
+        }
+        .stage .superset-wrapper .note-row { margin-bottom: var(--s2); }
+        .stage .superset-wrapper .note-toggle-btn {
+            padding: 3px 9px;
+            font-size: var(--t-micro);
+        }
+        .stage .superset-wrapper .note-preview {
+            margin-bottom: var(--s2);
+            padding: 6px 8px;
+            font-size: var(--t-xs);
+        }
+        .stage .superset-wrapper .note-panel { margin-bottom: var(--s2); }
+        .stage .superset-wrapper .note-panel textarea { min-height: 44px; }
+
         /* ============ Depth & motion ============
            Every animation below moves only transform and opacity. Those are
            handled by the compositor, so raising a card costs nothing to paint —
@@ -1130,7 +1152,7 @@
         .note-panel.open { display: block; }
         .note-panel textarea {
             min-height: 64px;
-            font-size: var(--t-sm);
+            font-size: 16px; /* below this iOS zooms on focus */
             margin-bottom: 0;
         }
 
@@ -1324,7 +1346,7 @@
             border: none;
             background: transparent;
             font-family: var(--mono);
-            font-size: var(--t-md);
+            font-size: 16px; /* below this iOS zooms on focus */
             font-weight: 700;
             color: var(--ink);
             text-align: center;
@@ -1390,7 +1412,7 @@
         .stage .superset-wrapper .perset { padding: var(--s2); }
         .stage .superset-wrapper .perset-row { gap: 6px; }
         .stage .superset-wrapper .perset-idx { width: 36px; font-size: var(--t-micro); }
-        .stage .superset-wrapper .perset-input { font-size: var(--t-sm); }
+        .stage .superset-wrapper .perset-input { font-size: 16px; }
         .stage .superset-wrapper .perset-unit { display: none; }
         .stage .superset-wrapper .perset-field { padding: 3px 6px; }
 
@@ -1572,7 +1594,39 @@
             box-shadow: 0 2px 12px color-mix(in srgb, var(--done) 30%, transparent);
         }
 
-        .finish-workout-btn { margin-bottom: var(--s3); }
+        /* ============ Finish-workout FAB ============
+           Opposite corner from the coach FAB, same floating language as the
+           rest timer — the three together read as one bottom action bar. */
+        .finish-fab {
+            position: fixed;
+            inset-inline-start: var(--s4);
+            bottom: calc(var(--timer-gap) + max(var(--s1), var(--safe-bottom)));
+            z-index: 901;
+            transition: opacity 0.25s ease, transform 0.25s var(--ease-pop), visibility 0.25s;
+        }
+        .finish-fab.hidden {
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(var(--s4)) scale(0.96);
+            pointer-events: none;
+        }
+        .finish-fab-btn {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 12px 18px;
+            border-radius: var(--r-pill);
+            border: 1px solid color-mix(in srgb, var(--done) 45%, transparent);
+            background: var(--done);
+            color: #fff;
+            font-family: inherit;
+            font-size: var(--t-sm);
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: var(--shadow-3), 0 0 0 3px color-mix(in srgb, var(--done) 20%, transparent);
+            transition: transform 0.18s var(--ease-pop);
+        }
+        .finish-fab-btn:active { transform: scale(0.94); }
 
         /* ============ Fields ============ */
 
@@ -3123,9 +3177,6 @@
                         <button class="clear-marks-btn" id="clear-marks-btn" onclick="clearAllCompletions()" style="display:none;">נקה</button>
                     </div>
 
-                    <button class="btn btn-success finish-workout-btn" id="finish-workout-btn"
-                            onclick="finishWorkout()" style="display:none;">🏁 סיים ושמור אימון</button>
-                    
                     <!-- Rest Stopwatch -->
                     <div id="weekly-workout-container"></div>
                 </div>
@@ -3340,6 +3391,13 @@
             <div class="timer-display" id="stopwatch-clock">00:00</div>
             <button class="timer-btn timer-reset" onclick="resetStopwatch()" aria-label="אפס מנוחה">🔄</button>
         </div>
+    </div>
+
+    <!-- FINISH-WORKOUT FAB — mirrors the rest timer's reasoning: the button
+         that ends the session has to be reachable at exercise 8 exactly as it
+         is at exercise 1, not stranded above a list you've scrolled past. -->
+    <div class="finish-fab hidden" id="finish-fab">
+        <button class="finish-fab-btn" onclick="finishWorkout()" aria-label="סיים ושמור אימון">🏁 סיים</button>
     </div>
 
     <!-- COACH-UPDATE FAB — the signature loop, tucked into a button that only
@@ -3703,12 +3761,15 @@
 
         // ============ iOS KEYBOARD HANDLING ============
         function initKeyboardHandling() {
-            const inputs = document.querySelectorAll('input, textarea');
-            inputs.forEach(input => {
-                input.addEventListener('focus', () => {
-                    // Scroll input into view
-                    setTimeout(() => input.scrollIntoView({ behavior: 'smooth', block: 'center' }), 100);
-                });
+            // Delegated on document, once, so it also covers every input the
+            // workout list re-renders later (weight/rep editors, per-set rows,
+            // exercise notes) — a per-element listener attached at load time
+            // would miss all of those, since they don't exist yet at this point.
+            document.addEventListener('focusin', (e) => {
+                const el = e.target;
+                if (el && el.matches && el.matches('input, textarea')) {
+                    setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'center' }), 100);
+                }
             });
         }
 
@@ -3768,6 +3829,7 @@
             // The rest timer belongs to the workout, not to analytics or settings
             syncTimerVisibility(tabId);
             syncCoachFab(tabId);
+            syncFinishFab(tabId);
 
             // Jump back to the top so the new view starts at its title
             const scroller = document.querySelector('.content-area');
@@ -4957,7 +5019,18 @@
         function toggleNoteEditor(index) {
             triggerHaptic(6);
             openNoteIndex = (openNoteIndex === index) ? null : index;
-            renderWeeklyWorkoutDashboard();
+
+            // Patch just this one card — same reasoning as paintCompletion/
+            // paintMetric: rebuilding every card to express one toggle is the
+            // exact lag-inducing pattern those functions exist to avoid.
+            const active = getActiveWorkout();
+            const card = document.querySelector(`.workout-card[data-ex-index="${index}"]`);
+            if (active && active.exercises[index] && card) {
+                card.outerHTML = generateInlineExerciseRow(active.exercises[index], index);
+            } else {
+                renderWeeklyWorkoutDashboard();
+            }
+
             if (openNoteIndex === index) {
                 requestAnimationFrame(() => {
                     const el = document.getElementById(`note-input-${index}`);
@@ -5705,6 +5778,10 @@
         }
 
         // Session progress — pairs with the rail down the left of the list
+        // Whether the floating finish button should be offered at all — kept
+        // separate from the tab check in syncFinishFab, which also gates it.
+        let workoutHasProgress = false;
+
         function renderWorkoutProgress() {
             const wrap = document.getElementById('workout-progress');
             const fill = document.getElementById('workout-progress-fill');
@@ -5713,6 +5790,8 @@
 
             if (stateWorkouts.length === 0) {
                 wrap.style.display = 'none';
+                workoutHasProgress = false;
+                syncFinishFab();
                 return;
             }
 
@@ -5720,6 +5799,8 @@
             const total = active.exercises ? active.exercises.length : 0;
             if (total === 0) {
                 wrap.style.display = 'none';
+                workoutHasProgress = false;
+                syncFinishFab();
                 return;
             }
 
@@ -5733,8 +5814,19 @@
             if (clearBtn) clearBtn.style.display = done > 0 ? 'block' : 'none';
 
             // Finishing only makes sense with at least one exercise ticked
-            const finishBtn = document.getElementById('finish-workout-btn');
-            if (finishBtn) finishBtn.style.display = done > 0 ? 'flex' : 'none';
+            workoutHasProgress = done > 0;
+            syncFinishFab();
+        }
+
+        // Show the floating finish button only on the workout screen, and only
+        // once there's something to finish — same pattern as the coach FAB.
+        function syncFinishFab(tabId) {
+            const fab = document.getElementById('finish-fab');
+            if (!fab) return;
+            const onWorkout = (tabId
+                ? tabId === 'view-workout'
+                : document.getElementById('view-workout')?.classList.contains('active'));
+            fab.classList.toggle('hidden', !(onWorkout && workoutHasProgress));
         }
 
         // Wipe every completion tick — for starting the same programme again
