@@ -3150,6 +3150,40 @@
                     </div>
                 </div>
 
+                <!-- VIEW: BODY WEIGHT -->
+                <div id="view-bodyweight" class="tab-view">
+                    <div class="view-title">⚖️ משקל גוף</div>
+
+                    <div class="metrics-row" id="bw-metrics" style="display:none;">
+                        <div class="metric-tile">
+                            <div>משקל אחרון</div>
+                            <div class="val" id="bw-latest">-</div>
+                        </div>
+                        <div class="metric-tile">
+                            <div>ממוצע 7 ימים</div>
+                            <div class="val" id="bw-avg7">-</div>
+                        </div>
+                    </div>
+
+                    <div style="display:flex; gap:10px; margin-bottom:20px; align-items:flex-end;">
+                        <div style="flex:1;">
+                            <label style="font-size:11px; color:var(--ink-soft); font-weight:700; display:block; margin-bottom:4px;">משקל היום (ק"ג)</label>
+                            <input type="number" step="0.1" id="bw-input" inputmode="decimal" placeholder="לדוגמה 78.4" onkeydown="if(event.key==='Enter') saveBodyWeightEntry()">
+                        </div>
+                        <button class="btn btn-primary" style="width:auto; padding-inline:20px; flex-shrink:0;" onclick="saveBodyWeightEntry()">💾 שמור</button>
+                    </div>
+
+                    <div class="graph-container" id="bw-graph-wrapper" style="display:none;"></div>
+
+                    <div id="bw-empty" class="empty-state">
+                        <div class="empty-state-icon">⚖️</div>
+                        <div class="empty-state-title">עדיין אין נתונים</div>
+                        <div class="empty-state-subtitle">הזן את המשקל שלך היום כדי להתחיל לעקוב</div>
+                    </div>
+
+                    <div id="bw-log"></div>
+                </div>
+
                 <!-- VIEW: SESSION LOG -->
                 <div id="view-history" class="tab-view">
                     <div class="view-title">📖 יומן אימונים</div>
@@ -3286,6 +3320,7 @@
         <button class="nav-tab active" data-tab-id="view-workout" onclick="switchTab('view-workout', this)"><icon>🏋️‍♂️</icon>אימון</button>
         <button class="nav-tab" data-tab-id="view-add" onclick="switchTab('view-add', this)"><icon>➕</icon>הוספה</button>
         <button class="nav-tab" data-tab-id="view-progress" onclick="switchTab('view-progress', this)"><icon>🌱</icon>התקדמות</button>
+        <button class="nav-tab" data-tab-id="view-bodyweight" onclick="switchTab('view-bodyweight', this)"><icon>⚖️</icon>משקל גוף</button>
         <button class="nav-tab" data-tab-id="view-history" onclick="switchTab('view-history', this)"><icon>📖</icon>יומן</button>
         <button class="nav-tab" data-tab-id="view-settings" onclick="switchTab('view-settings', this)"><icon>⚙️</icon>הגדרות</button>
     </aside>
@@ -3409,6 +3444,7 @@
             try { localStorage.removeItem('fitpro-auth'); } catch (e) {}
             stateWorkouts = [];
             sessionLog = [];
+            bodyWeightLog = [];
             activeWorkoutId = null;
             showAuthGate();
         }
@@ -3677,6 +3713,10 @@
 
             if (tabId === 'view-progress') {
                 renderProgress();
+            }
+
+            if (tabId === 'view-bodyweight') {
+                renderBodyWeightTab();
             }
 
             if (tabId === 'view-analytics') {
@@ -5733,6 +5773,177 @@
                 volume >= 1000 ? Math.round(volume / 1000) + 'k' : Math.round(volume);
         }
 
+        // ============ BODY WEIGHT TRACKING ============
+        // A separate, much simpler log than the workout data: one number per
+        // calendar day, no plan/actual split, no per-exercise anything. A new
+        // entry for today overwrites today's — this tracks the trend, not every
+        // time someone steps on the scale.
+        let bodyWeightLog = [];   // [{date: iso, weight: number}]
+
+        function bwEntryForToday() {
+            const k = todayKey();
+            return bodyWeightLog.find(e => dayKeyOf(e.date) === k) || null;
+        }
+
+        function saveBodyWeightEntry() {
+            const input = document.getElementById('bw-input');
+            const val = parseFloat(input && input.value);
+            if (!Number.isFinite(val) || val <= 0) {
+                displayNativeToast('⚠️ הזן משקל תקין');
+                return;
+            }
+
+            const today = todayKey();
+            const entry = { date: new Date().toISOString(), weight: Math.round(val * 10) / 10 };
+            const existingIdx = bodyWeightLog.findIndex(e => dayKeyOf(e.date) === today);
+            if (existingIdx >= 0) bodyWeightLog[existingIdx] = entry;
+            else bodyWeightLog.push(entry);
+            bodyWeightLog.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+            triggerHaptic(10);
+            renderBodyWeightTab();
+            syncToCloud('/bodyweight', bodyWeightLog);
+            displayNativeToast('✅ המשקל נשמר');
+        }
+
+        function deleteBodyWeightEntry(dayKey) {
+            if (!confirm('למחוק את הרשומה הזו?')) return;
+            bodyWeightLog = bodyWeightLog.filter(e => dayKeyOf(e.date) !== dayKey);
+            triggerHaptic(8);
+            renderBodyWeightTab();
+            syncToCloud('/bodyweight', bodyWeightLog);
+        }
+
+        // Trailing average over the last N logged entries (not calendar days —
+        // weigh-ins aren't always daily, and averaging over sparse calendar days
+        // would just divide by mostly-empty buckets).
+        function bwRollingAverage(points, windowSize = 7) {
+            return points.map((p, i) => {
+                const start = Math.max(0, i - windowSize + 1);
+                const slice = points.slice(start, i + 1);
+                const avg = slice.reduce((n, s) => n + s.weight, 0) / slice.length;
+                return { ...p, avg };
+            });
+        }
+
+        // Raw daily readings as a solid line, the rolling average as a faint
+        // ghost behind it — the same visual grammar as the plan/actual graph on
+        // the exercise detail screen, so a day-to-day jump doesn't read as noise.
+        function bodyWeightChartSVG(points) {
+            if (points.length < 2) return '<div class="graph-empty">נדרשות לפחות 2 רשומות לגרף</div>';
+
+            const withAvg = bwRollingAverage(points);
+            const W = 340, H = 210;
+            const padX = 16, padTop = 30, padBottom = 26;
+
+            const weights = points.map(p => p.weight);
+            const avgs = withAvg.map(p => p.avg);
+            const domain = weights.concat(avgs);
+            const dMax = Math.max(...domain), dMin = Math.min(...domain);
+            const range = (dMax - dMin) || dMax * 0.05 || 1;
+            const top = dMax + range * 0.25;
+            const bottom = Math.max(0, dMin - range * 0.35);
+            const span = (top - bottom) || 1;
+
+            const plotW = W - padX * 2, plotH = H - padTop - padBottom;
+            const baseY = padTop + plotH;
+            const xAt = i => padX + i * plotW / (points.length - 1);
+            const yAt = w => padTop + plotH - ((w - bottom) / span) * plotH;
+
+            const lastIdx = points.length - 1;
+            const coords = points.map((p, i) => [xAt(i), yAt(p.weight)]);
+            const linePath = 'M ' + coords.map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(' L ');
+            const areaPath = `M ${coords[0][0].toFixed(1)},${baseY.toFixed(1)} `
+                           + 'L ' + coords.map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(' L ')
+                           + ` L ${coords[lastIdx][0].toFixed(1)},${baseY.toFixed(1)} Z`;
+            const avgPath = 'M ' + withAvg.map((p, i) => `${xAt(i).toFixed(1)},${yAt(p.avg).toFixed(1)}`).join(' L ');
+
+            let grid = '';
+            [bottom, (bottom + top) / 2, top].forEach(v => {
+                const y = yAt(v);
+                grid += `<line class="graph-grid" x1="${padX}" y1="${y.toFixed(1)}" x2="${(W - padX).toFixed(1)}" y2="${y.toFixed(1)}" />`
+                     +  `<text class="graph-axis-val" x="${padX}" y="${(y - 4).toFixed(1)}">${v.toFixed(1)}</text>`;
+            });
+
+            const tickEvery = Math.max(1, Math.ceil(points.length / 4));
+            let ticks = '';
+            points.forEach((p, i) => {
+                if (i === 0 || i === lastIdx || i % tickEvery === 0) {
+                    const label = new Date(p.date).toLocaleDateString('he-IL', { day: 'numeric', month: 'short' });
+                    ticks += `<text class="graph-text" x="${xAt(i).toFixed(1)}" y="${H - 8}" text-anchor="middle">${label}</text>`;
+                }
+            });
+
+            const [lx, ly] = coords[lastIdx];
+            const labels = `<text class="graph-val" x="${lx.toFixed(1)}" y="${(ly - 12).toFixed(1)}" text-anchor="middle">${points[lastIdx].weight}</text>`;
+
+            return `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" style="display:block; direction:ltr; max-width:100%;">
+                <defs>
+                    <linearGradient id="bwAreaGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%"   style="stop-color:var(--accent); stop-opacity:0.28" />
+                        <stop offset="100%" style="stop-color:var(--accent); stop-opacity:0" />
+                    </linearGradient>
+                </defs>
+                ${grid}
+                <path class="graph-area" d="${areaPath}" fill="url(#bwAreaGrad)" />
+                <path class="graph-plan" d="${avgPath}" pathLength="100" />
+                <path class="graph-line" d="${linePath}" pathLength="100" />
+                <circle class="graph-halo" cx="${lx.toFixed(1)}" cy="${ly.toFixed(1)}" r="9" />
+                <circle class="graph-dot last" cx="${lx.toFixed(1)}" cy="${ly.toFixed(1)}" r="4.5" />
+                ${labels}
+                ${ticks}
+            </svg><div class="graph-legend"><span><i></i>יומי</span><span><i class="plan"></i>ממוצע 7 ימים</span></div>`;
+        }
+
+        function renderBodyWeightTab() {
+            const metricsWrap = document.getElementById('bw-metrics');
+            const graphWrap = document.getElementById('bw-graph-wrapper');
+            const emptyWrap = document.getElementById('bw-empty');
+            const logWrap = document.getElementById('bw-log');
+            const input = document.getElementById('bw-input');
+            if (!metricsWrap || !graphWrap || !emptyWrap || !logWrap) return;
+
+            const todayEntry = bwEntryForToday();
+            if (input && document.activeElement !== input) {
+                input.value = todayEntry ? todayEntry.weight : '';
+            }
+
+            if (bodyWeightLog.length === 0) {
+                metricsWrap.style.display = 'none';
+                graphWrap.style.display = 'none';
+                emptyWrap.style.display = 'flex';
+                logWrap.innerHTML = '';
+                return;
+            }
+
+            emptyWrap.style.display = 'none';
+
+            const sorted = [...bodyWeightLog].sort((a, b) => new Date(a.date) - new Date(b.date));
+            const latest = sorted[sorted.length - 1];
+            const avgSeries = bwRollingAverage(sorted);
+            const avg7 = avgSeries[avgSeries.length - 1].avg;
+
+            metricsWrap.style.display = 'grid';
+            document.getElementById('bw-latest').textContent = `${latest.weight} ק"ג`;
+            document.getElementById('bw-avg7').textContent = `${avg7.toFixed(1)} ק"ג`;
+
+            if (sorted.length >= 2) {
+                graphWrap.style.display = 'block';
+                graphWrap.innerHTML = bodyWeightChartSVG(sorted);
+            } else {
+                graphWrap.style.display = 'none';
+            }
+
+            logWrap.innerHTML = [...sorted].reverse().map(e => `
+                <div class="log-row">
+                    <span>${formatSessionDate(e.date)}</span>
+                    <span style="display:inline-flex; align-items:center; gap:8px;">
+                        ${e.weight} ק"ג
+                        <button class="perset-del" style="display:inline-flex;" onclick="deleteBodyWeightEntry('${dayKeyOf(e.date)}')" aria-label="מחק רשומה">✕</button>
+                    </span>
+                </div>`).join('');
+        }
+
         async function clearAllCompletions() {
             const active = getActiveWorkout();
             if (!active || !active.exercises) return;
@@ -7222,6 +7433,12 @@
             const loggedSessions = await syncFromCloud('/sessions');
             sessionLog = Array.isArray(loggedSessions) ? loggedSessions
                        : loggedSessions ? Object.values(loggedSessions) : [];
+
+            // Body weight lives in its own node too — same shape, independent log
+            const loggedBodyWeight = await syncFromCloud('/bodyweight');
+            bodyWeightLog = Array.isArray(loggedBodyWeight) ? loggedBodyWeight
+                          : loggedBodyWeight ? Object.values(loggedBodyWeight) : [];
+            bodyWeightLog.sort((a, b) => new Date(a.date) - new Date(b.date));
 
             // The indexes above were built moments ago against an empty log. Now
             // that the real sessions are in, mark them stale so the next render
