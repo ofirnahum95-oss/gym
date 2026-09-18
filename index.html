@@ -442,6 +442,34 @@
         .clear-marks-btn::after { content: ''; position: absolute; inset: -10px -6px; }
         .clear-marks-btn:active { color: var(--ink); }
 
+        /* ============ Workout program switcher ============
+           Only shown once there's more than one saved programme — for the
+           common single-programme case it would just be a label with nothing
+           to switch to. */
+        .workout-switcher {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: var(--s2);
+            background: var(--surface-1);
+            border: 1px solid var(--rule);
+            border-radius: var(--r-md);
+            padding: var(--s2) var(--s3);
+            margin-bottom: var(--s3);
+            cursor: pointer;
+            box-shadow: var(--shadow-1);
+            font-size: var(--t-sm);
+            font-weight: 600;
+            color: var(--ink);
+        }
+        .workout-switcher:active { transform: scale(0.99); }
+        .workout-switcher-label {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .workout-switcher-caret { color: var(--ink-faint); font-size: var(--t-xs); flex-shrink: 0; }
+
         /* ============ Rest timer — floating ============
            Anchored to the viewport, not the page. At exercise 8 you are scrolled
            far from the top of the list; a timer that lives up there costs a
@@ -3084,6 +3112,11 @@
                     </div>
 
 
+                    <div class="workout-switcher" id="workout-switcher" style="display:none;" onclick="openWorkoutPicker()">
+                        <span class="workout-switcher-label" id="workout-switcher-label"></span>
+                        <span class="workout-switcher-caret">▾ החלף</span>
+                    </div>
+
                     <div class="workout-progress" id="workout-progress" style="display:none;">
                         <div class="workout-progress-bar"><span id="workout-progress-fill"></span></div>
                         <div class="workout-progress-text" id="workout-progress-text">0/0</div>
@@ -3254,6 +3287,15 @@
                 </div>
             </div>
         </div>
+    </div>
+
+    <!-- WORKOUT PICKER SHEET -->
+    <div class="sheet-overlay" id="workout-picker-sheet">
+        <div class="sheet-header">
+            <h3>🔀 בחר תוכנית אימון</h3>
+            <button class="ctrl-btn" onclick="closeWorkoutPicker()" aria-label="סגור">×</button>
+        </div>
+        <div id="workout-picker-body"></div>
     </div>
 
     <!-- REVIEW SHEET -->
@@ -3974,6 +4016,17 @@
             return ex.plan || { sets: ex.sets, reps: ex.reps, weight: ex.weight };
         }
 
+        // A workout has no name by default — imports just carry a date. Once
+        // someone renames one (to tell "Push day" apart from "Pull day"), that
+        // name wins; otherwise fall back to a readable date.
+        function workoutLabel(w) {
+            if (w.name && w.name.trim()) return w.name.trim();
+            const d = new Date(w.date);
+            return Number.isFinite(d.getTime())
+                ? d.toLocaleDateString('he-IL', { day: 'numeric', month: 'short', year: 'numeric' })
+                : 'אימון';
+        }
+
         function deviatesFromPlan(ex) {
             const p = planOf(ex);
             // Per-set: any set whose load differs from the prescribed set counts
@@ -4128,6 +4181,132 @@
             } else {
                 document.body.style.overflow = '';
             }
+        }
+
+        // ============ WORKOUT PROGRAM SWITCHER ============
+        // Importing "Push day" and "Pull day" as two separate workouts used to
+        // leave no way back to the older one — getActiveWorkout() always picked
+        // the newest by date. This sheet lists every saved programme and lets
+        // you pick, rename, or remove one explicitly.
+        let renamingWorkoutId = null;
+
+        function updateWorkoutSwitcherLabel() {
+            const wrap = document.getElementById('workout-switcher');
+            const label = document.getElementById('workout-switcher-label');
+            if (!wrap || !label) return;
+            if (stateWorkouts.length <= 1) {
+                wrap.style.display = 'none';
+                return;
+            }
+            const active = getActiveWorkout();
+            label.textContent = active ? workoutLabel(active) : '';
+            wrap.style.display = 'flex';
+        }
+
+        function openWorkoutPicker() {
+            renamingWorkoutId = null;
+            renderWorkoutPickerSheet();
+            document.getElementById('workout-picker-sheet').classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeWorkoutPicker() {
+            document.getElementById('workout-picker-sheet').classList.remove('active');
+            document.body.style.overflow = '';
+            renamingWorkoutId = null;
+        }
+
+        function renderWorkoutPickerSheet() {
+            const body = document.getElementById('workout-picker-body');
+            if (!body) return;
+
+            const activeId = getActiveWorkout()?.id;
+            const ordered = [...stateWorkouts].sort((a, b) => new Date(b.date) - new Date(a.date));
+
+            body.innerHTML = ordered.map(w => {
+                const isActive = w.id === activeId;
+                const isRenaming = renamingWorkoutId === w.id;
+                const dateLabel = new Date(w.date).toLocaleDateString('he-IL');
+                const nameCell = isRenaming
+                    ? `<input type="text" id="workout-rename-input-${w.id}" value="${escAttr(workoutLabel(w))}"
+                           style="margin-bottom:0; padding:6px 8px; font-size:var(--t-sm); width:100%;"
+                           onkeydown="if(event.key==='Enter'){event.preventDefault(); renameWorkoutSave('${w.id}', this.value);} if(event.key==='Escape') renameWorkoutCancel();"
+                           onclick="event.stopPropagation()">`
+                    : `<div class="ov-name">${esc(workoutLabel(w))}${isActive ? ' ✓' : ''}</div>
+                       <div class="ov-detail">${w.exercises?.length || 0} תרגילים · ${dateLabel}</div>`;
+
+                const actionCell = isRenaming
+                    ? `<button class="perset-del" style="display:inline-flex;" onclick="event.stopPropagation(); renameWorkoutSave('${w.id}', document.getElementById('workout-rename-input-${w.id}').value)" aria-label="שמור שם">✓</button>
+                       <button class="perset-del" style="display:inline-flex;" onclick="event.stopPropagation(); renameWorkoutCancel()" aria-label="בטל">✕</button>`
+                    : `<button class="perset-del" style="display:inline-flex;" onclick="event.stopPropagation(); renameWorkoutStart('${w.id}')" aria-label="שנה שם">✎</button>
+                       <button class="perset-del" style="display:inline-flex;" onclick="event.stopPropagation(); deleteWorkoutFromPicker('${w.id}')" aria-label="מחק תוכנית">✕</button>`;
+
+                return `
+                    <div class="ov-row" style="cursor:pointer;" onclick="${isRenaming ? '' : `selectWorkoutFromPicker('${w.id}')`}">
+                        <div class="ov-main">${nameCell}</div>
+                        ${actionCell}
+                    </div>`;
+            }).join('');
+        }
+
+        function selectWorkoutFromPicker(id) {
+            activeWorkoutId = id;
+            seekFirstUndone();
+            invalidateIndexes();
+            stageIndex = 0;
+            renderWeeklyWorkoutDashboard();
+            closeWorkoutPicker();
+            triggerHaptic(10);
+            syncToCloud('/activeWorkoutId', activeWorkoutId);
+        }
+
+        function renameWorkoutStart(id) {
+            renamingWorkoutId = id;
+            renderWorkoutPickerSheet();
+            requestAnimationFrame(() => {
+                const el = document.getElementById(`workout-rename-input-${id}`);
+                if (el) { el.focus(); el.select(); }
+            });
+        }
+
+        function renameWorkoutCancel() {
+            renamingWorkoutId = null;
+            renderWorkoutPickerSheet();
+        }
+
+        function renameWorkoutSave(id, value) {
+            const w = stateWorkouts.find(w => w.id === id);
+            if (!w) return;
+            const trimmed = (value || '').trim();
+            if (trimmed) w.name = trimmed;
+            else delete w.name;
+
+            renamingWorkoutId = null;
+            renderWorkoutPickerSheet();
+            updateWorkoutSwitcherLabel();
+            triggerHaptic(8);
+            queueSync('/workouts', () => stateWorkouts);
+        }
+
+        function deleteWorkoutFromPicker(id) {
+            if (stateWorkouts.length <= 1) {
+                displayNativeToast('⚠️ זו התוכנית היחידה שיש');
+                return;
+            }
+            if (!confirm('למחוק את התוכנית הזו? אימונים שכבר תועדו ביומן יישארו.')) return;
+
+            stateWorkouts = stateWorkouts.filter(w => w.id !== id);
+            if (activeWorkoutId === id) activeWorkoutId = null;
+
+            invalidateIndexes();
+            seekFirstUndone();
+            stageIndex = 0;
+            renderWeeklyWorkoutDashboard();
+            renderWorkoutPickerSheet();
+            triggerHaptic(8);
+            displayNativeToast('🗑️ התוכנית נמחקה');
+            queueSync('/workouts', () => stateWorkouts);
+            syncToCloud('/activeWorkoutId', activeWorkoutId || '');
         }
 
         function enableManualInput(elementId) {
@@ -5490,11 +5669,13 @@
                 </div>`;
                 renderWorkoutProgress();
                 renderCoachUpdateCard();
+                updateWorkoutSwitcherLabel();
                 return;
             }
 
             const active = getActiveWorkout();
             ensureIndexes();
+            updateWorkoutSwitcherLabel();
 
             const slides = buildSlides(active.exercises);
             const stage = viewMode === 'stage' && slides.length > 0;
@@ -6491,6 +6672,7 @@
             }
             
             const synced = await syncToCloud('/workouts', stateWorkouts);
+            syncToCloud('/activeWorkoutId', activeWorkoutId);
             invalidateIndexes();
             pendingImportKind = 'paste';
             toggleReviewSheet(false);
@@ -7470,6 +7652,10 @@
                 const savedMode = localStorage.getItem('fitpro-viewmode');
                 if (savedMode === 'list' || savedMode === 'stage') viewMode = savedMode;
             } catch (e) {}
+
+            // Restore which saved programme was active, if more than one exists
+            const savedActiveId = await syncFromCloud('/activeWorkoutId');
+            if (typeof savedActiveId === 'string' && savedActiveId) activeWorkoutId = savedActiveId;
 
             // Open where you actually are, not back at exercise one
             seekFirstUndone();
