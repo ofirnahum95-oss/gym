@@ -82,12 +82,23 @@
             --rule-soft: rgba(18, 22, 28, 0.06);
 
             /* ---- Signal ---- */
-            --accent: #12a150;
+            /* Deepened from the original #12a150 — less neon, and it actually
+               improves contrast against white (3.37:1 → 4.17:1). This is the
+               everyday "good" color: done states, buttons, ordinary progress. */
+            --accent: #0e8f47;
             --accent-ink: #ffffff;
-            --accent-wash: rgba(18, 161, 80, 0.10);
-            --done: #12a150;
+            /* Derived from --accent via color-mix rather than a hand-picked
+               rgba, so it can never drift out of sync with it the way the old
+               dark-mode override silently did (see body.dark-mode below). */
+            --accent-wash: color-mix(in srgb, var(--accent) 10%, transparent);
+            --done: #0e8f47;
             --alert: #e5484d;
             --superset: #6d5efc;
+            /* Reserved for genuinely rare moments — a new personal record, a
+               streak — never for routine "good" states. Rarity is the point:
+               if this shows up often it stops meaning anything. */
+            --gold: #8a6a26;
+            --gold-wash: color-mix(in srgb, var(--gold) 12%, transparent);
 
             /* ELEVATION LADDER
                Height is meaning, not decoration. Each level pairs a tight contact
@@ -138,7 +149,14 @@
 
             --rule: rgba(255, 255, 255, 0.12);
             --rule-soft: rgba(255, 255, 255, 0.07);
-            --accent-wash: rgba(11, 95, 255, 0.18);
+            /* Was rgba(11, 95, 255, 0.18) — blue, while --accent is green and
+               isn't overridden here, so the wash never matched the accent it
+               was supposed to tint. Same color-mix approach as light mode. */
+            --accent-wash: color-mix(in srgb, var(--accent) 18%, transparent);
+            /* Lighter than the light-mode gold — a dark bronze would read as
+               mud on these dark surfaces instead of as a deliberate accent. */
+            --gold: #d9b872;
+            --gold-wash: color-mix(in srgb, var(--gold) 14%, transparent);
 
             --shadow-1: 0 1px 1px rgba(0, 0, 0, 0.35),
                         0 2px 6px rgba(0, 0, 0, 0.3);
@@ -1821,6 +1839,7 @@
         }
 
         .graph-dot { fill: var(--accent); }
+        .graph-dot.peak { fill: var(--gold); }
 
         /* The latest reading, ringed and haloed so the eye lands on "now" */
         .graph-dot.last {
@@ -1839,7 +1858,7 @@
             font-weight: 700;
         }
 
-        .graph-val.peak { fill: var(--ink-faint); }
+        .graph-val.peak { fill: var(--gold); font-weight: 700; }
 
         .graph-empty {
             font-size: var(--t-sm);
@@ -3056,6 +3075,58 @@
 
         .sheet-overlay.active { display: block; }
 
+        /* ============ Glass bottom sheet ============
+           Reserved for things opened rarely — unlike the floating rest timer,
+           which deliberately skips backdrop-filter because it repaints
+           constantly while running (see its own comment). A picker opened for
+           a few seconds can afford a live-blurred backdrop; a ticking clock
+           behind it can't. */
+        .glass-sheet-scrim {
+            position: fixed;
+            inset: 0;
+            z-index: 2400;
+            background: rgba(10, 13, 17, 0.35);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.28s ease, visibility 0.28s;
+        }
+        .glass-sheet-scrim.active { opacity: 1; visibility: visible; }
+
+        .glass-sheet {
+            position: fixed;
+            inset-inline: 0;
+            bottom: 0;
+            z-index: 2401;
+            max-height: 80vh;
+            display: flex;
+            flex-direction: column;
+            background: color-mix(in srgb, var(--surface-1) 88%, transparent);
+            backdrop-filter: blur(20px) saturate(1.4);
+            -webkit-backdrop-filter: blur(20px) saturate(1.4);
+            border: 1px solid var(--rule);
+            border-bottom: none;
+            border-radius: 22px 22px 0 0;
+            box-shadow: var(--shadow-4);
+            padding: var(--s3) var(--s4);
+            padding-bottom: calc(var(--s4) + max(var(--s3), var(--safe-bottom)));
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            transform: translateY(100%);
+            transition: transform 0.32s cubic-bezier(0.32, 0.72, 0, 1);
+        }
+        .glass-sheet.active { transform: translateY(0); }
+
+        .glass-sheet-handle {
+            width: 36px;
+            height: 4px;
+            border-radius: 2px;
+            background: var(--rule);
+            margin: 0 auto var(--s3);
+            flex-shrink: 0;
+        }
+
         @keyframes sheet-up {
             from { transform: translateY(2%); opacity: 0; }
             to   { transform: translateY(0); opacity: 1; }
@@ -3368,9 +3439,11 @@
     </div>
 
     <!-- WORKOUT PICKER SHEET -->
-    <div class="sheet-overlay" id="workout-picker-sheet">
+    <div class="glass-sheet-scrim" id="workout-picker-scrim" onclick="closeWorkoutPicker()"></div>
+    <div class="glass-sheet" id="workout-picker-sheet">
+        <div class="glass-sheet-handle"></div>
         <div class="sheet-header">
-            <h3>🔀 בחר תוכנית אימון</h3>
+            <h3><span data-icon="swap" data-icon-size="18"></span> בחר תוכנית אימון</h3>
             <button class="ctrl-btn" onclick="closeWorkoutPicker()" aria-label="סגור">×</button>
         </div>
         <div id="workout-picker-body"></div>
@@ -3579,6 +3652,7 @@
             openNoteIndex = null;
             editingBwDayKey = null;
             renamingWorkoutId = null;
+            editingSessionId = null;
             stageIndex = 0;
             invalidateIndexes();
             showAuthGate();
@@ -3989,6 +4063,16 @@
             if (!clock) return;
 
             const elapsed = getStopwatchElapsed();
+
+            // A rest that's still running at 10 minutes was left going by
+            // accident — reset it instead of letting it silently climb for
+            // the rest of the workout.
+            if (isStopwatchRunning && elapsed >= 600) {
+                resetStopwatch();
+                displayNativeToast('⏱️ המנוחה אופסה אוטומטית אחרי 10 דקות');
+                return;
+            }
+
             const minutes = Math.floor(elapsed / 60);
             const seconds = elapsed % 60;
             clock.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
@@ -4355,11 +4439,13 @@
         function openWorkoutPicker() {
             renamingWorkoutId = null;
             renderWorkoutPickerSheet();
+            document.getElementById('workout-picker-scrim').classList.add('active');
             document.getElementById('workout-picker-sheet').classList.add('active');
             document.body.style.overflow = 'hidden';
         }
 
         function closeWorkoutPicker() {
+            document.getElementById('workout-picker-scrim').classList.remove('active');
             document.getElementById('workout-picker-sheet').classList.remove('active');
             document.body.style.overflow = '';
             renamingWorkoutId = null;
@@ -6063,6 +6149,78 @@
             return `${Math.floor(m / 60)}:${String(m % 60).padStart(2, '0')} שע׳`;
         }
 
+        // ============ SESSION HISTORY EDITING ============
+        // Sessions were append-only by design (logging shouldn't rewrite what
+        // actually happened) — but a plain typo when a set was logged is a
+        // different thing from that, and there was no way to fix one. This
+        // edits the "performed" numbers in place; the plan/actual split still
+        // means the original prescription is never touched.
+        let editingSessionId = null;
+
+        function toggleSessionEdit(sessionId) {
+            triggerHaptic(6);
+            editingSessionId = (editingSessionId === sessionId) ? null : sessionId;
+            renderSessionHistory();
+        }
+
+        function deleteSession(sessionId) {
+            const session = sessionLog.find(s => s.id === sessionId);
+            if (!session) return;
+            if (!confirm('למחוק את האימון הזה מהיומן? הפעולה בלתי הפיכה.')) return;
+
+            sessionLog = sessionLog.filter(s => s.id !== sessionId);
+            if (editingSessionId === sessionId) editingSessionId = null;
+
+            invalidateIndexes();
+            renderSessionHistory();
+            renderHistorySummary();
+            triggerHaptic([10, 30, 10]);
+            displayNativeToast('🗑️ האימון נמחק מהיומן');
+            queueSync('/sessions', () => sessionLog);
+        }
+
+        function cancelSessionEdit() {
+            editingSessionId = null;
+            renderSessionHistory();
+        }
+
+        function saveSessionEdits(sessionId) {
+            const session = sessionLog.find(s => s.id === sessionId);
+            if (!session) return;
+
+            session.entries.forEach((e, i) => {
+                if (hasSetLog(e)) {
+                    e.setLog.forEach((set, si) => {
+                        const wEl = document.getElementById(`sess-edit-${sessionId}-${i}-set-${si}-weight`);
+                        const rEl = document.getElementById(`sess-edit-${sessionId}-${i}-set-${si}-reps`);
+                        const wv = parseFloat(wEl?.value);
+                        const rv = parseInt(rEl?.value, 10);
+                        if (Number.isFinite(wv) && wv >= 0) set.weight = wv;
+                        if (Number.isFinite(rv) && rv > 0) set.reps = rv;
+                    });
+                    syncScalarFromSetLog(e);
+                } else {
+                    const wEl = document.getElementById(`sess-edit-${sessionId}-${i}-weight`);
+                    const rEl = document.getElementById(`sess-edit-${sessionId}-${i}-reps`);
+                    const sEl = document.getElementById(`sess-edit-${sessionId}-${i}-sets`);
+                    const wv = parseFloat(wEl?.value);
+                    const rv = parseInt(rEl?.value, 10);
+                    const sv = parseInt(sEl?.value, 10);
+                    if (Number.isFinite(wv) && wv >= 0) e.weight = wv;
+                    if (Number.isFinite(rv) && rv > 0) e.reps = rv;
+                    if (Number.isFinite(sv) && sv > 0) e.sets = sv;
+                }
+            });
+
+            editingSessionId = null;
+            invalidateIndexes();
+            renderSessionHistory();
+            renderHistorySummary();
+            triggerHaptic(10);
+            displayNativeToast('✅ האימון עודכן');
+            queueSync('/sessions', () => sessionLog);
+        }
+
         function renderSessionHistory() {
             const zone = document.getElementById('session-history');
             if (!zone) return;
@@ -6089,7 +6247,9 @@
             zone.innerHTML = ordered.map(s => {
                 const vol = Math.round(sessionVolume(s));
                 const dur = formatDuration(s.durationSec);
-                const rows = s.entries.map(e => {
+                const isEditingSession = editingSessionId === s.id;
+
+                const rows = s.entries.map((e, i) => {
                     // Compare this exercise to the previous time it was done. When
                     // you repeat the prescribed load unchanged the trend is 'same' —
                     // show it as a neutral '=' rather than nothing, so a session
@@ -6105,19 +6265,58 @@
                     const noteLine = e.note
                         ? `<div class="note-preview" style="margin-top:2px; margin-bottom:0;">${esc(e.note)}</div>`
                         : '';
-                    return `<div class="session-row">
+
+                    if (!isEditingSession) {
+                        return `<div class="session-row">
+                            <span class="session-ex">${esc(e.name)}</span>
+                            <span class="session-fig${cls}">${figs}${mark}</span>
+                        </div>${noteLine}`;
+                    }
+
+                    const fieldStyle = 'margin-bottom:0; padding:4px 6px; font-size:16px;';
+                    if (hasSetLog(e)) {
+                        const setsHtml = e.setLog.map((set, si) => `
+                            <span style="display:inline-flex; align-items:center; gap:3px;">
+                                <input type="number" step="0.5" id="sess-edit-${s.id}-${i}-set-${si}-weight" value="${set.weight}" inputmode="decimal" style="width:52px; ${fieldStyle}">
+                                <span style="color:var(--ink-faint);">×</span>
+                                <input type="number" id="sess-edit-${s.id}-${i}-set-${si}-reps" value="${set.reps}" inputmode="numeric" style="width:50px; ${fieldStyle}">
+                            </span>`).join('');
+                        return `<div class="session-row" style="align-items:center; flex-wrap:wrap;">
+                            <span class="session-ex">${esc(e.name)}</span>
+                            <span style="display:flex; flex-wrap:wrap; gap:6px;">${setsHtml}</span>
+                        </div>`;
+                    }
+
+                    return `<div class="session-row" style="align-items:center; gap:6px; flex-wrap:wrap;">
                         <span class="session-ex">${esc(e.name)}</span>
-                        <span class="session-fig${cls}">${figs}${mark}</span>
-                    </div>${noteLine}`;
+                        <span style="display:inline-flex; align-items:center; gap:4px;">
+                            <input type="number" step="0.5" id="sess-edit-${s.id}-${i}-weight" value="${e.weight}" inputmode="decimal" style="width:54px; ${fieldStyle}">
+                            <span style="color:var(--ink-faint); font-size:var(--t-xs);">ק"ג ×</span>
+                            <input type="number" id="sess-edit-${s.id}-${i}-reps" value="${e.reps}" inputmode="numeric" style="width:50px; ${fieldStyle}">
+                            <span style="color:var(--ink-faint); font-size:var(--t-xs);">×</span>
+                            <input type="number" id="sess-edit-${s.id}-${i}-sets" value="${e.sets}" inputmode="numeric" style="width:40px; ${fieldStyle}">
+                        </span>
+                    </div>`;
                 }).join('');
+
+                const editControls = isEditingSession ? `
+                    <div style="display:flex; gap:8px; margin-top:10px;">
+                        <button class="btn btn-primary" style="padding:8px 14px; min-height:auto; flex:1;" onclick="saveSessionEdits('${s.id}')">${svgIcon('check', 14)} שמור</button>
+                        <button class="btn btn-secondary" style="padding:8px 14px; min-height:auto; flex:1;" onclick="cancelSessionEdit()">${svgIcon('x', 14)} בטל</button>
+                    </div>` : '';
 
                 return `<div class="session-card${s.withTrainer ? ' with-trainer' : ''}">
                     <div class="session-head">
                         <span class="session-date">${formatSessionDate(s.date)}${s.withTrainer ? ' <em class="trainer-tag">עם המאמן</em>' : ''}</span>
-                        <span class="session-meta">${s.entries.length} תרגילים${dur ? ' · ' + dur : ''}</span>
+                        <span style="display:flex; align-items:center; gap:6px;">
+                            <span class="session-meta">${s.entries.length} תרגילים${dur ? ' · ' + dur : ''}</span>
+                            <button class="ex-icon-btn" onclick="toggleSessionEdit('${s.id}')" aria-label="ערוך אימון">${svgIcon(isEditingSession ? 'x' : 'pencil', 14)}</button>
+                            <button class="ex-icon-btn" onclick="deleteSession('${s.id}')" aria-label="מחק אימון">${svgIcon('trash', 14)}</button>
+                        </span>
                     </div>
                     <div class="session-volume">${vol.toLocaleString()} <small>ק"ג נפח</small></div>
                     ${rows}
+                    ${editControls}
                 </div>`;
             }).join('');
         }
@@ -7321,7 +7520,8 @@
                     dots += `<circle class="graph-halo" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="9" />`
                          +  `<circle class="graph-dot last" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="4.5" />`;
                 } else if (i === 0 || i === maxIdx || points.length <= 20) {
-                    dots += `<circle class="graph-dot" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="3" />`;
+                    const peakCls = i === maxIdx ? ' peak' : '';
+                    dots += `<circle class="graph-dot${peakCls}" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="3" />`;
                 }
             });
 
