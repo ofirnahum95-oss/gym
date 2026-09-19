@@ -946,20 +946,13 @@
             font-size: var(--t-lg);
         }
 
-        /* A superset slide has two exercises sharing one screen — the demo
-           link and notes have to shrink here the same way everything else in
-           this block already does, or a superset with both can grow past the
-           screen and force a scroll, defeating the point of stage mode. */
-        .stage .superset-wrapper .demo-link {
-            margin-bottom: var(--s2);
-            padding: 3px 9px;
-            font-size: var(--t-micro);
-        }
-        .stage .superset-wrapper .note-row { margin-bottom: var(--s2); }
-        .stage .superset-wrapper .note-toggle-btn {
-            padding: 3px 9px;
-            font-size: var(--t-micro);
-        }
+        /* A superset slide has two exercises sharing one screen — notes have
+           to shrink here the same way everything else in this block already
+           does, or a superset with both can grow past the screen and force a
+           scroll, defeating the point of stage mode. The "⋯" menu itself needs
+           no compaction — it's a fixed-size button regardless of content. */
+        .stage .superset-wrapper .ex-menu-btn { width: 24px; height: 24px; }
+        .stage .superset-wrapper .ex-menu-wrap { top: var(--s2); inset-inline-end: var(--s2); }
         .stage .superset-wrapper .note-preview {
             margin-bottom: var(--s2);
             padding: 6px 8px;
@@ -1089,52 +1082,72 @@
             align-items: flex-start;
             gap: var(--s2);
             margin-bottom: var(--s3);
+            /* Room reserved for the "⋯" menu button, which is positioned
+               absolute against the card rather than as a flex child here —
+               that keeps it out of the way of stage mode's column-reverse
+               layout instead of fighting it with flex order. */
+            padding-inline-end: 30px;
         }
 
-        /* Video demo from the imported programme — opens the coach's clip */
-        .demo-link {
-            display: inline-flex;
-            align-items: center;
-            gap: 5px;
-            margin-bottom: var(--s3);
-            padding: 5px 11px;
-            border-radius: var(--r-pill);
-            background: var(--accent-wash);
-            color: var(--accent);
-            font-size: var(--t-xs);
-            font-weight: 700;
-            text-decoration: none;
-            border: 1px solid color-mix(in srgb, var(--accent) 28%, transparent);
+        /* One overflow menu per card replaces the old demo-link + note-toggle
+           pills — positioned against .workout-card (already position:relative)
+           so it's unaffected by list/stage/superset layout differences. */
+        .ex-menu-wrap {
+            position: absolute;
+            top: var(--s3);
+            inset-inline-end: var(--s3);
+            z-index: 5;
         }
-        .demo-link:active { background: color-mix(in srgb, var(--accent) 18%, transparent); }
-
-        /* Personal note per exercise — same pill language as the demo link, but
-           neutral until a note actually exists so an untouched card stays quiet. */
-        .note-row {
-            display: flex;
-            margin-bottom: var(--s3);
-        }
-        .note-toggle-btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 5px;
-            padding: 5px 11px;
-            border-radius: var(--r-pill);
+        .ex-menu-btn {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            border: none;
             background: var(--surface-sunk);
             color: var(--ink-soft);
-            font-family: inherit;
-            font-size: var(--t-xs);
-            font-weight: 700;
-            border: 1px solid transparent;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             cursor: pointer;
-            transition: all 0.18s ease;
+            position: relative;
         }
-        .note-toggle-btn.has-note {
-            background: var(--accent-wash);
-            color: var(--accent);
-            border-color: color-mix(in srgb, var(--accent) 28%, transparent);
+        .ex-menu-btn::after { content: ''; position: absolute; inset: -8px; }
+        .ex-menu-btn:active { transform: scale(0.92); }
+
+        .ex-menu-panel {
+            position: absolute;
+            inset-inline-end: 0;
+            top: calc(100% + 4px);
+            z-index: 20;
+            min-width: 168px;
+            background: var(--surface-1);
+            border: 1px solid var(--rule);
+            border-radius: var(--r-md);
+            box-shadow: var(--shadow-3), var(--lift);
+            padding: 4px;
+            display: none;
+            flex-direction: column;
         }
-        .note-toggle-btn:active { transform: scale(0.96); }
+        .ex-menu-panel.open { display: flex; }
+
+        .ex-menu-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            width: 100%;
+            padding: 9px 10px;
+            border: none;
+            background: none;
+            color: var(--ink);
+            font-family: inherit;
+            font-size: var(--t-sm);
+            font-weight: 600;
+            text-align: start;
+            text-decoration: none;
+            border-radius: var(--r-sm);
+            cursor: pointer;
+        }
+        .ex-menu-item:active { background: var(--surface-sunk); }
 
         .note-preview {
             margin-bottom: var(--s3);
@@ -3181,17 +3194,17 @@
                 <!-- VIEW 1: WEEKLY WORKOUT CORE -->
                 <div id="view-workout" class="tab-view active">
                     <div class="view-header-row">
-                        <div class="view-title">📅 אימון נוכחי</div>
+                        <div class="view-title"><span data-icon="dumbbell" data-icon-size="22"></span> אימון נוכחי</div>
                         <div class="header-actions">
-                            <button id="view-mode-toggle" class="edit-toggle-btn" onclick="toggleViewMode()">☰ הכל</button>
-                            <button id="edit-mode-toggle" class="edit-toggle-btn" onclick="toggleEditMode()">✏️ ערוך</button>
+                            <button id="view-mode-toggle" class="edit-toggle-btn" onclick="toggleViewMode()"><span data-icon="list" data-icon-size="14"></span> הכל</button>
+                            <button id="edit-mode-toggle" class="edit-toggle-btn" onclick="toggleEditMode()"><span data-icon="pencil" data-icon-size="14"></span> ערוך</button>
                         </div>
                     </div>
 
 
                     <div class="workout-switcher" id="workout-switcher" style="display:none;" onclick="openWorkoutPicker()">
                         <span class="workout-switcher-label" id="workout-switcher-label"></span>
-                        <span class="workout-switcher-caret">▾ החלף</span>
+                        <span class="workout-switcher-caret"><span data-icon="swap" data-icon-size="14"></span> החלף</span>
                     </div>
 
                     <div class="workout-progress" id="workout-progress" style="display:none;">
@@ -3207,7 +3220,7 @@
                 <!-- VIEW 2: PROGRESS ANALYTICS -->
                 <!-- VIEW 3: ADD NEW DATA -->
                 <div id="view-add" class="tab-view">
-                    <div class="view-title">📝 קליטת אימונים</div>
+                    <div class="view-title"><span data-icon="plus" data-icon-size="22"></span> קליטת אימונים</div>
 
                     <!-- Excel upload -->
                     <div style="background: var(--accent-wash); border: 1px dashed color-mix(in srgb, var(--accent) 35%, transparent); border-radius: var(--r-lg); padding: 16px; margin-bottom: 20px;">
@@ -3227,7 +3240,7 @@
                 <!-- VIEW: PROGRESS -->
                 <div id="view-progress" class="tab-view">
                     <div id="progress-main">
-                        <div class="view-title">🌱 ההתקדמות שלי</div>
+                        <div class="view-title"><span data-icon="trendingUp" data-icon-size="22"></span> ההתקדמות שלי</div>
                         <div id="progress-body"></div>
                     </div>
 
@@ -3259,7 +3272,7 @@
 
                 <!-- VIEW: BODY WEIGHT -->
                 <div id="view-bodyweight" class="tab-view">
-                    <div class="view-title">⚖️ משקל גוף</div>
+                    <div class="view-title"><span data-icon="scale" data-icon-size="22"></span> משקל גוף</div>
 
                     <div class="metrics-row" id="bw-metrics" style="display:none;">
                         <div class="metric-tile">
@@ -3293,7 +3306,7 @@
 
                 <!-- VIEW: SESSION LOG -->
                 <div id="view-history" class="tab-view">
-                    <div class="view-title">📖 יומן אימונים</div>
+                    <div class="view-title"><span data-icon="book" data-icon-size="22"></span> יומן אימונים</div>
                     <div id="history-summary" class="metrics-row" style="display:none;">
                         <div class="metric-tile">
                             <div>אימונים החודש</div>
@@ -3308,11 +3321,11 @@
                 </div>
 
                 <div id="view-settings" class="tab-view">
-                    <div class="view-title">⚙️ הגדרות</div>
+                    <div class="view-title"><span data-icon="sliders" data-icon-size="22"></span> הגדרות</div>
 
                     <div style="margin-bottom: 20px;">
                         <h4 style="font-size: 14px; margin-bottom: 12px; font-weight: 800;">🎨 עיצוב</h4>
-                        <button class="btn btn-secondary" onclick="toggleDarkMode()" style="margin-bottom: 10px;">🌙 מצב כהה</button>
+                        <button class="btn btn-secondary" onclick="toggleDarkMode()" style="margin-bottom: 10px;"><span data-icon="moon" data-icon-size="16"></span> מצב כהה</button>
                     </div>
 
                     <hr style="border: 0; border-top: 1px solid rgba(0,0,0,0.08); margin-bottom: 20px;">
@@ -3341,9 +3354,9 @@
                     <hr style="border: 0; border-top: 1px solid var(--rule-soft); margin-bottom: 20px;">
 
                     <div>
-                        <button class="btn btn-secondary" onclick="exportDataAsJSON()" style="margin-bottom: 10px;">📥 ייצא נתונים</button>
-                        <button class="btn btn-secondary" onclick="clearLocalStorageOnly()" style="margin-bottom: 10px; opacity: 0.8;">🗑️ מחק Backup מקומי</button>
-                        <button class="btn btn-danger" onclick="clearAllData()">☠️ מחק הכל (Cloud + Local)</button>
+                        <button class="btn btn-secondary" onclick="exportDataAsJSON()" style="margin-bottom: 10px;"><span data-icon="download" data-icon-size="16"></span> ייצא נתונים</button>
+                        <button class="btn btn-secondary" onclick="clearLocalStorageOnly()" style="margin-bottom: 10px; opacity: 0.8;"><span data-icon="trash" data-icon-size="16"></span> מחק Backup מקומי</button>
+                        <button class="btn btn-danger" onclick="clearAllData()"><span data-icon="warning" data-icon-size="16"></span> מחק הכל (Cloud + Local)</button>
                     </div>
                 </div>
             </div>
@@ -3397,9 +3410,9 @@
          reachable at exercise 8 exactly as it is at exercise 1 -->
     <div class="timer-card" id="timer-widget">
         <div class="timer-main-row">
-            <button class="timer-btn action-trigger" id="stopwatch-toggle-btn" onclick="toggleStopwatch()" aria-label="הפעל או השהה מנוחה">▶️</button>
+            <button class="timer-btn action-trigger" id="stopwatch-toggle-btn" onclick="toggleStopwatch()" aria-label="הפעל או השהה מנוחה"><span data-icon="play" data-icon-size="18"></span></button>
             <div class="timer-display" id="stopwatch-clock">00:00</div>
-            <button class="timer-btn timer-reset" onclick="resetStopwatch()" aria-label="אפס מנוחה">🔄</button>
+            <button class="timer-btn timer-reset" onclick="resetStopwatch()" aria-label="אפס מנוחה"><span data-icon="rotate" data-icon-size="16"></span></button>
         </div>
     </div>
 
@@ -3407,7 +3420,7 @@
          that ends the session has to be reachable at exercise 8 exactly as it
          is at exercise 1, not stranded above a list you've scrolled past. -->
     <div class="finish-fab hidden" id="finish-fab">
-        <button class="finish-fab-btn" onclick="finishWorkout()" aria-label="סיים ושמור אימון">🏁 סיים</button>
+        <button class="finish-fab-btn" onclick="finishWorkout()" aria-label="סיים ושמור אימון"><span data-icon="flag" data-icon-size="16"></span> סיים</button>
     </div>
 
     <!-- COACH-UPDATE FAB — the signature loop, tucked into a button that only
@@ -3416,7 +3429,7 @@
         <div class="coach-fab-scrim" onclick="closeCoachFab()"></div>
         <div class="coach-fab-panel" id="coach-fab-panel"></div>
         <button class="coach-fab-btn" onclick="toggleCoachFab()" aria-label="עדכון למאמן">
-            💬<span class="coach-fab-badge" id="coach-fab-badge"></span>
+            <span data-icon="message" data-icon-size="20"></span><span class="coach-fab-badge" id="coach-fab-badge"></span>
         </button>
     </div>
 
@@ -3427,12 +3440,12 @@
             <span class="nav-drawer-title">ניווט</span>
             <button class="drawer-close" onclick="closeNavDrawer()" aria-label="סגור תפריט">×</button>
         </div>
-        <button class="nav-tab active" data-tab-id="view-workout" onclick="switchTab('view-workout', this)"><icon>🏋️‍♂️</icon>אימון</button>
-        <button class="nav-tab" data-tab-id="view-add" onclick="switchTab('view-add', this)"><icon>➕</icon>הוספה</button>
-        <button class="nav-tab" data-tab-id="view-progress" onclick="switchTab('view-progress', this)"><icon>🌱</icon>התקדמות</button>
-        <button class="nav-tab" data-tab-id="view-bodyweight" onclick="switchTab('view-bodyweight', this)"><icon>⚖️</icon>משקל גוף</button>
-        <button class="nav-tab" data-tab-id="view-history" onclick="switchTab('view-history', this)"><icon>📖</icon>יומן</button>
-        <button class="nav-tab" data-tab-id="view-settings" onclick="switchTab('view-settings', this)"><icon>⚙️</icon>הגדרות</button>
+        <button class="nav-tab active" data-tab-id="view-workout" onclick="switchTab('view-workout', this)"><icon><span data-icon="dumbbell" data-icon-size="20"></span></icon>אימון</button>
+        <button class="nav-tab" data-tab-id="view-add" onclick="switchTab('view-add', this)"><icon><span data-icon="plus" data-icon-size="20"></span></icon>הוספה</button>
+        <button class="nav-tab" data-tab-id="view-progress" onclick="switchTab('view-progress', this)"><icon><span data-icon="trendingUp" data-icon-size="20"></span></icon>התקדמות</button>
+        <button class="nav-tab" data-tab-id="view-bodyweight" onclick="switchTab('view-bodyweight', this)"><icon><span data-icon="scale" data-icon-size="20"></span></icon>משקל גוף</button>
+        <button class="nav-tab" data-tab-id="view-history" onclick="switchTab('view-history', this)"><icon><span data-icon="book" data-icon-size="20"></span></icon>יומן</button>
+        <button class="nav-tab" data-tab-id="view-settings" onclick="switchTab('view-settings', this)"><icon><span data-icon="sliders" data-icon-size="20"></span></icon>הגדרות</button>
     </aside>
 
     <script>
@@ -3560,6 +3573,7 @@
             // leaving it set means the next account inherits open editors and
             // a stage position that no longer refer to anything.
             openNoteIndex = null;
+            openExerciseMenuIndex = null;
             editingBwDayKey = null;
             renamingWorkoutId = null;
             stageIndex = 0;
@@ -3688,6 +3702,58 @@
         // Sync state
         let lastSyncTime = 0;
         let isSyncing = false;
+
+        // ============ ICON SET ============
+        // Simple stroke-based line icons (24x24, currentColor) replacing emoji
+        // in the persistent chrome — nav, headers, toggles, the timer, the FABs.
+        // currentColor means each icon automatically follows whatever text
+        // color its container already has (including the active-tab accent
+        // and dark mode) with zero extra work.
+        const ICON_PATHS = {
+            dumbbell: '<rect x="2" y="9" width="3" height="6" rx="1"/><rect x="19" y="9" width="3" height="6" rx="1"/><line x1="5" y1="12" x2="19" y2="12"/><rect x="6.5" y="7" width="2.5" height="10" rx="1"/><rect x="15" y="7" width="2.5" height="10" rx="1"/>',
+            plus: '<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>',
+            trendingUp: '<polyline points="3,17 9,11 13,15 21,6"/><polyline points="15,6 21,6 21,12"/>',
+            scale: '<rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="12" cy="13" r="3.5"/><line x1="12" y1="9.5" x2="12" y2="13"/>',
+            book: '<rect x="4" y="3" width="16" height="18" rx="2"/><line x1="4" y1="7" x2="20" y2="7"/><line x1="8" y1="3" x2="8" y2="7"/>',
+            sliders: '<line x1="4" y1="6" x2="20" y2="6"/><circle cx="9" cy="6" r="2"/><line x1="4" y1="12" x2="20" y2="12"/><circle cx="15" cy="12" r="2"/><line x1="4" y1="18" x2="20" y2="18"/><circle cx="7" cy="18" r="2"/>',
+            pencil: '<path d="M4 20 L4 16 L15 5 L19 9 L8 20 Z"/><line x1="13" y1="7" x2="17" y2="11"/>',
+            list: '<line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/>',
+            square: '<rect x="5" y="5" width="14" height="14" rx="2"/>',
+            play: '<polygon points="6,4 20,12 6,20"/>',
+            pause: '<rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/>',
+            rotate: '<path d="M4 12a8 8 0 1 1 2.5 5.8"/><polyline points="3,17 4,21 8,20"/>',
+            flag: '<line x1="5" y1="3" x2="5" y2="21"/><path d="M5 4 L19 4 L15 8 L19 12 L5 12 Z"/>',
+            swap: '<polyline points="7,10 12,5 17,10"/><polyline points="7,14 12,19 17,14"/>',
+            trash: '<line x1="4" y1="7" x2="20" y2="7"/><path d="M6 7 L6 20 a2 2 0 0 0 2 2 h8 a2 2 0 0 0 2 -2 L18 7"/><line x1="9" y1="7" x2="9" y2="4"/><line x1="9" y1="4" x2="15" y2="4"/><line x1="15" y1="4" x2="15" y2="7"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/>',
+            download: '<path d="M12 3v12"/><polyline points="7,10 12,15 17,10"/><line x1="4" y1="19" x2="20" y2="19"/>',
+            moon: '<path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5z"/>',
+            clock: '<circle cx="12" cy="13" r="8"/><polyline points="12,9 12,13 15,15"/><line x1="9" y1="2" x2="15" y2="2"/><line x1="12" y1="2" x2="12" y2="5"/>',
+            message: '<path d="M4 4h16v12H8l-4 4V4z"/>',
+            more: '<circle cx="5" cy="12" r="1.6" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.6" fill="currentColor" stroke="none"/>',
+            note: '<path d="M5 3h11l3 3v15H5z"/><line x1="9" y1="9" x2="16" y2="9"/><line x1="9" y1="13" x2="16" y2="13"/><line x1="9" y1="17" x2="13" y2="17"/>',
+            warning: '<path d="M12 3 L22 20 H2 Z"/><line x1="12" y1="9" x2="12" y2="14"/><circle cx="12" cy="17" r="1" fill="currentColor" stroke="none"/>',
+            x: '<line x1="6" y1="6" x2="18" y2="18"/><line x1="6" y1="18" x2="18" y2="6"/>',
+            check: '<polyline points="5,13 10,18 19,7"/>',
+            lock: '<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>'
+        };
+
+        function svgIcon(name, size = 18) {
+            const body = ICON_PATHS[name] || '';
+            return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:-3px; flex-shrink:0;" aria-hidden="true">${body}</svg>`;
+        }
+
+        // Static chrome (nav, headers, toggles) marks its icon slots with
+        // data-icon instead of embedding SVG by hand everywhere — one source
+        // of truth in ICON_PATHS. Runs immediately: the script sits at the end
+        // of body, so this HTML already exists by the time it executes.
+        function hydrateStaticIcons(root = document) {
+            root.querySelectorAll('[data-icon]').forEach(el => {
+                const name = el.getAttribute('data-icon');
+                const size = parseInt(el.getAttribute('data-icon-size'), 10) || 18;
+                el.innerHTML = svgIcon(name, size);
+            });
+        }
+        hydrateStaticIcons();
 
         // ============ NATIVE FEEL HELPERS ============
 
@@ -3947,11 +4013,11 @@
 
             if (isStopwatchRunning) {
                 clearInterval(stopwatchInterval);
-                btn.textContent = '▶️';
+                btn.innerHTML = svgIcon('play', 18);
                 stopwatchPausedAt = getStopwatchElapsed();
                 isStopwatchRunning = false;
             } else {
-                btn.textContent = '⏸️';
+                btn.innerHTML = svgIcon('pause', 18);
                 stopwatchStartTimestamp = Date.now();
                 isStopwatchRunning = true;
                 startStopwatchTicker();
@@ -3968,7 +4034,7 @@
             stopwatchPausedAt = 0;
             stopwatchStartTimestamp = 0;
             isStopwatchRunning = false;
-            document.getElementById('stopwatch-toggle-btn').textContent = '▶️';
+            document.getElementById('stopwatch-toggle-btn').innerHTML = svgIcon('play', 18);
             try { localStorage.removeItem('fitpro-stopwatch'); } catch (e) {}
             syncTimerRunningState();
             updateStopwatchDisplay();
@@ -3984,13 +4050,13 @@
                 isStopwatchRunning = true;
                 stopwatchStartTimestamp = saved.startTimestamp;
                 stopwatchPausedAt = saved.pausedAt || 0;
-                if (btn) btn.textContent = '⏸️';
+                if (btn) btn.innerHTML = svgIcon('pause', 18);
                 startStopwatchTicker();
             } else if (saved) {
                 isStopwatchRunning = false;
                 stopwatchPausedAt = saved.pausedAt || 0;
                 stopwatchStartTimestamp = 0;
-                if (btn) btn.textContent = '▶️';
+                if (btn) btn.innerHTML = svgIcon('play', 18);
             }
 
             syncTimerRunningState();
@@ -4025,11 +4091,11 @@
             const container = document.getElementById('weekly-workout-container');
 
             if (isEditingModeActive) {
-                toggleBtn.textContent = '🔒 קבע';
+                toggleBtn.innerHTML = svgIcon('lock', 14) + ' קבע';
                 toggleBtn.classList.add('editing-active');
                 container.classList.add('is-editing');
             } else {
-                toggleBtn.textContent = '✏️ ערוך';
+                toggleBtn.innerHTML = svgIcon('pencil', 14) + ' ערוך';
                 toggleBtn.classList.remove('editing-active');
                 container.classList.remove('is-editing');
                 document.querySelectorAll('.inline-edit-input').forEach(el => el.classList.remove('active'));
@@ -4338,6 +4404,7 @@
             // once a different programme is showing — clear it or an unrelated
             // exercise opens with its editor expanded.
             openNoteIndex = null;
+            openExerciseMenuIndex = null;
             renderWeeklyWorkoutDashboard();
             closeWorkoutPicker();
             triggerHaptic(10);
@@ -4386,6 +4453,7 @@
             seekFirstUndone();
             stageIndex = 0;
             openNoteIndex = null;
+            openExerciseMenuIndex = null;
             renderWeeklyWorkoutDashboard();
             renderWorkoutPickerSheet();
             triggerHaptic(8);
@@ -4932,6 +5000,7 @@
         let stageIndex = 0;
         // Which exercise's note editor is expanded — cleared whenever it closes.
         let openNoteIndex = null;
+        let openExerciseMenuIndex = null;   // which exercise's "⋯" menu is expanded, if any
 
         // A slide is one exercise, or a superset pair that belongs together
         function buildSlides(exercises) {
@@ -5040,20 +5109,25 @@
         // the wider grip"), independent from the plan/actual numbers and always
         // editable — it isn't something the trainer prescribed, so it isn't
         // gated behind edit mode the way weight/reps are.
-        function toggleNoteEditor(index) {
-            triggerHaptic(6);
-            openNoteIndex = (openNoteIndex === index) ? null : index;
-
-            // Patch just this one card — same reasoning as paintCompletion/
-            // paintMetric: rebuilding every card to express one toggle is the
-            // exact lag-inducing pattern those functions exist to avoid.
+        // Patch just one exercise card — same reasoning as paintCompletion/
+        // paintMetric: rebuilding every card to express one toggle is the
+        // exact lag-inducing pattern those functions exist to avoid. Shared
+        // by the note toggle and the "⋯" menu, since both touch one card only.
+        function patchExerciseCard(index) {
             const active = getActiveWorkout();
             const card = document.querySelector(`.workout-card[data-ex-index="${index}"]`);
             if (active && active.exercises[index] && card) {
                 card.outerHTML = generateInlineExerciseRow(active.exercises[index], index);
-            } else {
-                renderWeeklyWorkoutDashboard();
+                return true;
             }
+            renderWeeklyWorkoutDashboard();
+            return false;
+        }
+
+        function toggleNoteEditor(index) {
+            triggerHaptic(6);
+            openNoteIndex = (openNoteIndex === index) ? null : index;
+            patchExerciseCard(index);
 
             if (openNoteIndex === index) {
                 requestAnimationFrame(() => {
@@ -5061,6 +5135,25 @@
                     if (el) el.focus();
                 });
             }
+        }
+
+        function toggleExerciseMenu(index) {
+            triggerHaptic(6);
+            openExerciseMenuIndex = (openExerciseMenuIndex === index) ? null : index;
+            patchExerciseCard(index);
+        }
+
+        // Opening the note from inside the "⋯" menu is one state change (close
+        // the menu, open the note) rather than two separate toggles firing in
+        // sequence — one render, not two.
+        function openNoteFromMenu(index) {
+            openExerciseMenuIndex = null;
+            openNoteIndex = index;
+            patchExerciseCard(index);
+            requestAnimationFrame(() => {
+                const el = document.getElementById(`note-input-${index}`);
+                if (el) el.focus();
+            });
         }
 
         function saveNoteValue(exerciseIndex, value) {
@@ -5075,14 +5168,13 @@
             if (trimmed) targetExercise.notes = trimmed;
             else delete targetExercise.notes;
 
-            // Update just the button/preview so a blur mid-render doesn't fight
-            // a full re-render, and typing elsewhere isn't disrupted.
+            // Update just the menu item/preview so a blur mid-render doesn't
+            // fight a full re-render, and typing elsewhere isn't disrupted.
             const card = document.querySelector(`.workout-card[data-ex-index="${exerciseIndex}"]`);
             if (card) {
-                const btn = card.querySelector('.note-toggle-btn');
-                if (btn) {
-                    btn.classList.toggle('has-note', !!trimmed);
-                    btn.textContent = trimmed ? '📝 ערוך הערה' : '📝 הוסף הערה';
+                const item = document.getElementById(`note-menu-item-${exerciseIndex}`);
+                if (item) {
+                    item.innerHTML = svgIcon('note', 16) + (trimmed ? ' ערוך הערה' : ' הוסף הערה');
                 }
                 let preview = card.querySelector('.note-preview');
                 if (trimmed && openNoteIndex !== exerciseIndex) {
@@ -5795,7 +5887,7 @@
             displayZone.classList.toggle('is-editing', isEditingModeActive);
 
             const modeBtn = document.getElementById('view-mode-toggle');
-            if (modeBtn) modeBtn.textContent = stage ? '☰ הכל' : '▣ אחד';
+            if (modeBtn) modeBtn.innerHTML = stage ? (svgIcon('list', 14) + ' הכל') : (svgIcon('square', 14) + ' אחד');
 
             renderWorkoutProgress();
             renderCoachUpdateCard();
@@ -6492,17 +6584,23 @@
                     </div>`;
             }
 
-            const demoLink = ex.demo
-                ? `<a class="demo-link" href="${escAttr(ex.demo)}" target="_blank" rel="noopener noreferrer" aria-label="צפה בהדגמת התרגיל">▶ צפה בתרגיל</a>`
-                : '';
-
             const noteOpen = openNoteIndex === index;
+            const menuOpen = openExerciseMenuIndex === index;
+
+            // One "⋯" menu instead of two separate pills (demo link + note
+            // toggle) — the note preview/panel below stay exactly as they
+            // were; only the two entry points that used to sit as their own
+            // rows are consolidated here.
+            const menuWrap = `
+                <div class="ex-menu-wrap">
+                    <button class="ex-menu-btn" onclick="toggleExerciseMenu(${index})" aria-label="אפשרויות תרגיל">${svgIcon('more', 16)}</button>
+                    <div class="ex-menu-panel ${menuOpen ? 'open' : ''}">
+                        ${ex.demo ? `<a class="ex-menu-item" href="${escAttr(ex.demo)}" target="_blank" rel="noopener noreferrer" onclick="openExerciseMenuIndex=null;">${svgIcon('play', 16)} צפה בהדגמה</a>` : ''}
+                        <button class="ex-menu-item" id="note-menu-item-${index}" onclick="openNoteFromMenu(${index})">${svgIcon('note', 16)} ${ex.notes ? 'ערוך הערה' : 'הוסף הערה'}</button>
+                    </div>
+                </div>`;
+
             const noteRow = `
-                <div class="note-row">
-                    <button class="note-toggle-btn ${ex.notes ? 'has-note' : ''}" onclick="toggleNoteEditor(${index})" aria-label="הערה לתרגיל">
-                        📝 ${ex.notes ? 'ערוך הערה' : 'הוסף הערה'}
-                    </button>
-                </div>
                 ${(ex.notes && !noteOpen) ? `<div class="note-preview">${esc(ex.notes)}</div>` : ''}
                 <div class="note-panel ${noteOpen ? 'open' : ''}" id="note-panel-${index}">
                     <textarea id="note-input-${index}" placeholder="הערה לתרגיל..." onblur="saveNoteValue(${index}, this.value)">${esc(ex.notes || '')}</textarea>
@@ -6510,13 +6608,13 @@
 
             return `
                 <div class="workout-card ${isDone ? 'exercise-done' : ''}" data-ex-index="${index}" data-num="${index + 1}">
+                    ${menuWrap}
                     <div class="exercise-header-row">
                         <button class="complete-toggle ${isDone ? 'checked' : ''}" onclick="toggleExerciseComplete(${index})" aria-label="סמן כהושלם">
                             ${isDone ? '✓' : ''}
                         </button>
                         <h3>${esc(ex.name)}</h3>
                     </div>
-                    ${demoLink}
                     ${noteRow}
                     ${selectors}
                     ${prevRow}
