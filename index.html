@@ -843,6 +843,26 @@
             margin-top: 0;
         }
 
+        /* The checkbox sitting alone in a full-screen slide reads as an empty
+           broken circle without this — a caption turns it back into a labeled
+           control instead of unexplained whitespace. List mode doesn't need
+           it: there the checkbox sits right beside the exercise name. */
+        .ex-toggle-caption { display: none; }
+        .stage .ex-toggle-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+        }
+        .stage .ex-toggle-caption {
+            display: block;
+            font-size: var(--t-micro);
+            font-weight: 600;
+            color: var(--ink-faint);
+            letter-spacing: 0.02em;
+        }
+        .stage .complete-toggle.checked ~ .ex-toggle-caption { color: var(--done); }
+
         .stage .card-selectors { gap: var(--s3); }
 
         .stage .inline-stepper {
@@ -919,6 +939,12 @@
             min-width: 34px;
             font-size: var(--t-lg);
         }
+
+        /* Supersets keep the row layout (checkbox beside the title, same as
+           list mode) rather than stage's reversed single-exercise column, so
+           the checkbox is never isolated here — the caption stays off. */
+        .stage .superset-wrapper .ex-toggle-caption { display: none; }
+        .stage .superset-wrapper .ex-toggle-group { flex-direction: row; gap: 0; }
 
         .stage .superset-wrapper .inline-stepper {
             flex-direction: row;
@@ -1124,7 +1150,7 @@
         /* Centred as a cluster in stage mode, matching the centred title
            treatment there, and sized up a little for the fuller screen. */
         .stage .ex-title-group { justify-content: center; }
-        .stage .ex-title-group h3 { flex: none; }
+        .stage .ex-title-group h3 { flex: 0 1 auto; min-width: 0; }
         .stage .ex-icon-btn { width: 32px; height: 32px; }
 
         .note-preview {
@@ -4561,6 +4587,8 @@
                 toggle.classList.toggle('checked', isDone);
                 toggle.textContent = isDone ? '✓' : '';
             }
+            const caption = card.querySelector('.ex-toggle-caption');
+            if (caption) caption.textContent = isDone ? 'הושלם' : 'הקש לסימון';
 
             // The rail dots are a map of the session, so they move with it
             const active = getActiveWorkout();
@@ -6561,9 +6589,12 @@
             return `
                 <div class="workout-card ${isDone ? 'exercise-done' : ''}" data-ex-index="${index}" data-num="${index + 1}">
                     <div class="exercise-header-row">
-                        <button class="complete-toggle ${isDone ? 'checked' : ''}" onclick="toggleExerciseComplete(${index})" aria-label="סמן כהושלם">
-                            ${isDone ? '✓' : ''}
-                        </button>
+                        <div class="ex-toggle-group">
+                            <button class="complete-toggle ${isDone ? 'checked' : ''}" onclick="toggleExerciseComplete(${index})" aria-label="סמן כהושלם">
+                                ${isDone ? '✓' : ''}
+                            </button>
+                            <span class="ex-toggle-caption">${isDone ? 'הושלם' : 'הקש לסימון'}</span>
+                        </div>
                         ${titleGroup}
                     </div>
                     ${noteRow}
