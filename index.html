@@ -911,6 +911,8 @@
             flex: 1;
         }
 
+        .stage .superset-wrapper .ex-title-group { justify-content: flex-start; }
+
         .stage .superset-wrapper .complete-toggle {
             width: 34px;
             height: 34px;
@@ -949,10 +951,8 @@
         /* A superset slide has two exercises sharing one screen — notes have
            to shrink here the same way everything else in this block already
            does, or a superset with both can grow past the screen and force a
-           scroll, defeating the point of stage mode. The "⋯" menu itself needs
-           no compaction — it's a fixed-size button regardless of content. */
-        .stage .superset-wrapper .ex-menu-btn { width: 24px; height: 24px; }
-        .stage .superset-wrapper .ex-menu-wrap { top: var(--s2); inset-inline-end: var(--s2); }
+           scroll, defeating the point of stage mode. */
+        .stage .superset-wrapper .ex-icon-btn { width: 20px; height: 20px; }
         .stage .superset-wrapper .note-preview {
             margin-bottom: var(--s2);
             padding: 6px 8px;
@@ -1082,72 +1082,50 @@
             align-items: flex-start;
             gap: var(--s2);
             margin-bottom: var(--s3);
-            /* Room reserved for the "⋯" menu button, which is positioned
-               absolute against the card rather than as a flex child here —
-               that keeps it out of the way of stage mode's column-reverse
-               layout instead of fighting it with flex order. */
-            padding-inline-end: 30px;
         }
 
-        /* One overflow menu per card replaces the old demo-link + note-toggle
-           pills — positioned against .workout-card (already position:relative)
-           so it's unaffected by list/stage/superset layout differences. */
-        .ex-menu-wrap {
-            position: absolute;
-            top: var(--s3);
-            inset-inline-end: var(--s3);
-            z-index: 5;
+        /* Title + its two icon buttons (demo, note) travel together as one
+           unit. Grouping them matters specifically for stage mode: the header
+           row there reverses to column direction, and a bare icon button
+           sitting as its own flex child would end up reordered above the
+           title instead of staying beside it. */
+        .ex-title-group {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex: 1;
+            min-width: 0;
         }
-        .ex-menu-btn {
-            width: 28px;
-            height: 28px;
+        .ex-title-group h3 { flex: 1; min-width: 0; }
+
+        .ex-icon-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 26px;
+            height: 26px;
             border-radius: 50%;
             border: none;
             background: var(--surface-sunk);
-            color: var(--ink-soft);
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            color: var(--ink-faint);
             cursor: pointer;
+            flex-shrink: 0;
             position: relative;
-        }
-        .ex-menu-btn::after { content: ''; position: absolute; inset: -8px; }
-        .ex-menu-btn:active { transform: scale(0.92); }
-
-        .ex-menu-panel {
-            position: absolute;
-            inset-inline-end: 0;
-            top: calc(100% + 4px);
-            z-index: 20;
-            min-width: 168px;
-            background: var(--surface-1);
-            border: 1px solid var(--rule);
-            border-radius: var(--r-md);
-            box-shadow: var(--shadow-3), var(--lift);
-            padding: 4px;
-            display: none;
-            flex-direction: column;
-        }
-        .ex-menu-panel.open { display: flex; }
-
-        .ex-menu-item {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            width: 100%;
-            padding: 9px 10px;
-            border: none;
-            background: none;
-            color: var(--ink);
-            font-family: inherit;
-            font-size: var(--t-sm);
-            font-weight: 600;
-            text-align: start;
             text-decoration: none;
-            border-radius: var(--r-sm);
-            cursor: pointer;
+            transition: transform 0.14s ease, background 0.18s ease, color 0.18s ease;
         }
-        .ex-menu-item:active { background: var(--surface-sunk); }
+        .ex-icon-btn::after { content: ''; position: absolute; inset: -8px; }
+        .ex-icon-btn:active { transform: scale(0.9); }
+        .ex-icon-btn.has-note {
+            background: var(--accent-wash);
+            color: var(--accent);
+        }
+
+        /* Centred as a cluster in stage mode, matching the centred title
+           treatment there, and sized up a little for the fuller screen. */
+        .stage .ex-title-group { justify-content: center; }
+        .stage .ex-title-group h3 { flex: none; }
+        .stage .ex-icon-btn { width: 32px; height: 32px; }
 
         .note-preview {
             margin-bottom: var(--s3);
@@ -3573,7 +3551,6 @@
             // leaving it set means the next account inherits open editors and
             // a stage position that no longer refer to anything.
             openNoteIndex = null;
-            openExerciseMenuIndex = null;
             editingBwDayKey = null;
             renamingWorkoutId = null;
             stageIndex = 0;
@@ -4404,7 +4381,6 @@
             // once a different programme is showing — clear it or an unrelated
             // exercise opens with its editor expanded.
             openNoteIndex = null;
-            openExerciseMenuIndex = null;
             renderWeeklyWorkoutDashboard();
             closeWorkoutPicker();
             triggerHaptic(10);
@@ -4453,7 +4429,6 @@
             seekFirstUndone();
             stageIndex = 0;
             openNoteIndex = null;
-            openExerciseMenuIndex = null;
             renderWeeklyWorkoutDashboard();
             renderWorkoutPickerSheet();
             triggerHaptic(8);
@@ -5000,7 +4975,6 @@
         let stageIndex = 0;
         // Which exercise's note editor is expanded — cleared whenever it closes.
         let openNoteIndex = null;
-        let openExerciseMenuIndex = null;   // which exercise's "⋯" menu is expanded, if any
 
         // A slide is one exercise, or a superset pair that belongs together
         function buildSlides(exercises) {
@@ -5137,25 +5111,6 @@
             }
         }
 
-        function toggleExerciseMenu(index) {
-            triggerHaptic(6);
-            openExerciseMenuIndex = (openExerciseMenuIndex === index) ? null : index;
-            patchExerciseCard(index);
-        }
-
-        // Opening the note from inside the "⋯" menu is one state change (close
-        // the menu, open the note) rather than two separate toggles firing in
-        // sequence — one render, not two.
-        function openNoteFromMenu(index) {
-            openExerciseMenuIndex = null;
-            openNoteIndex = index;
-            patchExerciseCard(index);
-            requestAnimationFrame(() => {
-                const el = document.getElementById(`note-input-${index}`);
-                if (el) el.focus();
-            });
-        }
-
         function saveNoteValue(exerciseIndex, value) {
             const currentActiveWorkout = getActiveWorkout();
             if (!currentActiveWorkout) return;
@@ -5168,13 +5123,13 @@
             if (trimmed) targetExercise.notes = trimmed;
             else delete targetExercise.notes;
 
-            // Update just the menu item/preview so a blur mid-render doesn't
-            // fight a full re-render, and typing elsewhere isn't disrupted.
+            // Update just the icon/preview so a blur mid-render doesn't fight
+            // a full re-render, and typing elsewhere isn't disrupted.
             const card = document.querySelector(`.workout-card[data-ex-index="${exerciseIndex}"]`);
             if (card) {
-                const item = document.getElementById(`note-menu-item-${exerciseIndex}`);
-                if (item) {
-                    item.innerHTML = svgIcon('note', 16) + (trimmed ? ' ערוך הערה' : ' הוסף הערה');
+                const iconBtn = document.getElementById(`note-icon-btn-${exerciseIndex}`);
+                if (iconBtn) {
+                    iconBtn.classList.toggle('has-note', !!trimmed);
                 }
                 let preview = card.querySelector('.note-preview');
                 if (trimmed && openNoteIndex !== exerciseIndex) {
@@ -6585,19 +6540,16 @@
             }
 
             const noteOpen = openNoteIndex === index;
-            const menuOpen = openExerciseMenuIndex === index;
-
-            // One "⋯" menu instead of two separate pills (demo link + note
-            // toggle) — the note preview/panel below stay exactly as they
-            // were; only the two entry points that used to sit as their own
-            // rows are consolidated here.
-            const menuWrap = `
-                <div class="ex-menu-wrap">
-                    <button class="ex-menu-btn" onclick="toggleExerciseMenu(${index})" aria-label="אפשרויות תרגיל">${svgIcon('more', 16)}</button>
-                    <div class="ex-menu-panel ${menuOpen ? 'open' : ''}">
-                        ${ex.demo ? `<a class="ex-menu-item" href="${escAttr(ex.demo)}" target="_blank" rel="noopener noreferrer" onclick="openExerciseMenuIndex=null;">${svgIcon('play', 16)} צפה בהדגמה</a>` : ''}
-                        <button class="ex-menu-item" id="note-menu-item-${index}" onclick="openNoteFromMenu(${index})">${svgIcon('note', 16)} ${ex.notes ? 'ערוך הערה' : 'הוסף הערה'}</button>
-                    </div>
+            // Two small icon buttons live right next to the title, grouped
+            // together so the pair moves as one unit — including in stage
+            // mode, where the header row reverses to column direction and a
+            // bare flex child here would end up floating above the title
+            // instead of beside it.
+            const titleGroup = `
+                <div class="ex-title-group">
+                    <h3>${esc(ex.name)}</h3>
+                    ${ex.demo ? `<a class="ex-icon-btn" href="${escAttr(ex.demo)}" target="_blank" rel="noopener noreferrer" aria-label="צפה בהדגמת התרגיל">${svgIcon('play', 15)}</a>` : ''}
+                    <button class="ex-icon-btn ${ex.notes ? 'has-note' : ''}" id="note-icon-btn-${index}" onclick="toggleNoteEditor(${index})" aria-label="הערה לתרגיל">${svgIcon('note', 15)}</button>
                 </div>`;
 
             const noteRow = `
@@ -6608,12 +6560,11 @@
 
             return `
                 <div class="workout-card ${isDone ? 'exercise-done' : ''}" data-ex-index="${index}" data-num="${index + 1}">
-                    ${menuWrap}
                     <div class="exercise-header-row">
                         <button class="complete-toggle ${isDone ? 'checked' : ''}" onclick="toggleExerciseComplete(${index})" aria-label="סמן כהושלם">
                             ${isDone ? '✓' : ''}
                         </button>
-                        <h3>${esc(ex.name)}</h3>
+                        ${titleGroup}
                     </div>
                     ${noteRow}
                     ${selectors}
