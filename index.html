@@ -412,6 +412,16 @@
             align-items: center;
             gap: var(--s3);
             margin-bottom: var(--s3);
+            /* Sticky, not floating: reachable from anywhere in the list like a
+               floating button would be, but anchored to the top — physically
+               far from the rest timer at the bottom, so the two can never be
+               mistaken for each other the way two floating pills could. */
+            position: sticky;
+            top: var(--safe-top);
+            z-index: 50;
+            background: var(--surface-0);
+            padding: var(--s2) 0;
+            border-bottom: 1px solid var(--rule-soft);
         }
 
         .workout-progress-bar {
@@ -1312,7 +1322,19 @@
             width: auto;
             cursor: pointer;
             box-shadow: inset 0 -2px 0 color-mix(in srgb, var(--accent) 38%, transparent);
+            /* The base rule's flex:1 1 0% starts from a zero basis, so with
+               width:auto the box collapsed to its 50px min-width while the
+               readout text ("3×12" at the readout size) is wider — the text
+               then overflowed its own box and ran under the ± buttons.
+               Sizing from content instead keeps the number inside its box. */
+            flex: 1 1 auto;
+            min-width: fit-content;
         }
+        /* Stage mode gives the readout the full tile width; the width:auto
+           above (same specificity, declared later) was winning and shrinking
+           the box below its own content, so the unit label spilled outside
+           the underline. Restore the full width here. */
+        .stage .inline-stepper.is-editing .step-value { width: 100%; }
         .is-editing .step-value:active {
             box-shadow: inset 0 -2px 0 var(--accent);
         }
@@ -1639,39 +1661,26 @@
         }
         .btn-danger:active { background: color-mix(in srgb, var(--alert) 10%, transparent); }
 
-        /* ============ Finish-workout FAB ============
-           Opposite corner from the coach FAB, same floating language as the
-           rest timer — the three together read as one bottom action bar. */
-        .finish-fab {
-            position: fixed;
-            inset-inline-start: var(--s4);
-            bottom: calc(var(--timer-gap) + max(var(--s1), var(--safe-bottom)));
-            z-index: 901;
-            transition: opacity 0.25s ease, transform 0.25s var(--ease-pop), visibility 0.25s;
-        }
-        .finish-fab.hidden {
-            opacity: 0;
-            visibility: hidden;
-            transform: translateY(var(--s4)) scale(0.96);
-            pointer-events: none;
-        }
-        .finish-fab-btn {
+        /* ============ Finish button — inline, in the sticky progress row ============
+           No longer a floating pill near the rest timer — see .workout-progress. */
+        .progress-finish-btn {
             display: flex;
             align-items: center;
-            gap: 6px;
-            padding: 12px 18px;
+            gap: 4px;
+            flex-shrink: 0;
+            padding: 6px 12px;
             border-radius: var(--r-pill);
-            border: 1px solid color-mix(in srgb, var(--done) 45%, transparent);
+            border: none;
             background: var(--done);
             color: #fff;
             font-family: inherit;
-            font-size: var(--t-sm);
+            font-size: var(--t-xs);
             font-weight: 700;
             cursor: pointer;
-            box-shadow: var(--shadow-3), 0 0 0 3px color-mix(in srgb, var(--done) 20%, transparent);
-            transition: transform 0.18s var(--ease-pop);
+            box-shadow: 0 2px 8px color-mix(in srgb, var(--done) 30%, transparent);
+            transition: transform 0.14s ease;
         }
-        .finish-fab-btn:active { transform: scale(0.94); }
+        .progress-finish-btn:active { transform: scale(0.94); }
 
         /* ============ Fields ============ */
 
@@ -3288,6 +3297,9 @@
                         <div class="workout-progress-bar"><span id="workout-progress-fill"></span></div>
                         <div class="workout-progress-text" id="workout-progress-text">0/0</div>
                         <button class="clear-marks-btn" id="clear-marks-btn" onclick="clearAllCompletions()" style="display:none;">נקה</button>
+                        <button class="progress-finish-btn" id="progress-finish-btn" onclick="finishWorkout()" style="display:none;" aria-label="סיים ושמור אימון">
+                            <span data-icon="flag" data-icon-size="14"></span> סיים
+                        </button>
                     </div>
 
                     <!-- Rest Stopwatch -->
@@ -3493,13 +3505,6 @@
             <div class="timer-display" id="stopwatch-clock">00:00</div>
             <button class="timer-btn timer-reset" onclick="resetStopwatch()" aria-label="אפס מנוחה"><span data-icon="rotate" data-icon-size="16"></span></button>
         </div>
-    </div>
-
-    <!-- FINISH-WORKOUT FAB — mirrors the rest timer's reasoning: the button
-         that ends the session has to be reachable at exercise 8 exactly as it
-         is at exercise 1, not stranded above a list you've scrolled past. -->
-    <div class="finish-fab hidden" id="finish-fab">
-        <button class="finish-fab-btn" onclick="finishWorkout()" aria-label="סיים ושמור אימון"><span data-icon="flag" data-icon-size="16"></span> סיים</button>
     </div>
 
     <!-- COACH-UPDATE FAB — the signature loop, tucked into a button that only
@@ -3992,7 +3997,6 @@
             // The rest timer belongs to the workout, not to analytics or settings
             syncTimerVisibility(tabId);
             syncCoachFab(tabId);
-            syncFinishFab(tabId);
 
             // Jump back to the top so the new view starts at its title
             const scroller = document.querySelector('.content-area');
@@ -5964,11 +5968,6 @@
             renderCoachUpdateCard();
         }
 
-        // Session progress — pairs with the rail down the left of the list
-        // Whether the floating finish button should be offered at all — kept
-        // separate from the tab check in syncFinishFab, which also gates it.
-        let workoutHasProgress = false;
-
         function renderWorkoutProgress() {
             const wrap = document.getElementById('workout-progress');
             const fill = document.getElementById('workout-progress-fill');
@@ -5977,8 +5976,6 @@
 
             if (stateWorkouts.length === 0) {
                 wrap.style.display = 'none';
-                workoutHasProgress = false;
-                syncFinishFab();
                 return;
             }
 
@@ -5986,8 +5983,6 @@
             const total = active.exercises ? active.exercises.length : 0;
             if (total === 0) {
                 wrap.style.display = 'none';
-                workoutHasProgress = false;
-                syncFinishFab();
                 return;
             }
 
@@ -5996,24 +5991,16 @@
             fill.style.width = Math.round((done / total) * 100) + '%';
             text.textContent = `${done}/${total}`;
 
-            // Offer the reset only once there's something to reset
+            // Offer the reset and the finish button only once there's
+            // something to reset/finish. The finish button lives inside this
+            // row (itself inside view-workout), so it hides on its own when
+            // another tab is active — no separate tab check needed, unlike the
+            // coach FAB which sits outside every tab-view.
             const clearBtn = document.getElementById('clear-marks-btn');
             if (clearBtn) clearBtn.style.display = done > 0 ? 'block' : 'none';
 
-            // Finishing only makes sense with at least one exercise ticked
-            workoutHasProgress = done > 0;
-            syncFinishFab();
-        }
-
-        // Show the floating finish button only on the workout screen, and only
-        // once there's something to finish — same pattern as the coach FAB.
-        function syncFinishFab(tabId) {
-            const fab = document.getElementById('finish-fab');
-            if (!fab) return;
-            const onWorkout = (tabId
-                ? tabId === 'view-workout'
-                : document.getElementById('view-workout')?.classList.contains('active'));
-            fab.classList.toggle('hidden', !(onWorkout && workoutHasProgress));
+            const finishBtn = document.getElementById('progress-finish-btn');
+            if (finishBtn) finishBtn.style.display = done > 0 ? 'flex' : 'none';
         }
 
         // Wipe every completion tick — for starting the same programme again
