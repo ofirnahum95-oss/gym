@@ -398,11 +398,15 @@
 
         .edit-toggle-btn:active { transform: scale(0.96); }
 
+        /* Deliberately NOT the accent green: that colour means progress and
+           completion here (done ticks, the finish button), and an active edit
+           mode is neither — it's a state you're currently in. Sharing the
+           colour made "קבע" and "סיים" read as the same kind of action. */
         .edit-toggle-btn.editing-active {
-            background: var(--accent);
-            color: var(--accent-ink);
-            border-color: var(--accent);
-            box-shadow: 0 2px 10px color-mix(in srgb, var(--accent) 35%, transparent);
+            background: var(--ink);
+            color: var(--surface-0);
+            border-color: var(--ink);
+            box-shadow: 0 2px 10px color-mix(in srgb, var(--ink) 28%, transparent);
         }
 
         /* ============ Session progress ============ */
