@@ -747,6 +747,57 @@
             flex-shrink: 0;
         }
 
+        /* One entry point ("תצוגה") instead of two separate always-visible
+           toggle pills — the view-mode and edit-mode controls themselves are
+           untouched, just relocated into this dropdown. */
+        .view-menu-wrap { position: relative; }
+
+        .view-menu-scrim {
+            position: fixed;
+            inset: 0;
+            /* Above the sticky progress bar (z-index 50) — that bar is what
+               the trigger button itself sits inside, so the panel opening
+               from it must render above the bar, not underneath it. */
+            z-index: 59;
+            display: none;
+        }
+        .view-menu-wrap.open .view-menu-scrim { display: block; }
+
+        .view-menu-panel {
+            position: absolute;
+            inset-inline-end: 0;
+            top: calc(100% + 6px);
+            z-index: 60;
+            min-width: 160px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            background: var(--surface-1);
+            border: 1px solid var(--rule);
+            border-radius: var(--r-lg);
+            box-shadow: var(--shadow-3), var(--lift);
+            padding: 6px;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-4px) scale(0.98);
+            transform-origin: top;
+            transition: opacity 0.18s ease, transform 0.18s var(--ease-pop), visibility 0.18s;
+        }
+        .view-menu-wrap.open .view-menu-panel {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0) scale(1);
+        }
+
+        /* Inside the panel the two pills become full-width rows */
+        .view-menu-panel .edit-toggle-btn {
+            width: 100%;
+            text-align: start;
+            box-shadow: none;
+            border-color: transparent;
+            background: var(--surface-sunk);
+        }
+
         .stage-count {
             font-family: var(--mono);
             font-size: var(--t-xl);
@@ -1518,6 +1569,7 @@
             padding-top: var(--s2);
             border-top: 1px solid var(--rule-soft);
             font-size: var(--t-xs);
+            cursor: pointer;
         }
 
         .last-time-label {
@@ -3286,8 +3338,16 @@
                     <div class="view-header-row">
                         <div class="view-title"><span data-icon="dumbbell" data-icon-size="22"></span> אימון נוכחי</div>
                         <div class="header-actions">
-                            <button id="view-mode-toggle" class="edit-toggle-btn" onclick="toggleViewMode()"><span data-icon="list" data-icon-size="14"></span> הכל</button>
-                            <button id="edit-mode-toggle" class="edit-toggle-btn" onclick="toggleEditMode()"><span data-icon="pencil" data-icon-size="14"></span> ערוך</button>
+                            <div class="view-menu-wrap" id="view-menu-wrap">
+                                <div class="view-menu-scrim" onclick="closeViewMenu()"></div>
+                                <button class="edit-toggle-btn" onclick="toggleViewMenu()" aria-label="אפשרויות תצוגה">
+                                    <span data-icon="sliders" data-icon-size="14"></span> תצוגה
+                                </button>
+                                <div class="view-menu-panel">
+                                    <button id="view-mode-toggle" class="edit-toggle-btn" onclick="toggleViewMode(); closeViewMenu();"><span data-icon="list" data-icon-size="14"></span> הכל</button>
+                                    <button id="edit-mode-toggle" class="edit-toggle-btn" onclick="toggleEditMode(); closeViewMenu();"><span data-icon="pencil" data-icon-size="14"></span> ערוך</button>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -3661,6 +3721,7 @@
             // leaving it set means the next account inherits open editors and
             // a stage position that no longer refer to anything.
             openNoteIndex = null;
+            sparkOpenIndex = null;
             editingBwDayKey = null;
             renamingWorkoutId = null;
             editingSessionId = null;
@@ -4181,6 +4242,15 @@
         window.addEventListener('pageshow', resyncStopwatch);
         window.addEventListener('pagehide', () => { flushPendingWrites(); saveStopwatchState(); });
 
+        function toggleViewMenu() {
+            triggerHaptic(6);
+            document.getElementById('view-menu-wrap')?.classList.toggle('open');
+        }
+
+        function closeViewMenu() {
+            document.getElementById('view-menu-wrap')?.classList.remove('open');
+        }
+
         function toggleEditMode() {
             isEditingModeActive = !isEditingModeActive;
             triggerHaptic(isEditingModeActive ? 15 : [10, 30, 10]);
@@ -4503,6 +4573,7 @@
             // once a different programme is showing — clear it or an unrelated
             // exercise opens with its editor expanded.
             openNoteIndex = null;
+            sparkOpenIndex = null;
             renderWeeklyWorkoutDashboard();
             closeWorkoutPicker();
             triggerHaptic(10);
@@ -4551,6 +4622,7 @@
             seekFirstUndone();
             stageIndex = 0;
             openNoteIndex = null;
+            sparkOpenIndex = null;
             renderWeeklyWorkoutDashboard();
             renderWorkoutPickerSheet();
             triggerHaptic(8);
@@ -4825,16 +4897,36 @@
             const stepper = valueEl.closest('.inline-stepper');
             const card = input.closest('.workout-card');
 
-            // The plan hint sits in the label above and can flip on this change
+            // The label itself is always plain now — the plan comparison lives
+            // in the last-time row below, not here.
             const label = stepper?.querySelector('.stepper-label');
-            if (label) {
-                const p = planOf(ex);
-                const off = field === 'weight'
-                    ? p.weight !== ex.weight
-                    : (p.reps !== ex.reps || p.sets !== ex.sets);
-                const base = field === 'weight' ? 'משקל' : 'חזרות × סטים';
-                const hint = field === 'weight' ? `תוכנית ${p.weight}` : `תוכנית ${p.reps}×${p.sets}`;
-                label.innerHTML = off ? `${base} <em class="plan-delta">${hint}</em>` : base;
+            if (label) label.textContent = field === 'weight' ? 'משקל' : 'חזרות × סטים';
+
+            // One combined plan-delta note covers both weight and reps/sets, so
+            // an edit to either field can add, update, or remove it. Only
+            // patched when the last-time row already exists — the rare case of
+            // a first-ever entry (no history yet) that just went off-plan for
+            // the first time waits for the next full render instead.
+            if (card) {
+                const strip = card.querySelector('.last-time');
+                if (strip) {
+                    const p = planOf(ex);
+                    const anyOff = p.weight !== ex.weight || p.reps !== ex.reps || p.sets !== ex.sets;
+                    let planNote = strip.querySelector('.plan-delta');
+                    if (anyOff) {
+                        const text = `תוכנית ${p.weight} · ${p.reps}×${p.sets}`;
+                        if (!planNote) {
+                            planNote = document.createElement('em');
+                            planNote.className = 'plan-delta';
+                            const figsEl = strip.querySelector('.last-time-figs');
+                            if (figsEl) figsEl.insertAdjacentElement('afterend', planNote);
+                            else strip.insertBefore(planNote, strip.firstChild);
+                        }
+                        planNote.textContent = text;
+                    } else if (planNote) {
+                        planNote.remove();
+                    }
+                }
             }
 
             // The against-last-time arrow is also a function of the weight, so it
@@ -5099,6 +5191,7 @@
         let stageIndex = 0;
         // Which exercise's note editor is expanded — cleared whenever it closes.
         let openNoteIndex = null;
+        let sparkOpenIndex = null;   // which exercise's last-time row has its sparkline expanded
 
         // A slide is one exercise, or a superset pair that belongs together
         function buildSlides(exercises) {
@@ -5233,6 +5326,14 @@
                     if (el) el.focus();
                 });
             }
+        }
+
+        // The sparkline is a tap on the last-time row away, not drawn by
+        // default on every card — see generateInlineExerciseRow.
+        function toggleSpark(index) {
+            triggerHaptic(6);
+            sparkOpenIndex = (sparkOpenIndex === index) ? null : index;
+            patchExerciseCard(index);
         }
 
         function saveNoteValue(exerciseIndex, value) {
@@ -6672,34 +6773,47 @@
             const isDone = isCompletedToday(ex);
             const p = planOf(ex);
 
-            // Only surface the prescription when you've actually deviated from it,
-            // so an untouched card stays quiet.
-            const weightHint = p.weight !== ex.weight
-                ? `<em class="plan-delta">תוכנית ${p.weight}</em>` : '';
-            const repsHint = (p.reps !== ex.reps || p.sets !== ex.sets)
-                ? `<em class="plan-delta">תוכנית ${p.reps}×${p.sets}</em>` : '';
+            // Only surface the prescription when you've actually deviated from
+            // it — folded into the last-time line below instead of a separate
+            // label, so a card doesn't carry two different "vs. something"
+            // comparisons in two different places for one number.
+            const planWeightOff = p.weight !== ex.weight;
+            const planRepsOff = (p.reps !== ex.reps || p.sets !== ex.sets);
+            const planFigs = `${p.weight} · ${p.reps}×${p.sets}`;
 
             // The question you actually ask mid-set: what did I lift last time?
             const prev = lastPerformedFor(ex.name);
+            const sparkOpen = sparkOpenIndex === index;
             let prevRow = '';
-            if (prev) {
-                // Progress is total work, not load alone — more reps at the same
-                // weight is still a step forward.
-                const dir = trendAgainst(ex, prev);
-                const arrow = dir === 'up' ? '↑' : dir === 'down' ? '↓' : '=';
-                const spark = sparklineFor(ex.name);
-                // A per-set reading has no single "weight" worth quoting — show
-                // the sets themselves, same shorthand as the log screen, so the
-                // one thing this strip exists for (what did I lift last time)
-                // doesn't quietly collapse to just the heaviest set.
-                const figs = hasSetLog(prev)
-                    ? prev.setLog.map(s => `${s.weight}×${s.reps}`).join(' · ')
-                    : `${prev.weight} · ${prev.reps}×${prev.sets}`;
+            if (prev || planWeightOff || planRepsOff) {
+                let dir = '', gapLabel = '', figs = '', trailer = '';
+                if (prev) {
+                    // Progress is total work, not load alone — more reps at the same
+                    // weight is still a step forward.
+                    dir = trendAgainst(ex, prev);
+                    const arrow = dir === 'up' ? '↑' : dir === 'down' ? '↓' : '=';
+                    // The sparkline is a tap away rather than always drawn — the
+                    // arrow already answers "better or worse", so the graph is
+                    // detail you ask for, not something every card carries.
+                    const spark = sparkOpen ? sparklineFor(ex.name) : '';
+                    gapLabel = describeGap(prev.timestamp);
+                    // A per-set reading has no single "weight" worth quoting — show
+                    // the sets themselves, same shorthand as the log screen, so the
+                    // one thing this strip exists for (what did I lift last time)
+                    // doesn't quietly collapse to just the heaviest set.
+                    figs = hasSetLog(prev)
+                        ? prev.setLog.map(s => `${s.weight}×${s.reps}`).join(' · ')
+                        : `${prev.weight} · ${prev.reps}×${prev.sets}`;
+                    trailer = spark || `<span class="last-time-arrow">${arrow}</span>`;
+                }
+                const planNote = (planWeightOff || planRepsOff)
+                    ? `<em class="plan-delta">תוכנית ${planFigs}</em>` : '';
                 prevRow = `
-                    <div class="last-time ${dir}">
-                        <span class="last-time-label">${describeGap(prev.timestamp)}</span>
-                        <span class="last-time-figs">${figs}</span>
-                        ${spark || `<span class="last-time-arrow">${arrow}</span>`}
+                    <div class="last-time ${dir}" onclick="toggleSpark(${index})" role="button" tabindex="0" aria-label="הצג מגמה">
+                        ${gapLabel ? `<span class="last-time-label">${gapLabel}</span>` : ''}
+                        ${figs ? `<span class="last-time-figs">${figs}</span>` : ''}
+                        ${planNote}
+                        ${trailer}
                     </div>`;
             }
 
@@ -6743,14 +6857,14 @@
                 selectors = `
                     <div class="card-selectors">
                         <div class="inline-stepper ${isEditingModeActive ? 'is-editing' : ''}">
-                            <span class="stepper-label">משקל ${weightHint}</span>
+                            <span class="stepper-label">משקל</span>
                             <button class="ctrl-btn" onclick="modifyMetric(${index}, 'weight', -0.5)" aria-label="הפחת חצי קילו">−</button>
                             <input type="number" step="0.5" id="inp-w-${index}" class="inline-edit-input" value="${ex.weight}" inputmode="decimal" onblur="saveManualInputValue(${index}, 'weight', this.value)">
                             <span class="step-value weight" onclick="enableManualInput('inp-w-${index}')">${ex.weight} <small>ק"ג</small></span>
                             <button class="ctrl-btn" onclick="modifyMetric(${index}, 'weight', 0.5)" aria-label="הוסף חצי קילו">+</button>
                         </div>
                         <div class="inline-stepper ${isEditingModeActive ? 'is-editing' : ''}">
-                            <span class="stepper-label">חזרות × סטים ${repsHint}</span>
+                            <span class="stepper-label">חזרות × סטים</span>
                             <button class="ctrl-btn" onclick="modifyMetric(${index}, 'reps', -1)" aria-label="הפחת חזרה">−</button>
                             <input type="number" id="inp-r-${index}" class="inline-edit-input" value="${ex.reps}" inputmode="numeric" onblur="saveManualInputValue(${index}, 'reps', this.value)">
                             <span class="step-value reps" onclick="enableManualInput('inp-r-${index}')">${ex.reps}×${ex.sets}</span>
