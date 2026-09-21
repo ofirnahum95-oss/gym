@@ -7083,38 +7083,91 @@
 
         function parseExerciseStringToken(str) {
             const match = str.match(/(\d+)[×x](\d+)/);
-            if (!match) return null;
-
-            const counts = normalizeSetsAndReps(match[1], match[2]);
-            if (!counts) return null;
+            const counts = match ? normalizeSetsAndReps(match[1], match[2]) : null;
 
             const weightMatch = str.match(/\((\d+\.?\d*)\)?/);
             const weight = weightMatch ? parseFloat(weightMatch[1]) : 0;
-            
+
+            // Strict parse: reps and sets are both plain numbers straddling the ×.
+            if (counts) {
+                let name = str
+                    .replace(/\d+[×x]\d+/g, '')
+                    .replace(/\(\d+\.?\d*\)?/g, '')
+                    .replace(/^.*?-\s*/, '')
+                    .trim();
+                return name.length > 1 ? {
+                    name,
+                    sets: counts.sets,
+                    reps: counts.reps,
+                    weight,
+                    // Frozen snapshot of the prescription — logging never overwrites this
+                    plan: { sets: counts.sets, reps: counts.reps, weight },
+                    superset: false,
+                    history: []
+                } : null;
+            }
+
+            // Salvage path: the line still looks like an exercise — it carries a
+            // "×N" sets marker — but the quantity on the other side of the × isn't
+            // a plain number the strict pattern accepts. The real case is a
+            // time-based hold, e.g. "סינגל לג 60 שניות×3", where "שניות" sits
+            // between the count and the ×. Rather than return null and let the
+            // exercise vanish without a trace, we keep what we can (the sets count,
+            // and the full name with its time text intact) and stage it flagged so
+            // it surfaces in the review sheet for the reps value to be filled in.
+            const setsMatch = str.match(/[×x]\s*(\d+)/) || str.match(/(\d+)\s*[×x]/);
+            if (!setsMatch) return null;
+            const sets = parseInt(setsMatch[1], 10);
+            if (!Number.isFinite(sets) || sets < 1) return null;
+
             let name = str
-                .replace(/\d+[×x]\d+/g, '')
+                .replace(/[×x]\s*\d+/g, '')
+                .replace(/\d+\s*[×x]/g, '')
                 .replace(/\(\d+\.?\d*\)?/g, '')
                 .replace(/^.*?-\s*/, '')
-                .trim(); 
-            
-            return name.length > 1 ? { 
-                name, 
-                sets: counts.sets, 
-                reps: counts.reps, 
-                weight, 
-                // Frozen snapshot of the prescription — logging never overwrites this
-                plan: { sets: counts.sets, reps: counts.reps, weight },
+                .trim();
+            if (name.length <= 1) return null;
+
+            return {
+                name,
+                sets,
+                reps: null,            // unknown — completed by the user in the review sheet
+                weight,
+                plan: { sets, reps: null, weight },
                 superset: false,
+                needsReview: true,
                 history: []
-            } : null;
+            };
+        }
+
+        function updateStagedReps(idx, raw) {
+            const ex = temporaryStagedWorkout[idx];
+            if (!ex) return;
+            const v = parseInt(raw, 10);
+            const ok = Number.isFinite(v) && v > 0;
+            ex.reps = ok ? v : null;
+            const wasFlagged = !!ex.needsReview;
+            ex.needsReview = !ok;
+            // Re-render only when the flagged state flips, so the highlight and the
+            // commit guard stay in sync without stealing focus on every keystroke.
+            if (wasFlagged !== ex.needsReview) renderReviewSheetUI();
         }
 
         function renderReviewSheetUI() {
             let html = '';
             temporaryStagedWorkout.forEach((ex, idx) => {
+                const repsVal = Number.isFinite(ex.reps) ? ex.reps : '';
+                const flagged = !!ex.needsReview;
+                const cardStyle = flagged
+                    ? 'margin-bottom: 10px; border: 1px solid var(--gold); background: var(--gold-wash);'
+                    : 'margin-bottom: 10px;';
+                const hint = flagged
+                    ? `<div style="font-size: 11px; color: var(--gold); font-weight: 700; margin-bottom: 10px;">⚠️ לא זוהו חזרות (כנראה תרגיל זמן) — השלם ידנית</div>`
+                    : '';
                 html += `
-                    <div class="workout-card" style="margin-bottom: 10px;">
+                    <div class="workout-card" style="${cardStyle}">
                         <h4 style="font-size:15px; margin-bottom:12px; font-weight: 800;">${esc(ex.name)}</h4>
+                        ${hint}
                         <div style="display:flex; gap:10px; align-items: flex-end;">
                             <div style="flex: 1;">
                                 <label style="font-size: 11px; color: var(--ink-soft); font-weight: 700; display: block; margin-bottom: 4px;">סטים</label>
@@ -7122,7 +7175,7 @@
                             </div>
                             <div style="flex: 1;">
                                 <label style="font-size: 11px; color: var(--ink-soft); font-weight: 700; display: block; margin-bottom: 4px;">חזרות</label>
-                                <input type="number" value="${ex.reps}" onchange="temporaryStagedWorkout[${idx}].reps=parseInt(this.value)" inputmode="numeric" style="background: var(--surface-sunk);">
+                                <input type="number" value="${repsVal}" placeholder="${flagged ? '?' : ''}" onchange="updateStagedReps(${idx}, this.value)" inputmode="numeric" style="background: var(--surface-sunk);${flagged ? ' border-color: var(--gold);' : ''}">
                             </div>
                             <div style="flex: 1;">
                                 <label style="font-size: 11px; color: var(--ink-soft); font-weight: 700; display: block; margin-bottom: 4px;">משקל</label>
@@ -7135,6 +7188,14 @@
         }
 
         async function commitParsedWorkout() {
+            // Nothing dropped silently also means nothing saved half-known: a row we
+            // could only partially parse must be completed before it can be stored.
+            const incomplete = temporaryStagedWorkout.some(
+                ex => ex.needsReview || !Number.isFinite(ex.reps) || ex.reps < 1);
+            if (incomplete) {
+                return displayNativeToast('⚠️ יש תרגיל שחסרות בו חזרות — השלם אותו לפני שמירה');
+            }
+
             const newId = 'wk-' + Date.now();
             const now = new Date().toISOString();
 
