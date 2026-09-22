@@ -4801,14 +4801,17 @@
 
             queueSync('/workouts', () => stateWorkouts);
 
-            // In stage mode, completing the slide moves you on — the gesture you
-            // were going to make anyway
+            // In stage mode, completing the slide moves you on to whatever's
+            // still left — normally the next one, but if you skipped an
+            // exercise earlier (device was busy, etc.) and just closed the
+            // gap ahead of it, this sends you back to the one you skipped
+            // instead of past it.
             if (nowTicked && viewMode === 'stage') {
                 const slides = currentSlides();
                 const slide = slides[stageIndex];
-                if (slide && slide.every(i => isCompletedToday(currentActiveWorkout.exercises[i]))
-                          && stageIndex < slides.length - 1) {
-                    setTimeout(() => goToSlide(stageIndex + 1), 420);
+                if (slide && isSlideDone(slide)) {
+                    const target = nextIncompleteSlide(stageIndex, slides);
+                    if (target !== -1) setTimeout(() => goToSlide(target), 420);
                 }
             }
 
@@ -5180,6 +5183,28 @@
         function currentSlides() {
             const active = getActiveWorkout();
             return active && active.exercises ? buildSlides(active.exercises) : [];
+        }
+
+        function isSlideDone(slide) {
+            const active = getActiveWorkout();
+            return !!active && slide.every(i => isCompletedToday(active.exercises[i]));
+        }
+
+        // Where stage mode lands after a completion: the next slide that
+        // still needs doing. Checked backward first — if something earlier
+        // was left incomplete (skipped it earlier, e.g. the device was busy
+        // at #2), that's what you land on, so you catch up on it before
+        // moving on rather than running past it toward #4. Only when nothing
+        // is left behind does it continue forward as usual. Returns -1 when
+        // nothing is left at all.
+        function nextIncompleteSlide(fromIndex, slides) {
+            for (let i = 0; i < fromIndex; i++) {
+                if (!isSlideDone(slides[i])) return i;
+            }
+            for (let i = fromIndex + 1; i < slides.length; i++) {
+                if (!isSlideDone(slides[i])) return i;
+            }
+            return -1;
         }
 
         function goToSlide(n, viaSwipe) {
