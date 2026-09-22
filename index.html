@@ -1625,20 +1625,6 @@
         .spark.down .spark-line, .spark.down .spark-head { stroke: var(--alert); fill: var(--alert); }
         .spark.down .spark-line { fill: none; }
 
-        /* Off-plan marker — same family as the reference strip, not a second language */
-        .plan-delta {
-            font-style: normal;
-            font-family: var(--mono);
-            font-size: var(--t-xs);
-            font-weight: 600;
-            color: var(--accent);
-            opacity: 0.75;
-            letter-spacing: 0;
-            text-transform: none;
-            margin-inline-start: var(--s1);
-            font-variant-numeric: tabular-nums;
-        }
-
         /* ============ Superset ============ */
 
         .superset-wrapper {
@@ -3358,9 +3344,9 @@
                     </div>
 
                     <div class="workout-progress" id="workout-progress" style="display:none;">
+                        <button class="clear-marks-btn" id="clear-marks-btn" onclick="clearAllCompletions()" style="display:none;">נקה</button>
                         <div class="workout-progress-bar"><span id="workout-progress-fill"></span></div>
                         <div class="workout-progress-text" id="workout-progress-text">0/0</div>
-                        <button class="clear-marks-btn" id="clear-marks-btn" onclick="clearAllCompletions()" style="display:none;">נקה</button>
                         <button class="progress-finish-btn" id="progress-finish-btn" onclick="finishWorkout()" style="display:none;" aria-label="סיים ושמור אימון">
                             <span data-icon="flag" data-icon-size="14"></span> סיים
                         </button>
@@ -4901,33 +4887,6 @@
             // in the last-time row below, not here.
             const label = stepper?.querySelector('.stepper-label');
             if (label) label.textContent = field === 'weight' ? 'משקל' : 'חזרות × סטים';
-
-            // One combined plan-delta note covers both weight and reps/sets, so
-            // an edit to either field can add, update, or remove it. Only
-            // patched when the last-time row already exists — the rare case of
-            // a first-ever entry (no history yet) that just went off-plan for
-            // the first time waits for the next full render instead.
-            if (card) {
-                const strip = card.querySelector('.last-time');
-                if (strip) {
-                    const p = planOf(ex);
-                    const anyOff = p.weight !== ex.weight || p.reps !== ex.reps || p.sets !== ex.sets;
-                    let planNote = strip.querySelector('.plan-delta');
-                    if (anyOff) {
-                        const text = `תוכנית ${p.weight} · ${p.reps}×${p.sets}`;
-                        if (!planNote) {
-                            planNote = document.createElement('em');
-                            planNote.className = 'plan-delta';
-                            const figsEl = strip.querySelector('.last-time-figs');
-                            if (figsEl) figsEl.insertAdjacentElement('afterend', planNote);
-                            else strip.insertBefore(planNote, strip.firstChild);
-                        }
-                        planNote.textContent = text;
-                    } else if (planNote) {
-                        planNote.remove();
-                    }
-                }
-            }
 
             // The against-last-time arrow is also a function of the weight, so it
             // has to move with it rather than waiting for the next full render
@@ -6771,48 +6730,33 @@
 
         function generateInlineExerciseRow(ex, index) {
             const isDone = isCompletedToday(ex);
-            const p = planOf(ex);
-
-            // Only surface the prescription when you've actually deviated from
-            // it — folded into the last-time line below instead of a separate
-            // label, so a card doesn't carry two different "vs. something"
-            // comparisons in two different places for one number.
-            const planWeightOff = p.weight !== ex.weight;
-            const planRepsOff = (p.reps !== ex.reps || p.sets !== ex.sets);
-            const planFigs = `${p.weight} · ${p.reps}×${p.sets}`;
 
             // The question you actually ask mid-set: what did I lift last time?
             const prev = lastPerformedFor(ex.name);
             const sparkOpen = sparkOpenIndex === index;
             let prevRow = '';
-            if (prev || planWeightOff || planRepsOff) {
-                let dir = '', gapLabel = '', figs = '', trailer = '';
-                if (prev) {
-                    // Progress is total work, not load alone — more reps at the same
-                    // weight is still a step forward.
-                    dir = trendAgainst(ex, prev);
-                    const arrow = dir === 'up' ? '↑' : dir === 'down' ? '↓' : '=';
-                    // The sparkline is a tap away rather than always drawn — the
-                    // arrow already answers "better or worse", so the graph is
-                    // detail you ask for, not something every card carries.
-                    const spark = sparkOpen ? sparklineFor(ex.name) : '';
-                    gapLabel = describeGap(prev.timestamp);
-                    // A per-set reading has no single "weight" worth quoting — show
-                    // the sets themselves, same shorthand as the log screen, so the
-                    // one thing this strip exists for (what did I lift last time)
-                    // doesn't quietly collapse to just the heaviest set.
-                    figs = hasSetLog(prev)
-                        ? prev.setLog.map(s => `${s.weight}×${s.reps}`).join(' · ')
-                        : `${prev.weight} · ${prev.reps}×${prev.sets}`;
-                    trailer = spark || `<span class="last-time-arrow">${arrow}</span>`;
-                }
-                const planNote = (planWeightOff || planRepsOff)
-                    ? `<em class="plan-delta">תוכנית ${planFigs}</em>` : '';
+            if (prev) {
+                // Progress is total work, not load alone — more reps at the same
+                // weight is still a step forward.
+                const dir = trendAgainst(ex, prev);
+                const arrow = dir === 'up' ? '↑' : dir === 'down' ? '↓' : '=';
+                // The sparkline is a tap away rather than always drawn — the
+                // arrow already answers "better or worse", so the graph is
+                // detail you ask for, not something every card carries.
+                const spark = sparkOpen ? sparklineFor(ex.name) : '';
+                const gapLabel = describeGap(prev.timestamp);
+                // A per-set reading has no single "weight" worth quoting — show
+                // the sets themselves, same shorthand as the log screen, so the
+                // one thing this strip exists for (what did I lift last time)
+                // doesn't quietly collapse to just the heaviest set.
+                const figs = hasSetLog(prev)
+                    ? prev.setLog.map(s => `${s.weight}×${s.reps}`).join(' · ')
+                    : `${prev.weight} · ${prev.reps}×${prev.sets}`;
+                const trailer = spark || `<span class="last-time-arrow">${arrow}</span>`;
                 prevRow = `
                     <div class="last-time ${dir}" onclick="toggleSpark(${index})" role="button" tabindex="0" aria-label="הצג מגמה">
                         ${gapLabel ? `<span class="last-time-label">${gapLabel}</span>` : ''}
                         ${figs ? `<span class="last-time-figs">${figs}</span>` : ''}
-                        ${planNote}
                         ${trailer}
                     </div>`;
             }
