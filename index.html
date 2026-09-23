@@ -4820,6 +4820,12 @@
             if (done === total && total > 0) {
                 triggerHaptic([15, 30, 15, 30, 15]);
                 displayNativeToast('🎉 סיימת את כל התרגילים! כל הכבוד');
+                // Everything's ticked — prompt to close out the workout right
+                // now rather than leaving it open until the person happens to
+                // hit the finish button themselves. A short delay lets the
+                // toast and the completion animation land first, so the
+                // confirm dialog doesn't interrupt them mid-tap.
+                if (nowTicked) setTimeout(finishWorkout, 700);
             } else if (nowTicked) {
                 displayNativeToast(`✅ ${done}/${total} תרגילים הושלמו`);
             }
@@ -7295,34 +7301,39 @@
             const maxLen = Math.max(a.length, b.length);
             if (maxLen === 0) return true;
             const dist = levenshteinDistance(a, b);
-            // Allow small typo tolerance relative to name length (roughly 1 typo per ~5-6 chars)
-            const threshold = Math.max(1, Math.floor(maxLen * 0.18));
+            // Typo tolerance scales with name length, with no floor: a name of
+            // 5 characters or fewer needs an exact match. Short, generic
+            // Hebrew exercise names are exactly the case where one edit can
+            // land on a real, different exercise ("חתירה"/"חזירה" — one
+            // substitution, five letters, two different movements) rather
+            // than a typo of the same one, so tolerating an edit there does
+            // more harm than the typos it would have caught.
+            const threshold = Math.floor(maxLen * 0.18);
             return dist <= threshold;
         }
 
-        // Union-Find clustering of normalized names that are similar enough
-        // to be considered the same exercise (spacing differences + minor typos)
+        // Leader-based clustering instead of transitive union-find. The old
+        // version unioned every pair that looked similar, which chains: if
+        // A~B and B~C look similar, A and C end up in the same cluster even
+        // when A and C themselves are nothing alike. Every trend/strength
+        // number downstream is computed per cluster, so a bad merge here
+        // silently blends two different exercises' histories with no visible
+        // sign of it. Comparing each name only against existing cluster
+        // leaders — never against another member it was chained through —
+        // makes every merge a direct, checkable match instead of an
+        // inherited one.
         function clusterExerciseNames(names) {
-            const parent = {};
-            function find(x) {
-                if (parent[x] === undefined) parent[x] = x;
-                if (parent[x] !== x) parent[x] = find(parent[x]);
-                return parent[x];
-            }
-            function union(x, y) {
-                const rx = find(x), ry = find(y);
-                if (rx !== ry) parent[rx] = ry;
-            }
-            names.forEach(n => { if (parent[n] === undefined) parent[n] = n; });
-            for (let i = 0; i < names.length; i++) {
-                for (let j = i + 1; j < names.length; j++) {
-                    if (isSimilarExerciseName(names[i], names[j])) {
-                        union(names[i], names[j]);
-                    }
-                }
-            }
+            const leaders = [];
             const clusterOf = {};
-            names.forEach(n => { clusterOf[n] = find(n); });
+            names.forEach(n => {
+                const leader = leaders.find(l => isSimilarExerciseName(n, l));
+                if (leader) {
+                    clusterOf[n] = leader;
+                } else {
+                    leaders.push(n);
+                    clusterOf[n] = n;
+                }
+            });
             return clusterOf;
         }
 
