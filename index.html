@@ -47,6 +47,19 @@
             --t-xs:      0.75rem;    /* meta, references — 12px, above the mobile floor */
             --t-micro:   0.6875rem;  /* uppercase eyebrows — 11px, the mobile minimum */
 
+            /* Three sizes bigger than the reading scale above — a stage-mode
+               readout, its cramped superset variant, and the progress-tab
+               hero number all genuinely need more room than --t-readout
+               gives them. They used to be clamp() values written inline at
+               each of those three call sites — not wrong, but invisible to
+               anyone auditing "the type scale" from here, and the file's own
+               claim of "7 steps, not 20" wasn't true with them uncounted.
+               Named here, they're an acknowledged, findable exception
+               instead of three unrelated-looking magic numbers. */
+            --t-stage:    clamp(2rem, 2.75rem, 3.25rem);
+            --t-stage-ss: clamp(1.75rem, 2.25rem, 2.75rem);
+            --t-hero:     clamp(2.75rem, 11vw, 4.25rem);
+
             /* ---- Space scale (4px base) ---- */
             --s1:  4px;
             --s2:  8px;
@@ -72,10 +85,13 @@
             /* ---- Ink ---- */
             --ink: #12161c;
             --ink-soft: #6b7280;
-            /* Darkened from #9aa3af, which measured 2.6:1 and failed AA. This
-               tone carries dates, rep counts and plan hints — not decoration —
-               so it has to be legible in poor gym lighting. Now 4.5:1. */
-            --ink-faint: #6F7784;
+            /* Darkened from #9aa3af, which measured 2.6:1 and failed AA, then
+               to #6F7784 which cleared it at exactly 4.5:1 — no margin, so
+               anything layering opacity on top (as several rules did) could
+               silently drop back under the line. This value keeps ~4.7:1,
+               real headroom, while staying visibly lighter than --ink-soft
+               (4.83:1) so the two tiers don't collapse into each other. */
+            --ink-faint: #6C7581;
 
             /* ---- Structure ---- */
             --rule: rgba(18, 22, 28, 0.10);
@@ -84,16 +100,32 @@
             /* ---- Signal ---- */
             /* Deepened from the original #12a150 — less neon, and it actually
                improves contrast against white (3.37:1 → 4.17:1). This is the
-               everyday "good" color: done states, buttons, ordinary progress. */
+               brand/interactive color: buttons, links, the active edit state,
+               the number you're reading right now. */
             --accent: #0e8f47;
             --accent-ink: #ffffff;
             /* Derived from --accent via color-mix rather than a hand-picked
                rgba, so it can never drift out of sync with it the way the old
                dark-mode override silently did (see body.dark-mode below). */
             --accent-wash: color-mix(in srgb, var(--accent) 10%, transparent);
-            --done: #0e8f47;
-            --alert: #e5484d;
-            --superset: #6d5efc;
+            /* A distinct hue from --accent on purpose, not a duplicate of it —
+               "done" is a different meaning (a completed exercise, a session
+               finished) from "interactive" (an editable field, a live edit
+               session), and two different meanings sharing one exact color
+               is how the edit-mode toggle once ended up reading as the same
+               kind of action as the finish button. Kept in the same green
+               family so it still reads as "good", just a cooler, tealer
+               green — and it clears AA with more headroom than --accent
+               itself (5.0:1 vs 4.2:1 against white). */
+            --done: #0b7d72;
+            /* Was #e5484d, measuring 3.9:1 on white — under AA everywhere it's
+               used as text (stalled-lift labels, the "down" trend color).
+               This shade clears 5.3:1 while staying the same red. */
+            --alert: #c93138;
+            /* Was #6d5efc at 4.51:1 — technically over the line, but with
+               zero margin, the same failure mode --ink-faint had before its
+               own fix. This clears 5.7:1. */
+            --superset: #5b4bf0;
             /* Reserved for genuinely rare moments — a new personal record, a
                streak — never for routine "good" states. Rarity is the point:
                if this shows up often it stops meaning anything. */
@@ -161,6 +193,14 @@
                isn't overridden here, so the wash never matched the accent it
                was supposed to tint. Same color-mix approach as light mode. */
             --accent-wash: color-mix(in srgb, var(--accent) 18%, transparent);
+            /* Neither of these carried a dark-mode value before — same gap
+               --accent-wash had. Their light-mode shades measure under AA
+               against this dark surface (alert 4.3:1, superset 3.7:1), so
+               unlike --accent itself (which genuinely can stay one hue in
+               both themes), these need to lighten here the way text usually
+               does moving from a light to a dark surface. */
+            --alert: #ef5f63;
+            --superset: #9184ff;
             /* Lighter than the light-mode gold — a dark bronze would read as
                mud on these dark surfaces instead of as a deliberate accent. */
             --gold: #d9b872;
@@ -970,7 +1010,7 @@
 
         /* This is the number you came to read */
         .stage .step-value {
-            font-size: clamp(2rem, 2.75rem, 3.25rem);   /* 32 – 44 – 52px */
+            font-size: var(--t-stage);   /* 32 – 44 – 52px */
             width: 100%;
         }
 
@@ -1050,7 +1090,7 @@
         }
 
         /* The number is still the reason the screen exists */
-        .stage .superset-wrapper .step-value { font-size: clamp(1.75rem, 2.25rem, 2.75rem); } /* 28 – 36 – 44px */
+        .stage .superset-wrapper .step-value { font-size: var(--t-stage-ss); } /* 28 – 36 – 44px */
         .stage .superset-wrapper .step-value small { font-size: var(--t-xs); }
 
         .stage .superset-wrapper .last-time {
@@ -1191,7 +1231,9 @@
             color: #fff;
         }
 
-        .workout-card.exercise-done { opacity: 0.5; }
+        /* 0.5 measured ~3.6:1 for the card's own text — under AA. 0.6 clears
+           it (~4.6:1) while still reading as clearly de-emphasized. */
+        .workout-card.exercise-done { opacity: 0.6; }
         .workout-card.is-editing { border-color: var(--accent); }
 
         .exercise-header-row {
@@ -1373,7 +1415,11 @@
             font-family: var(--sans);
             font-size: var(--t-xs);
             font-weight: 500;
-            opacity: 0.45;
+            /* Was opacity: 0.45 on the inherited color (accent or ink) — on
+               white that measured ~3:1, well under AA. A solid, already-
+               calibrated token reads just as "secondary" without the
+               contrast cost of blending toward the background. */
+            color: var(--ink-faint);
             letter-spacing: 0;
         }
 
@@ -2094,7 +2140,7 @@
             /* Was clamp(2.25rem, 3.25rem, 4rem) — three fixed rems make the middle
                value win always, so it never actually scaled. A vw preferred value
                lets it breathe between phone and tablet. */
-            font-size: clamp(2.75rem, 11vw, 4.25rem);
+            font-size: var(--t-hero);
             font-weight: 700;
             letter-spacing: -0.04em;
             line-height: 1;
@@ -2322,10 +2368,18 @@
             margin-inline-start: var(--s2);
             padding: 2px 7px;
             border-radius: var(--r-pill);
-            background: color-mix(in srgb, var(--done) 13%, transparent);
+            /* 13% put the badge tint close enough to solid --done that the
+               text itself dropped under 4.5:1 (measured ~4.2:1) — a lighter
+               tint keeps the badge visibly "success-colored" while leaving
+               the text real headroom (~4.6:1). */
+            background: color-mix(in srgb, var(--done) 6%, transparent);
         }
 
-        .pg-lift-gain small { font-size: var(--t-micro); opacity: 0.7; }
+        /* Smaller by font-size alone, not by opacity — the badge's own
+           contrast margin above is already modest, so dimming this further
+           on top of it is exactly the kind of compounding that dropped
+           other unit labels below AA (see .step-value small). */
+        .pg-lift-gain small { font-size: var(--t-micro); }
 
         /* --- Adherence to the plan --- */
 
@@ -3479,14 +3533,14 @@
                     <hr style="border: 0; border-top: 1px solid rgba(0,0,0,0.08); margin-bottom: 20px;">
 
                     <div style="margin-bottom: 20px;">
-                        <h4 style="margin-bottom: 10px;">⏱️ סטופר</h4>
+                        <h4 style="margin-bottom: 10px; display:flex; align-items:center; gap:6px;"><span data-icon="clock" data-icon-size="14"></span> סטופר</h4>
                         <button class="btn btn-secondary" id="autorest-toggle" onclick="toggleAutoRest()">מנוחה אוטומטית: פעילה</button>
                     </div>
 
                     <hr style="border: 0; border-top: 1px solid var(--rule-soft); margin-bottom: 20px;">
 
                     <div style="margin-bottom: 20px;">
-                        <h4 style="margin-bottom: 6px;">🏋️ תיעוד</h4>
+                        <h4 style="margin-bottom: 6px; display:flex; align-items:center; gap:6px;"><span data-icon="dumbbell" data-icon-size="14"></span> תיעוד</h4>
                         <div style="font-size:12px; color:var(--ink-soft); margin-bottom:10px;">מאפשר משקל וחזרות שונים בכל סט. כבוי כברירת מחדל.</div>
                         <button class="btn btn-secondary" id="perset-toggle" onclick="togglePerSetMode()">עריכת סטים בנפרד: כבויה</button>
                     </div>
