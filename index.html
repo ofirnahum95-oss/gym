@@ -171,10 +171,13 @@
         /* Accessibility: bumps the root font-size so every rem-based value in
            the type scale above grows with it — no separate scale to maintain.
            Pinch-zoom is disabled elsewhere in the app (see the viewport meta
-           tag), so this is the only way left for someone to get bigger text. */
-        html.large-text {
-            font-size: 118.75%;
-        }
+           tag), so this is the only way left for someone to get bigger text.
+           Four steps (~12.5% apart, matching the jump most OS text-size
+           settings use) instead of a single on/off — level 1 is the root
+           default and needs no rule of its own. */
+        html[data-text-size="2"] { font-size: 112.5%; }
+        html[data-text-size="3"] { font-size: 125%; }
+        html[data-text-size="4"] { font-size: 137.5%; }
 
         body.dark-mode {
             --surface-0: #0f1216;
@@ -445,6 +448,18 @@
         }
 
         .edit-toggle-btn:active { transform: scale(0.96); }
+
+        /* Accent, not neutral gray like its neighbours ("הכל"/"תצוגה") —
+           editing is this screen's actual interactive affordance, and accent
+           is exactly the meaning we settled on for that (see --accent's own
+           comment above: "buttons, links, the active edit state"). Scoped to
+           :not(.editing-active) so once edit mode is ON it still switches to
+           --ink below, the same fix that kept it from re-matching the finish
+           button's --done. */
+        #edit-mode-toggle:not(.editing-active) {
+            color: var(--accent);
+            border-color: color-mix(in srgb, var(--accent) 35%, transparent);
+        }
 
         /* Deliberately NOT the accent green: that colour means progress and
            completion here (done ticks, the finish button), and an active edit
@@ -3527,7 +3542,14 @@
                     <div style="margin-bottom: 20px;">
                         <h4 style="font-size: 14px; margin-bottom: 12px; font-weight: 800;">🎨 עיצוב</h4>
                         <button class="btn btn-secondary" onclick="toggleDarkMode()" style="margin-bottom: 10px;"><span data-icon="moon" data-icon-size="16"></span> מצב כהה</button>
-                        <button class="btn btn-secondary" id="large-text-toggle" onclick="toggleLargeText()">טקסט גדול: כבוי</button>
+                        <div style="margin-bottom:4px; font-size:var(--t-xs); color:var(--ink-soft); font-weight:600;">גודל טקסט</div>
+                        <div class="pg-window" id="text-size-control">
+                            <button class="pg-window-opt" style="font-size:13px;" onclick="setTextSize(1)" aria-label="גודל טקסט רגיל">Aa</button>
+                            <button class="pg-window-opt" style="font-size:15px;" onclick="setTextSize(2)" aria-label="גודל טקסט גדול">Aa</button>
+                            <button class="pg-window-opt" style="font-size:17px;" onclick="setTextSize(3)" aria-label="גודל טקסט גדול מאוד">Aa</button>
+                            <button class="pg-window-opt" style="font-size:19px;" onclick="setTextSize(4)" aria-label="גודל טקסט ענק">Aa</button>
+                        </div>
+                        <div id="text-size-label" style="font-size:var(--t-xs); color:var(--ink-faint); margin-top:4px;"></div>
                     </div>
 
                     <hr style="border: 0; border-top: 1px solid rgba(0,0,0,0.08); margin-bottom: 20px;">
@@ -4089,7 +4111,7 @@
                 if (box) box.textContent = authState.email || '';
                 renderAutoRestLabel();
                 renderPerSetLabel();
-                renderLargeTextLabel();
+                renderTextSizeControl();
             }
 
             if (tabId === 'view-history') {
@@ -8132,26 +8154,42 @@
             displayNativeToast(isDark ? '🌙 מצב כהה הופעל' : '☀️ מצב בהיר הופעל');
         }
 
-        // Accessibility text-size toggle — same on/off, localStorage-backed
-        // pattern as dark mode and the other settings toggles.
-        function toggleLargeText() {
-            triggerHaptic(12);
-            const isLarge = document.documentElement.classList.toggle('large-text');
-            localStorage.setItem('fitpro-largeText', isLarge);
-            renderLargeTextLabel();
-            displayNativeToast(isLarge ? '🔠 טקסט גדול הופעל' : '🔡 טקסט גדול כובה');
+        // Accessibility text-size control — 4 levels instead of on/off, same
+        // localStorage-backed pattern as the other settings toggles.
+        const TEXT_SIZE_LABELS = { 1: 'רגיל', 2: 'גדול', 3: 'גדול מאוד', 4: 'ענק' };
+
+        function setTextSize(level) {
+            triggerHaptic(10);
+            if (level === 1) {
+                document.documentElement.removeAttribute('data-text-size');
+            } else {
+                document.documentElement.setAttribute('data-text-size', String(level));
+            }
+            localStorage.setItem('fitpro-textSize', String(level));
+            renderTextSizeControl();
+            displayNativeToast(`🔠 גודל טקסט: ${TEXT_SIZE_LABELS[level]}`);
         }
 
-        function renderLargeTextLabel() {
-            const btn = document.getElementById('large-text-toggle');
-            if (!btn) return;
-            const on = document.documentElement.classList.contains('large-text');
-            btn.textContent = `טקסט גדול: ${on ? 'פעיל' : 'כבוי'}`;
+        function currentTextSize() {
+            const n = parseInt(document.documentElement.getAttribute('data-text-size'), 10);
+            return TEXT_SIZE_LABELS[n] ? n : 1;
         }
 
-        function initializeLargeText() {
-            if (localStorage.getItem('fitpro-largeText') === 'true') {
-                document.documentElement.classList.add('large-text');
+        function renderTextSizeControl() {
+            const wrap = document.getElementById('text-size-control');
+            const label = document.getElementById('text-size-label');
+            if (!wrap) return;
+            const level = currentTextSize();
+            wrap.querySelectorAll('.pg-window-opt').forEach((btn, i) => {
+                btn.classList.toggle('on', i + 1 === level);
+            });
+            if (label) label.textContent = `נבחר: ${TEXT_SIZE_LABELS[level]}`;
+        }
+
+        function initializeTextSize() {
+            const saved = parseInt(localStorage.getItem('fitpro-textSize'), 10);
+            if (saved >= 2 && saved <= 4) {
+                document.documentElement.setAttribute('data-text-size', String(saved));
             }
         }
 
@@ -8381,7 +8419,7 @@
 
         window.addEventListener('load', async () => {
             initializeTheme();
-            initializeLargeText();
+            initializeTextSize();
             generateNativeAppAssets();
 
             // Restore a previous session; otherwise show the sign-in screen
