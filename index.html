@@ -47,19 +47,6 @@
             --t-xs:      0.75rem;    /* meta, references — 12px, above the mobile floor */
             --t-micro:   0.6875rem;  /* uppercase eyebrows — 11px, the mobile minimum */
 
-            /* Three sizes bigger than the reading scale above — a stage-mode
-               readout, its cramped superset variant, and the progress-tab
-               hero number all genuinely need more room than --t-readout
-               gives them. They used to be clamp() values written inline at
-               each of those three call sites — not wrong, but invisible to
-               anyone auditing "the type scale" from here, and the file's own
-               claim of "7 steps, not 20" wasn't true with them uncounted.
-               Named here, they're an acknowledged, findable exception
-               instead of three unrelated-looking magic numbers. */
-            --t-stage:    clamp(2rem, 2.75rem, 3.25rem);
-            --t-stage-ss: clamp(1.75rem, 2.25rem, 2.75rem);
-            --t-hero:     clamp(2.75rem, 11vw, 4.25rem);
-
             /* ---- Space scale (4px base) ---- */
             --s1:  4px;
             --s2:  8px;
@@ -85,13 +72,10 @@
             /* ---- Ink ---- */
             --ink: #12161c;
             --ink-soft: #6b7280;
-            /* Darkened from #9aa3af, which measured 2.6:1 and failed AA, then
-               to #6F7784 which cleared it at exactly 4.5:1 — no margin, so
-               anything layering opacity on top (as several rules did) could
-               silently drop back under the line. This value keeps ~4.7:1,
-               real headroom, while staying visibly lighter than --ink-soft
-               (4.83:1) so the two tiers don't collapse into each other. */
-            --ink-faint: #6C7581;
+            /* Darkened from #9aa3af, which measured 2.6:1 and failed AA. This
+               tone carries dates, rep counts and plan hints — not decoration —
+               so it has to be legible in poor gym lighting. Now 4.5:1. */
+            --ink-faint: #6F7784;
 
             /* ---- Structure ---- */
             --rule: rgba(18, 22, 28, 0.10);
@@ -100,32 +84,16 @@
             /* ---- Signal ---- */
             /* Deepened from the original #12a150 — less neon, and it actually
                improves contrast against white (3.37:1 → 4.17:1). This is the
-               brand/interactive color: buttons, links, the active edit state,
-               the number you're reading right now. */
+               everyday "good" color: done states, buttons, ordinary progress. */
             --accent: #0e8f47;
             --accent-ink: #ffffff;
             /* Derived from --accent via color-mix rather than a hand-picked
                rgba, so it can never drift out of sync with it the way the old
                dark-mode override silently did (see body.dark-mode below). */
             --accent-wash: color-mix(in srgb, var(--accent) 10%, transparent);
-            /* A distinct hue from --accent on purpose, not a duplicate of it —
-               "done" is a different meaning (a completed exercise, a session
-               finished) from "interactive" (an editable field, a live edit
-               session), and two different meanings sharing one exact color
-               is how the edit-mode toggle once ended up reading as the same
-               kind of action as the finish button. Kept in the same green
-               family so it still reads as "good", just a cooler, tealer
-               green — and it clears AA with more headroom than --accent
-               itself (5.0:1 vs 4.2:1 against white). */
-            --done: #0b7d72;
-            /* Was #e5484d, measuring 3.9:1 on white — under AA everywhere it's
-               used as text (stalled-lift labels, the "down" trend color).
-               This shade clears 5.3:1 while staying the same red. */
-            --alert: #c93138;
-            /* Was #6d5efc at 4.51:1 — technically over the line, but with
-               zero margin, the same failure mode --ink-faint had before its
-               own fix. This clears 5.7:1. */
-            --superset: #5b4bf0;
+            --done: #0e8f47;
+            --alert: #e5484d;
+            --superset: #6d5efc;
             /* Reserved for genuinely rare moments — a new personal record, a
                streak — never for routine "good" states. Rarity is the point:
                if this shows up often it stops meaning anything. */
@@ -168,17 +136,6 @@
             --ease-pop: cubic-bezier(0.34, 1.5, 0.64, 1);
         }
 
-        /* Accessibility: bumps the root font-size so every rem-based value in
-           the type scale above grows with it — no separate scale to maintain.
-           Pinch-zoom is disabled elsewhere in the app (see the viewport meta
-           tag), so this is the only way left for someone to get bigger text.
-           Four steps (~12.5% apart, matching the jump most OS text-size
-           settings use) instead of a single on/off — level 1 is the root
-           default and needs no rule of its own. */
-        html[data-text-size="2"] { font-size: 112.5%; }
-        html[data-text-size="3"] { font-size: 125%; }
-        html[data-text-size="4"] { font-size: 137.5%; }
-
         body.dark-mode {
             --surface-0: #0f1216;
             --surface-1: #191e25;
@@ -196,14 +153,6 @@
                isn't overridden here, so the wash never matched the accent it
                was supposed to tint. Same color-mix approach as light mode. */
             --accent-wash: color-mix(in srgb, var(--accent) 18%, transparent);
-            /* Neither of these carried a dark-mode value before — same gap
-               --accent-wash had. Their light-mode shades measure under AA
-               against this dark surface (alert 4.3:1, superset 3.7:1), so
-               unlike --accent itself (which genuinely can stay one hue in
-               both themes), these need to lighten here the way text usually
-               does moving from a light to a dark surface. */
-            --alert: #ef5f63;
-            --superset: #9184ff;
             /* Lighter than the light-mode gold — a dark bronze would read as
                mud on these dark surfaces instead of as a deliberate accent. */
             --gold: #d9b872;
@@ -448,18 +397,6 @@
         }
 
         .edit-toggle-btn:active { transform: scale(0.96); }
-
-        /* Accent, not neutral gray like its neighbours ("הכל"/"תצוגה") —
-           editing is this screen's actual interactive affordance, and accent
-           is exactly the meaning we settled on for that (see --accent's own
-           comment above: "buttons, links, the active edit state"). Scoped to
-           :not(.editing-active) so once edit mode is ON it still switches to
-           --ink below, the same fix that kept it from re-matching the finish
-           button's --done. */
-        #edit-mode-toggle:not(.editing-active) {
-            color: var(--accent);
-            border-color: color-mix(in srgb, var(--accent) 35%, transparent);
-        }
 
         /* Deliberately NOT the accent green: that colour means progress and
            completion here (done ticks, the finish button), and an active edit
@@ -800,6 +737,25 @@
         #weekly-workout-container:has(> .empty-state)::before { display: none; }
         #weekly-workout-container:has(> .empty-state) { padding-inline-start: 0; }
 
+        /* ============ Drag-to-reorder (list view) ============
+           .drag-unit is a transparent wrapper around one exercise card (or a
+           whole superset pair, which moves as one piece) — it carries none of
+           its own visual styling except while a drag is actually in progress. */
+        .drag-unit.dragging {
+            opacity: 0.96;
+            box-shadow: var(--shadow-4);
+            border-radius: var(--r-lg);
+            transform: scale(1.015);
+            pointer-events: none;
+        }
+        .drag-placeholder {
+            background: var(--surface-sunk);
+            border: 2px dashed var(--rule);
+            border-radius: var(--r-lg);
+            margin-bottom: var(--s2);
+            box-sizing: border-box;
+        }
+
         /* ============ Stage mode ============
            One exercise fills the screen. Nothing to scroll past to reach the
            eighth lift, and the numbers get the room they deserve. */
@@ -1025,7 +981,7 @@
 
         /* This is the number you came to read */
         .stage .step-value {
-            font-size: var(--t-stage);   /* 32 – 44 – 52px */
+            font-size: clamp(2rem, 2.75rem, 3.25rem);   /* 32 – 44 – 52px */
             width: 100%;
         }
 
@@ -1105,7 +1061,7 @@
         }
 
         /* The number is still the reason the screen exists */
-        .stage .superset-wrapper .step-value { font-size: var(--t-stage-ss); } /* 28 – 36 – 44px */
+        .stage .superset-wrapper .step-value { font-size: clamp(1.75rem, 2.25rem, 2.75rem); } /* 28 – 36 – 44px */
         .stage .superset-wrapper .step-value small { font-size: var(--t-xs); }
 
         .stage .superset-wrapper .last-time {
@@ -1246,9 +1202,7 @@
             color: #fff;
         }
 
-        /* 0.5 measured ~3.6:1 for the card's own text — under AA. 0.6 clears
-           it (~4.6:1) while still reading as clearly de-emphasized. */
-        .workout-card.exercise-done { opacity: 0.6; }
+        .workout-card.exercise-done { opacity: 0.5; }
         .workout-card.is-editing { border-color: var(--accent); }
 
         .exercise-header-row {
@@ -1430,11 +1384,7 @@
             font-family: var(--sans);
             font-size: var(--t-xs);
             font-weight: 500;
-            /* Was opacity: 0.45 on the inherited color (accent or ink) — on
-               white that measured ~3:1, well under AA. A solid, already-
-               calibrated token reads just as "secondary" without the
-               contrast cost of blending toward the background. */
-            color: var(--ink-faint);
+            opacity: 0.45;
             letter-spacing: 0;
         }
 
@@ -1693,6 +1643,20 @@
         .spark.up   .spark-line { fill: none; }
         .spark.down .spark-line, .spark.down .spark-head { stroke: var(--alert); fill: var(--alert); }
         .spark.down .spark-line { fill: none; }
+
+        /* Off-plan marker — same family as the reference strip, not a second language */
+        .plan-delta {
+            font-style: normal;
+            font-family: var(--mono);
+            font-size: var(--t-xs);
+            font-weight: 600;
+            color: var(--accent);
+            opacity: 0.75;
+            letter-spacing: 0;
+            text-transform: none;
+            margin-inline-start: var(--s1);
+            font-variant-numeric: tabular-nums;
+        }
 
         /* ============ Superset ============ */
 
@@ -2155,7 +2119,7 @@
             /* Was clamp(2.25rem, 3.25rem, 4rem) — three fixed rems make the middle
                value win always, so it never actually scaled. A vw preferred value
                lets it breathe between phone and tablet. */
-            font-size: var(--t-hero);
+            font-size: clamp(2.75rem, 11vw, 4.25rem);
             font-weight: 700;
             letter-spacing: -0.04em;
             line-height: 1;
@@ -2383,18 +2347,10 @@
             margin-inline-start: var(--s2);
             padding: 2px 7px;
             border-radius: var(--r-pill);
-            /* 13% put the badge tint close enough to solid --done that the
-               text itself dropped under 4.5:1 (measured ~4.2:1) — a lighter
-               tint keeps the badge visibly "success-colored" while leaving
-               the text real headroom (~4.6:1). */
-            background: color-mix(in srgb, var(--done) 6%, transparent);
+            background: color-mix(in srgb, var(--done) 13%, transparent);
         }
 
-        /* Smaller by font-size alone, not by opacity — the badge's own
-           contrast margin above is already modest, so dimming this further
-           on top of it is exactly the kind of compounding that dropped
-           other unit labels below AA (see .step-value small). */
-        .pg-lift-gain small { font-size: var(--t-micro); }
+        .pg-lift-gain small { font-size: var(--t-micro); opacity: 0.7; }
 
         /* --- Adherence to the plan --- */
 
@@ -3421,9 +3377,9 @@
                     </div>
 
                     <div class="workout-progress" id="workout-progress" style="display:none;">
-                        <button class="clear-marks-btn" id="clear-marks-btn" onclick="clearAllCompletions()" style="display:none;">נקה</button>
                         <div class="workout-progress-bar"><span id="workout-progress-fill"></span></div>
                         <div class="workout-progress-text" id="workout-progress-text">0/0</div>
+                        <button class="clear-marks-btn" id="clear-marks-btn" onclick="clearAllCompletions()" style="display:none;">נקה</button>
                         <button class="progress-finish-btn" id="progress-finish-btn" onclick="finishWorkout()" style="display:none;" aria-label="סיים ושמור אימון">
                             <span data-icon="flag" data-icon-size="14"></span> סיים
                         </button>
@@ -3542,27 +3498,19 @@
                     <div style="margin-bottom: 20px;">
                         <h4 style="font-size: 14px; margin-bottom: 12px; font-weight: 800;">🎨 עיצוב</h4>
                         <button class="btn btn-secondary" onclick="toggleDarkMode()" style="margin-bottom: 10px;"><span data-icon="moon" data-icon-size="16"></span> מצב כהה</button>
-                        <div style="margin-bottom:4px; font-size:var(--t-xs); color:var(--ink-soft); font-weight:600;">גודל טקסט</div>
-                        <div class="pg-window" id="text-size-control">
-                            <button class="pg-window-opt" style="font-size:13px;" onclick="setTextSize(1)" aria-label="גודל טקסט רגיל">Aa</button>
-                            <button class="pg-window-opt" style="font-size:15px;" onclick="setTextSize(2)" aria-label="גודל טקסט גדול">Aa</button>
-                            <button class="pg-window-opt" style="font-size:17px;" onclick="setTextSize(3)" aria-label="גודל טקסט גדול מאוד">Aa</button>
-                            <button class="pg-window-opt" style="font-size:19px;" onclick="setTextSize(4)" aria-label="גודל טקסט ענק">Aa</button>
-                        </div>
-                        <div id="text-size-label" style="font-size:var(--t-xs); color:var(--ink-faint); margin-top:4px;"></div>
                     </div>
 
                     <hr style="border: 0; border-top: 1px solid rgba(0,0,0,0.08); margin-bottom: 20px;">
 
                     <div style="margin-bottom: 20px;">
-                        <h4 style="margin-bottom: 10px; display:flex; align-items:center; gap:6px;"><span data-icon="clock" data-icon-size="14"></span> סטופר</h4>
+                        <h4 style="margin-bottom: 10px;">⏱️ סטופר</h4>
                         <button class="btn btn-secondary" id="autorest-toggle" onclick="toggleAutoRest()">מנוחה אוטומטית: פעילה</button>
                     </div>
 
                     <hr style="border: 0; border-top: 1px solid var(--rule-soft); margin-bottom: 20px;">
 
                     <div style="margin-bottom: 20px;">
-                        <h4 style="margin-bottom: 6px; display:flex; align-items:center; gap:6px;"><span data-icon="dumbbell" data-icon-size="14"></span> תיעוד</h4>
+                        <h4 style="margin-bottom: 6px;">🏋️ תיעוד</h4>
                         <div style="font-size:12px; color:var(--ink-soft); margin-bottom:10px;">מאפשר משקל וחזרות שונים בכל סט. כבוי כברירת מחדל.</div>
                         <button class="btn btn-secondary" id="perset-toggle" onclick="togglePerSetMode()">עריכת סטים בנפרד: כבויה</button>
                     </div>
@@ -4111,7 +4059,6 @@
                 if (box) box.textContent = authState.email || '';
                 renderAutoRestLabel();
                 renderPerSetLabel();
-                renderTextSizeControl();
             }
 
             if (tabId === 'view-history') {
@@ -4212,6 +4159,7 @@
             // the rest of the workout.
             if (isStopwatchRunning && elapsed >= 600) {
                 resetStopwatch();
+                displayNativeToast('⏱️ המנוחה אופסה אוטומטית אחרי 10 דקות');
                 return;
             }
 
@@ -4877,17 +4825,14 @@
 
             queueSync('/workouts', () => stateWorkouts);
 
-            // In stage mode, completing the slide moves you on to whatever's
-            // still left — normally the next one, but if you skipped an
-            // exercise earlier (device was busy, etc.) and just closed the
-            // gap ahead of it, this sends you back to the one you skipped
-            // instead of past it.
+            // In stage mode, completing the slide moves you on — the gesture you
+            // were going to make anyway
             if (nowTicked && viewMode === 'stage') {
                 const slides = currentSlides();
                 const slide = slides[stageIndex];
-                if (slide && isSlideDone(slide)) {
-                    const target = nextIncompleteSlide(stageIndex, slides);
-                    if (target !== -1) setTimeout(() => goToSlide(target), 420);
+                if (slide && slide.every(i => isCompletedToday(currentActiveWorkout.exercises[i]))
+                          && stageIndex < slides.length - 1) {
+                    setTimeout(() => goToSlide(stageIndex + 1), 420);
                 }
             }
 
@@ -4896,12 +4841,6 @@
             if (done === total && total > 0) {
                 triggerHaptic([15, 30, 15, 30, 15]);
                 displayNativeToast('🎉 סיימת את כל התרגילים! כל הכבוד');
-                // Everything's ticked — prompt to close out the workout right
-                // now rather than leaving it open until the person happens to
-                // hit the finish button themselves. A short delay lets the
-                // toast and the completion animation land first, so the
-                // confirm dialog doesn't interrupt them mid-tap.
-                if (nowTicked) setTimeout(finishWorkout, 700);
             } else if (nowTicked) {
                 displayNativeToast(`✅ ${done}/${total} תרגילים הושלמו`);
             }
@@ -4981,6 +4920,33 @@
             // in the last-time row below, not here.
             const label = stepper?.querySelector('.stepper-label');
             if (label) label.textContent = field === 'weight' ? 'משקל' : 'חזרות × סטים';
+
+            // One combined plan-delta note covers both weight and reps/sets, so
+            // an edit to either field can add, update, or remove it. Only
+            // patched when the last-time row already exists — the rare case of
+            // a first-ever entry (no history yet) that just went off-plan for
+            // the first time waits for the next full render instead.
+            if (card) {
+                const strip = card.querySelector('.last-time');
+                if (strip) {
+                    const p = planOf(ex);
+                    const anyOff = p.weight !== ex.weight || p.reps !== ex.reps || p.sets !== ex.sets;
+                    let planNote = strip.querySelector('.plan-delta');
+                    if (anyOff) {
+                        const text = `תוכנית ${p.weight} · ${p.reps}×${p.sets}`;
+                        if (!planNote) {
+                            planNote = document.createElement('em');
+                            planNote.className = 'plan-delta';
+                            const figsEl = strip.querySelector('.last-time-figs');
+                            if (figsEl) figsEl.insertAdjacentElement('afterend', planNote);
+                            else strip.insertBefore(planNote, strip.firstChild);
+                        }
+                        planNote.textContent = text;
+                    } else if (planNote) {
+                        planNote.remove();
+                    }
+                }
+            }
 
             // The against-last-time arrow is also a function of the weight, so it
             // has to move with it rather than waiting for the next full render
@@ -5265,28 +5231,6 @@
         function currentSlides() {
             const active = getActiveWorkout();
             return active && active.exercises ? buildSlides(active.exercises) : [];
-        }
-
-        function isSlideDone(slide) {
-            const active = getActiveWorkout();
-            return !!active && slide.every(i => isCompletedToday(active.exercises[i]));
-        }
-
-        // Where stage mode lands after a completion: the next slide that
-        // still needs doing. Checked backward first — if something earlier
-        // was left incomplete (skipped it earlier, e.g. the device was busy
-        // at #2), that's what you land on, so you catch up on it before
-        // moving on rather than running past it toward #4. Only when nothing
-        // is left behind does it continue forward as usual. Returns -1 when
-        // nothing is left at all.
-        function nextIncompleteSlide(fromIndex, slides) {
-            for (let i = 0; i < fromIndex; i++) {
-                if (!isSlideDone(slides[i])) return i;
-            }
-            for (let i = fromIndex + 1; i < slides.length; i++) {
-                if (!isSlideDone(slides[i])) return i;
-            }
-            return -1;
         }
 
         function goToSlide(n, viaSwipe) {
@@ -6134,7 +6078,13 @@
                     <div class="stage-slide" id="stage-slide">${slideHtml(slides[stageIndex])}</div>
                     ${renderStageChrome(slides)}`;
             } else {
-                htmlBuffer = slides.map(slideHtml).join('');
+                // Reordering is a list-view thing only — each unit (a single
+                // exercise, or a superset pair moving together) gets wrapped
+                // so it can be long-pressed and dragged. data-slide-idx points
+                // back at its position in THIS render's slides array, which
+                // initDragReorder uses to rebuild the exercise order on drop.
+                htmlBuffer = slides.map((slide, i) =>
+                    `<div class="drag-unit" data-slide-idx="${i}">${slideHtml(slide)}</div>`).join('');
             }
 
             displayZone.innerHTML = htmlBuffer;
@@ -6146,6 +6096,165 @@
 
             renderWorkoutProgress();
             renderCoachUpdateCard();
+
+            if (!stage) initDragReorder(displayZone, slides);
+        }
+
+        // ============ DRAG-TO-REORDER (list view only) ============
+        // Long-press a card — or a superset pair, which moves together as one
+        // unit — to pick it up and drop it elsewhere. Pointer Events cover
+        // touch and mouse alike; the long-press delay is what tells a real
+        // drag-intent apart from an ordinary scroll starting on the same card.
+        const DRAG_HOLD_MS = 450;
+        const DRAG_MOVE_CANCEL_PX = 10;
+        let dragState = null;
+
+        function initDragReorder(container, slides) {
+            container.querySelectorAll('.drag-unit').forEach(unit => {
+                unit.addEventListener('pointerdown', (e) => watchForDragStart(e, unit, container, slides));
+            });
+        }
+
+        function watchForDragStart(e, unit, container, slides) {
+            if (e.button !== undefined && e.button !== 0) return;
+            // A tap that starts on an actual control (checkbox, stepper,
+            // note icon, link) is that control's tap, never a drag — even
+            // after holding it half a second.
+            if (e.target.closest('input, textarea, button, a')) return;
+
+            const startX = e.clientX, startY = e.clientY;
+            let moved = false;
+
+            const onMove = (ev) => {
+                if (Math.abs(ev.clientX - startX) > DRAG_MOVE_CANCEL_PX || Math.abs(ev.clientY - startY) > DRAG_MOVE_CANCEL_PX) {
+                    moved = true;
+                    cleanup();
+                }
+            };
+            const cleanup = () => {
+                clearTimeout(timer);
+                unit.removeEventListener('pointermove', onMove);
+                unit.removeEventListener('pointerup', cleanup);
+                unit.removeEventListener('pointercancel', cleanup);
+            };
+
+            unit.addEventListener('pointermove', onMove);
+            unit.addEventListener('pointerup', cleanup);
+            unit.addEventListener('pointercancel', cleanup);
+
+            const timer = setTimeout(() => {
+                cleanup();
+                if (!moved) beginDrag(e, unit, container, slides);
+            }, DRAG_HOLD_MS);
+        }
+
+        function beginDrag(e, unit, container, slides) {
+            triggerHaptic(15);
+            const rect = unit.getBoundingClientRect();
+
+            // An empty spacer holds the unit's place in the list while the
+            // real card floats above everything as a fixed overlay — moving
+            // the spacer around is what makes the list reorder live, without
+            // having to fight the scroll container's own layout.
+            const placeholder = document.createElement('div');
+            placeholder.className = 'drag-unit drag-placeholder';
+            placeholder.style.height = rect.height + 'px';
+            placeholder.dataset.slideIdx = unit.dataset.slideIdx;
+            unit.parentNode.insertBefore(placeholder, unit);
+
+            unit.classList.add('dragging');
+            unit.style.position = 'fixed';
+            unit.style.top = rect.top + 'px';
+            unit.style.left = rect.left + 'px';
+            unit.style.width = rect.width + 'px';
+            unit.style.zIndex = '500';
+
+            dragState = { unit, placeholder, container, slides, startY: e.clientY, baseTop: rect.top, pointerId: e.pointerId };
+
+            try { unit.setPointerCapture(e.pointerId); } catch (err) { /* already released */ }
+            unit.addEventListener('pointermove', onDragMove);
+            unit.addEventListener('pointerup', onDragEnd);
+            unit.addEventListener('pointercancel', onDragEnd);
+
+            // No auto-scroll support yet — simplest to just freeze the list
+            // while a drag is in progress than to fight a moving target.
+            const scroller = document.querySelector('.content-area');
+            if (scroller) scroller.style.overflow = 'hidden';
+        }
+
+        function onDragMove(e) {
+            if (!dragState) return;
+            const { unit, placeholder, container, startY, baseTop } = dragState;
+            unit.style.top = (baseTop + (e.clientY - startY)) + 'px';
+
+            const draggedRect = unit.getBoundingClientRect();
+            const draggedCenter = draggedRect.top + draggedRect.height / 2;
+
+            const siblings = [...container.querySelectorAll('.drag-unit')].filter(el => el !== unit && el !== placeholder);
+            let target = null;
+            for (const sib of siblings) {
+                const r = sib.getBoundingClientRect();
+                if (draggedCenter < r.top + r.height / 2) { target = sib; break; }
+            }
+            if (target) container.insertBefore(placeholder, target);
+            else container.appendChild(placeholder);
+        }
+
+        function onDragEnd() {
+            if (!dragState) return;
+            const { unit, placeholder, container, slides, pointerId } = dragState;
+
+            try { unit.releasePointerCapture(pointerId); } catch (err) { /* already released */ }
+            unit.removeEventListener('pointermove', onDragMove);
+            unit.removeEventListener('pointerup', onDragEnd);
+            unit.removeEventListener('pointercancel', onDragEnd);
+
+            container.insertBefore(unit, placeholder);
+            placeholder.remove();
+            unit.classList.remove('dragging');
+            unit.style.position = '';
+            unit.style.top = '';
+            unit.style.left = '';
+            unit.style.width = '';
+            unit.style.zIndex = '';
+
+            const scroller = document.querySelector('.content-area');
+            if (scroller) scroller.style.overflow = '';
+
+            commitReorder(container, slides);
+            dragState = null;
+        }
+
+        // Reads the final drag-unit order from the DOM and rebuilds the
+        // exercise array to match — each exercise object travels with its own
+        // data (plan, history, notes), only its position in the array changes.
+        function commitReorder(container, slides) {
+            const active = getActiveWorkout();
+            if (!active) return;
+
+            const order = [...container.querySelectorAll('.drag-unit')].map(el => parseInt(el.dataset.slideIdx, 10));
+            const newExercises = [];
+            order.forEach(slideIdx => {
+                (slides[slideIdx] || []).forEach(exIdx => newExercises.push(active.exercises[exIdx]));
+            });
+
+            const unchanged = newExercises.length === active.exercises.length
+                && newExercises.every((ex, i) => ex === active.exercises[i]);
+            if (unchanged) return;
+
+            active.exercises = newExercises;
+
+            // Any per-index UI state (an open note, an expanded sparkline) now
+            // points at whatever exercise happens to sit at that index after
+            // the reorder — not the one it was actually open for.
+            openNoteIndex = null;
+            sparkOpenIndex = null;
+
+            triggerHaptic(10);
+            renderWeeklyWorkoutDashboard();
+            rebuildChangesSummaryReport();
+            renderCoachUpdateCard();
+            queueSync('/workouts', () => stateWorkouts);
         }
 
         function renderWorkoutProgress() {
@@ -6846,33 +6955,48 @@
 
         function generateInlineExerciseRow(ex, index) {
             const isDone = isCompletedToday(ex);
+            const p = planOf(ex);
+
+            // Only surface the prescription when you've actually deviated from
+            // it — folded into the last-time line below instead of a separate
+            // label, so a card doesn't carry two different "vs. something"
+            // comparisons in two different places for one number.
+            const planWeightOff = p.weight !== ex.weight;
+            const planRepsOff = (p.reps !== ex.reps || p.sets !== ex.sets);
+            const planFigs = `${p.weight} · ${p.reps}×${p.sets}`;
 
             // The question you actually ask mid-set: what did I lift last time?
             const prev = lastPerformedFor(ex.name);
             const sparkOpen = sparkOpenIndex === index;
             let prevRow = '';
-            if (prev) {
-                // Progress is total work, not load alone — more reps at the same
-                // weight is still a step forward.
-                const dir = trendAgainst(ex, prev);
-                const arrow = dir === 'up' ? '↑' : dir === 'down' ? '↓' : '=';
-                // The sparkline is a tap away rather than always drawn — the
-                // arrow already answers "better or worse", so the graph is
-                // detail you ask for, not something every card carries.
-                const spark = sparkOpen ? sparklineFor(ex.name) : '';
-                const gapLabel = describeGap(prev.timestamp);
-                // A per-set reading has no single "weight" worth quoting — show
-                // the sets themselves, same shorthand as the log screen, so the
-                // one thing this strip exists for (what did I lift last time)
-                // doesn't quietly collapse to just the heaviest set.
-                const figs = hasSetLog(prev)
-                    ? prev.setLog.map(s => `${s.weight}×${s.reps}`).join(' · ')
-                    : `${prev.weight} · ${prev.reps}×${prev.sets}`;
-                const trailer = spark || `<span class="last-time-arrow">${arrow}</span>`;
+            if (prev || planWeightOff || planRepsOff) {
+                let dir = '', gapLabel = '', figs = '', trailer = '';
+                if (prev) {
+                    // Progress is total work, not load alone — more reps at the same
+                    // weight is still a step forward.
+                    dir = trendAgainst(ex, prev);
+                    const arrow = dir === 'up' ? '↑' : dir === 'down' ? '↓' : '=';
+                    // The sparkline is a tap away rather than always drawn — the
+                    // arrow already answers "better or worse", so the graph is
+                    // detail you ask for, not something every card carries.
+                    const spark = sparkOpen ? sparklineFor(ex.name) : '';
+                    gapLabel = describeGap(prev.timestamp);
+                    // A per-set reading has no single "weight" worth quoting — show
+                    // the sets themselves, same shorthand as the log screen, so the
+                    // one thing this strip exists for (what did I lift last time)
+                    // doesn't quietly collapse to just the heaviest set.
+                    figs = hasSetLog(prev)
+                        ? prev.setLog.map(s => `${s.weight}×${s.reps}`).join(' · ')
+                        : `${prev.weight} · ${prev.reps}×${prev.sets}`;
+                    trailer = spark || `<span class="last-time-arrow">${arrow}</span>`;
+                }
+                const planNote = (planWeightOff || planRepsOff)
+                    ? `<em class="plan-delta">תוכנית ${planFigs}</em>` : '';
                 prevRow = `
                     <div class="last-time ${dir}" onclick="toggleSpark(${index})" role="button" tabindex="0" aria-label="הצג מגמה">
                         ${gapLabel ? `<span class="last-time-label">${gapLabel}</span>` : ''}
                         ${figs ? `<span class="last-time-figs">${figs}</span>` : ''}
+                        ${planNote}
                         ${trailer}
                     </div>`;
             }
@@ -7143,91 +7267,38 @@
 
         function parseExerciseStringToken(str) {
             const match = str.match(/(\d+)[×x](\d+)/);
-            const counts = match ? normalizeSetsAndReps(match[1], match[2]) : null;
+            if (!match) return null;
+
+            const counts = normalizeSetsAndReps(match[1], match[2]);
+            if (!counts) return null;
 
             const weightMatch = str.match(/\((\d+\.?\d*)\)?/);
             const weight = weightMatch ? parseFloat(weightMatch[1]) : 0;
-
-            // Strict parse: reps and sets are both plain numbers straddling the ×.
-            if (counts) {
-                let name = str
-                    .replace(/\d+[×x]\d+/g, '')
-                    .replace(/\(\d+\.?\d*\)?/g, '')
-                    .replace(/^.*?-\s*/, '')
-                    .trim();
-                return name.length > 1 ? {
-                    name,
-                    sets: counts.sets,
-                    reps: counts.reps,
-                    weight,
-                    // Frozen snapshot of the prescription — logging never overwrites this
-                    plan: { sets: counts.sets, reps: counts.reps, weight },
-                    superset: false,
-                    history: []
-                } : null;
-            }
-
-            // Salvage path: the line still looks like an exercise — it carries a
-            // "×N" sets marker — but the quantity on the other side of the × isn't
-            // a plain number the strict pattern accepts. The real case is a
-            // time-based hold, e.g. "סינגל לג 60 שניות×3", where "שניות" sits
-            // between the count and the ×. Rather than return null and let the
-            // exercise vanish without a trace, we keep what we can (the sets count,
-            // and the full name with its time text intact) and stage it flagged so
-            // it surfaces in the review sheet for the reps value to be filled in.
-            const setsMatch = str.match(/[×x]\s*(\d+)/) || str.match(/(\d+)\s*[×x]/);
-            if (!setsMatch) return null;
-            const sets = parseInt(setsMatch[1], 10);
-            if (!Number.isFinite(sets) || sets < 1) return null;
-
+            
             let name = str
-                .replace(/[×x]\s*\d+/g, '')
-                .replace(/\d+\s*[×x]/g, '')
+                .replace(/\d+[×x]\d+/g, '')
                 .replace(/\(\d+\.?\d*\)?/g, '')
                 .replace(/^.*?-\s*/, '')
-                .trim();
-            if (name.length <= 1) return null;
-
-            return {
-                name,
-                sets,
-                reps: null,            // unknown — completed by the user in the review sheet
-                weight,
-                plan: { sets, reps: null, weight },
+                .trim(); 
+            
+            return name.length > 1 ? { 
+                name, 
+                sets: counts.sets, 
+                reps: counts.reps, 
+                weight, 
+                // Frozen snapshot of the prescription — logging never overwrites this
+                plan: { sets: counts.sets, reps: counts.reps, weight },
                 superset: false,
-                needsReview: true,
                 history: []
-            };
-        }
-
-        function updateStagedReps(idx, raw) {
-            const ex = temporaryStagedWorkout[idx];
-            if (!ex) return;
-            const v = parseInt(raw, 10);
-            const ok = Number.isFinite(v) && v > 0;
-            ex.reps = ok ? v : null;
-            const wasFlagged = !!ex.needsReview;
-            ex.needsReview = !ok;
-            // Re-render only when the flagged state flips, so the highlight and the
-            // commit guard stay in sync without stealing focus on every keystroke.
-            if (wasFlagged !== ex.needsReview) renderReviewSheetUI();
+            } : null;
         }
 
         function renderReviewSheetUI() {
             let html = '';
             temporaryStagedWorkout.forEach((ex, idx) => {
-                const repsVal = Number.isFinite(ex.reps) ? ex.reps : '';
-                const flagged = !!ex.needsReview;
-                const cardStyle = flagged
-                    ? 'margin-bottom: 10px; border: 1px solid var(--gold); background: var(--gold-wash);'
-                    : 'margin-bottom: 10px;';
-                const hint = flagged
-                    ? `<div style="font-size: 11px; color: var(--gold); font-weight: 700; margin-bottom: 10px;">⚠️ לא זוהו חזרות (כנראה תרגיל זמן) — השלם ידנית</div>`
-                    : '';
                 html += `
-                    <div class="workout-card" style="${cardStyle}">
+                    <div class="workout-card" style="margin-bottom: 10px;">
                         <h4 style="font-size:15px; margin-bottom:12px; font-weight: 800;">${esc(ex.name)}</h4>
-                        ${hint}
                         <div style="display:flex; gap:10px; align-items: flex-end;">
                             <div style="flex: 1;">
                                 <label style="font-size: 11px; color: var(--ink-soft); font-weight: 700; display: block; margin-bottom: 4px;">סטים</label>
@@ -7235,7 +7306,7 @@
                             </div>
                             <div style="flex: 1;">
                                 <label style="font-size: 11px; color: var(--ink-soft); font-weight: 700; display: block; margin-bottom: 4px;">חזרות</label>
-                                <input type="number" value="${repsVal}" placeholder="${flagged ? '?' : ''}" onchange="updateStagedReps(${idx}, this.value)" inputmode="numeric" style="background: var(--surface-sunk);${flagged ? ' border-color: var(--gold);' : ''}">
+                                <input type="number" value="${ex.reps}" onchange="temporaryStagedWorkout[${idx}].reps=parseInt(this.value)" inputmode="numeric" style="background: var(--surface-sunk);">
                             </div>
                             <div style="flex: 1;">
                                 <label style="font-size: 11px; color: var(--ink-soft); font-weight: 700; display: block; margin-bottom: 4px;">משקל</label>
@@ -7248,14 +7319,6 @@
         }
 
         async function commitParsedWorkout() {
-            // Nothing dropped silently also means nothing saved half-known: a row we
-            // could only partially parse must be completed before it can be stored.
-            const incomplete = temporaryStagedWorkout.some(
-                ex => ex.needsReview || !Number.isFinite(ex.reps) || ex.reps < 1);
-            if (incomplete) {
-                return displayNativeToast('⚠️ יש תרגיל שחסרות בו חזרות — השלם אותו לפני שמירה');
-            }
-
             const newId = 'wk-' + Date.now();
             const now = new Date().toISOString();
 
@@ -7377,39 +7440,34 @@
             const maxLen = Math.max(a.length, b.length);
             if (maxLen === 0) return true;
             const dist = levenshteinDistance(a, b);
-            // Typo tolerance scales with name length, with no floor: a name of
-            // 5 characters or fewer needs an exact match. Short, generic
-            // Hebrew exercise names are exactly the case where one edit can
-            // land on a real, different exercise ("חתירה"/"חזירה" — one
-            // substitution, five letters, two different movements) rather
-            // than a typo of the same one, so tolerating an edit there does
-            // more harm than the typos it would have caught.
-            const threshold = Math.floor(maxLen * 0.18);
+            // Allow small typo tolerance relative to name length (roughly 1 typo per ~5-6 chars)
+            const threshold = Math.max(1, Math.floor(maxLen * 0.18));
             return dist <= threshold;
         }
 
-        // Leader-based clustering instead of transitive union-find. The old
-        // version unioned every pair that looked similar, which chains: if
-        // A~B and B~C look similar, A and C end up in the same cluster even
-        // when A and C themselves are nothing alike. Every trend/strength
-        // number downstream is computed per cluster, so a bad merge here
-        // silently blends two different exercises' histories with no visible
-        // sign of it. Comparing each name only against existing cluster
-        // leaders — never against another member it was chained through —
-        // makes every merge a direct, checkable match instead of an
-        // inherited one.
+        // Union-Find clustering of normalized names that are similar enough
+        // to be considered the same exercise (spacing differences + minor typos)
         function clusterExerciseNames(names) {
-            const leaders = [];
-            const clusterOf = {};
-            names.forEach(n => {
-                const leader = leaders.find(l => isSimilarExerciseName(n, l));
-                if (leader) {
-                    clusterOf[n] = leader;
-                } else {
-                    leaders.push(n);
-                    clusterOf[n] = n;
+            const parent = {};
+            function find(x) {
+                if (parent[x] === undefined) parent[x] = x;
+                if (parent[x] !== x) parent[x] = find(parent[x]);
+                return parent[x];
+            }
+            function union(x, y) {
+                const rx = find(x), ry = find(y);
+                if (rx !== ry) parent[rx] = ry;
+            }
+            names.forEach(n => { if (parent[n] === undefined) parent[n] = n; });
+            for (let i = 0; i < names.length; i++) {
+                for (let j = i + 1; j < names.length; j++) {
+                    if (isSimilarExerciseName(names[i], names[j])) {
+                        union(names[i], names[j]);
+                    }
                 }
-            });
+            }
+            const clusterOf = {};
+            names.forEach(n => { clusterOf[n] = find(n); });
             return clusterOf;
         }
 
@@ -8154,45 +8212,6 @@
             displayNativeToast(isDark ? '🌙 מצב כהה הופעל' : '☀️ מצב בהיר הופעל');
         }
 
-        // Accessibility text-size control — 4 levels instead of on/off, same
-        // localStorage-backed pattern as the other settings toggles.
-        const TEXT_SIZE_LABELS = { 1: 'רגיל', 2: 'גדול', 3: 'גדול מאוד', 4: 'ענק' };
-
-        function setTextSize(level) {
-            triggerHaptic(10);
-            if (level === 1) {
-                document.documentElement.removeAttribute('data-text-size');
-            } else {
-                document.documentElement.setAttribute('data-text-size', String(level));
-            }
-            localStorage.setItem('fitpro-textSize', String(level));
-            renderTextSizeControl();
-            displayNativeToast(`🔠 גודל טקסט: ${TEXT_SIZE_LABELS[level]}`);
-        }
-
-        function currentTextSize() {
-            const n = parseInt(document.documentElement.getAttribute('data-text-size'), 10);
-            return TEXT_SIZE_LABELS[n] ? n : 1;
-        }
-
-        function renderTextSizeControl() {
-            const wrap = document.getElementById('text-size-control');
-            const label = document.getElementById('text-size-label');
-            if (!wrap) return;
-            const level = currentTextSize();
-            wrap.querySelectorAll('.pg-window-opt').forEach((btn, i) => {
-                btn.classList.toggle('on', i + 1 === level);
-            });
-            if (label) label.textContent = `נבחר: ${TEXT_SIZE_LABELS[level]}`;
-        }
-
-        function initializeTextSize() {
-            const saved = parseInt(localStorage.getItem('fitpro-textSize'), 10);
-            if (saved >= 2 && saved <= 4) {
-                document.documentElement.setAttribute('data-text-size', String(saved));
-            }
-        }
-
         function animateWeightUpdate(element, oldValue, newValue) {
             if (element) {
                 element.classList.add('updating');
@@ -8419,7 +8438,6 @@
 
         window.addEventListener('load', async () => {
             initializeTheme();
-            initializeTextSize();
             generateNativeAppAssets();
 
             // Restore a previous session; otherwise show the sign-in screen
