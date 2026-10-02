@@ -7207,7 +7207,14 @@
         }
 
         function parseExerciseStringToken(str) {
-            const match = str.match(/(\d+)[×x](\d+)/);
+            // A plain "11×3", or a timed hold written as "60 שניות×3" — the
+            // number and × no longer need to sit directly adjacent; an
+            // optional unit word (and the space around it) can sit between
+            // them. The seconds count lands in the same "reps" field the app
+            // already has — there's no separate duration concept — so a timed
+            // set shows as "3×60" rather than "60 שניות", but it's imported
+            // and paired correctly instead of silently disappearing.
+            const match = str.match(/(\d+)\s*(?:שניות|שנ['׳]?|sec(?:onds)?)?\s*[×x]\s*(\d+)/i);
             if (!match) return null;
 
             const counts = normalizeSetsAndReps(match[1], match[2]);
@@ -7215,9 +7222,9 @@
 
             const weightMatch = str.match(/\((\d+\.?\d*)\)?/);
             const weight = weightMatch ? parseFloat(weightMatch[1]) : 0;
-            
+
             let name = str
-                .replace(/\d+[×x]\d+/g, '')
+                .replace(match[0], '')
                 .replace(/\(\d+\.?\d*\)?/g, '')
                 .replace(/^.*?-\s*/, '')
                 .trim(); 
